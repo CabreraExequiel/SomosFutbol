@@ -1,0 +1,166 @@
+<a class="skip-link" href="#contenido-principal">Ir al contenido</a>
+<div class="app-layout" [class.menu-abierto]="menuAbierto">
+  <header class="topbar">
+    <div class="topbar-izquierda">
+      <button
+        type="button"
+        class="btn-menu"
+        (click)="alternarMenu()"
+        [attr.aria-expanded]="menuAbierto"
+        aria-controls="navegacion-principal"
+        aria-label="Abrir o cerrar el menú"
+        >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16"></path>
+        </svg>
+      </button>
+
+      <a routerLink="/inicio" class="marca" (click)="cerrarMenu()">
+        <img src="assets/logo.png" alt="" />
+        <span>Somos Fútbol</span>
+      </a>
+    </div>
+
+    <div class="topbar-derecha">
+      <a routerLink="/notificaciones" class="btn-notificaciones" title="Abrir notificaciones" aria-label="Abrir notificaciones">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"></path>
+        </svg>
+        @if (noLeidas > 0) {
+          <span class="badge-notificaciones">{{ noLeidas > 99 ? '99+' : noLeidas }}</span>
+        }
+      </a>
+
+      <a routerLink="/perfil" class="usuario-topbar" title="Abrir mi perfil">
+        <span class="avatar-usuario">
+          @if (usuario?.avatar) {
+            <img [src]="$safeNavigationMigration(usuario?.avatar)" [alt]="usuario?.name || 'Perfil'" />
+          }
+          @if (!usuario?.avatar) {
+            <span>{{ inicialUsuario }}</span>
+          }
+        </span>
+        <span class="usuario-texto">
+          <strong>{{ usuario?.name || 'Jugador' }}</strong>
+          <small>{{ etiquetaRol }}</small>
+        </span>
+      </a>
+
+      <button type="button" class="btn-logout" (click)="cerrarSesion()" title="Cerrar sesión">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M10 17l5-5-5-5M15 12H3M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"></path>
+        </svg>
+        <span>Cerrar sesión</span>
+      </button>
+    </div>
+  </header>
+
+  <button
+    type="button"
+    class="sidebar-backdrop"
+    [class.visible]="menuAbierto"
+    (click)="cerrarMenu()"
+    aria-label="Cerrar menú"
+  ></button>
+
+  <aside id="navegacion-principal" class="sidebar">
+    <div class="sidebar-cabecera">
+      <span class="sidebar-etiqueta">MENÚ PRINCIPAL</span>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="Navegación principal">
+      <a
+        routerLink="/inicio"
+        routerLinkActive="activo"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="nav-item"
+        (click)="cerrarMenu()"
+        >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 11.5 12 4l9 7.5M5.5 10v10h13V10M9.5 20v-6h5v6"></path>
+        </svg>
+        <span>Inicio</span>
+      </a>
+
+      <a routerLink="/canchas" routerLinkActive="activo" class="nav-item" (click)="cerrarMenu()">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="m12 8 3 2.2-1.1 3.5h-3.8L9 10.2 12 8ZM7.2 5.8l1.8 4.4M16.8 5.8 15 10.2M4 13l6.1.7M20 13l-6.1.7M8.1 20l2-6.3M15.9 20l-2-6.3"></path>
+        </svg>
+        <span>Buscar canchas</span>
+      </a>
+
+      <a routerLink="/reservas" routerLinkActive="activo" class="nav-item" (click)="cerrarMenu()">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+          <path d="M7 3v4M17 3v4M3 10h18M8 14h3M8 17h6"></path>
+        </svg>
+        <span>Mis reservas</span>
+      </a>
+
+      <a routerLink="/chat" routerLinkActive="activo" class="nav-item" (click)="cerrarMenu()">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8Z"></path>
+          <path d="M8 9h8M8 13h5"></path>
+        </svg>
+        <span>Mensajes</span>
+      </a>
+
+      <a routerLink="/amigos" routerLinkActive="activo" class="nav-item" (click)="cerrarMenu()">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="9" cy="8" r="3"></circle>
+          <circle cx="17" cy="9" r="2.5"></circle>
+          <path d="M3.5 20a5.5 5.5 0 0 1 11 0M14 15.5a4.5 4.5 0 0 1 6.5 4"></path>
+        </svg>
+        <span>Amigos</span>
+      </a>
+
+      <a routerLink="/notificaciones" routerLinkActive="activo" class="nav-item" (click)="cerrarMenu()">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"></path>
+        </svg>
+        <span>Notificaciones</span>
+        @if (noLeidas > 0) {
+          <span class="nav-badge">{{ noLeidas > 99 ? '99+' : noLeidas }}</span>
+        }
+      </a>
+
+      <a routerLink="/perfil" routerLinkActive="activo" class="nav-item" (click)="cerrarMenu()">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="8" r="4"></circle>
+          <path d="M4.5 21a7.5 7.5 0 0 1 15 0"></path>
+        </svg>
+        <span>Mi perfil</span>
+      </a>
+
+      @if (authService.esDueno() || authService.esAdmin()) {
+        <a
+          routerLink="/mis-canchas"
+          routerLinkActive="activo"
+          class="nav-item"
+          (click)="cerrarMenu()"
+          >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 20V8l9-5 9 5v12M3 10h18M7 20v-6h10v6M12 10v4"></path>
+          </svg>
+          <span>Mis canchas</span>
+        </a>
+      }
+    </nav>
+
+    <div class="sidebar-pie">
+      <div class="detalle-comunidad">
+        <span class="estado-activo"></span>
+        <div>
+          <strong>Somos Fútbol</strong>
+          <small>Tu comunidad deportiva</small>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="contenido-app">
+    <span id="contenido-principal" tabindex="-1"></span>
+      <router-outlet></router-outlet>
+  </main>
+</div>

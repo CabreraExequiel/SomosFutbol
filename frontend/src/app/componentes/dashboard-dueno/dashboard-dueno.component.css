@@ -1,0 +1,563 @@
+.resumen-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.resumen-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 17px;
+}
+
+.resumen-icono {
+  width: 43px;
+  height: 43px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 11px;
+  font-size: 1.05rem;
+}
+
+.resumen-icono.naranja {
+  color: #c2410c;
+  background: #fff7ed;
+}
+
+.resumen-icono.azul {
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.resumen-icono.amarillo {
+  color: #a16207;
+  background: #fefce8;
+}
+
+.resumen-card small,
+.resumen-card strong {
+  display: block;
+}
+
+.resumen-card small {
+  color: var(--texto-suave);
+  font-size: 0.72rem;
+}
+
+.resumen-card strong {
+  margin-top: 3px;
+  color: var(--tinta);
+  font-size: 1.35rem;
+}
+
+.form-cancha {
+  padding: 25px;
+  margin-bottom: 32px;
+  border-color: #fed7aa;
+}
+
+.form-cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 20px;
+  margin-bottom: 21px;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.form-cabecera h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.form-cabecera p {
+  margin: 6px 0 0;
+  color: var(--texto-suave);
+  font-size: 0.8rem;
+}
+
+.paso-badge {
+  padding: 6px 9px;
+  color: #9a3412;
+  background: var(--naranja-suave);
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.campos-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 17px;
+}
+
+.campo {
+  display: grid;
+  gap: 7px;
+}
+
+.campo-ancho {
+  grid-column: 1 / -1;
+}
+
+.campo > span {
+  color: var(--texto);
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  color: var(--tinta);
+  background: #fff;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  outline: 0;
+}
+
+.campo textarea {
+  min-height: 96px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus {
+  border-color: var(--naranja);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+
+.campo input::placeholder,
+.campo textarea::placeholder {
+  color: #a8b1bf;
+}
+
+.input-prefijo {
+  position: relative;
+}
+
+.input-prefijo > span {
+  position: absolute;
+  top: 50%;
+  left: 13px;
+  color: var(--texto-suave);
+  transform: translateY(-50%);
+}
+
+.input-prefijo input {
+  padding-left: 29px;
+}
+
+.checkbox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 13px;
+  background: #f8fafc;
+  border: 1px solid var(--borde);
+  border-radius: 11px;
+  cursor: pointer;
+}
+
+.selector-foto {
+  position: relative;
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 12px;
+  overflow: hidden;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 11px;
+}
+
+.selector-foto img { width: 94px; height: 68px; flex: 0 0 auto; object-fit: cover; border-radius: 8px; }
+.selector-foto-texto { min-width: 0; flex: 1; }
+.selector-foto-texto strong, .selector-foto-texto small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.selector-foto-texto strong { color: var(--tinta); font-size: .77rem; }
+.selector-foto-texto small { margin-top: 4px; color: var(--texto-suave); font-size: .66rem; }
+.selector-foto input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.selector-foto .secondary-button { min-height: 36px; padding: 7px 11px; font-size: .72rem; pointer-events: none; }
+
+.checkbox input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.checkbox-control {
+  width: 23px;
+  height: 23px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: transparent;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.checkbox input:checked + .checkbox-control {
+  color: #fff;
+  background: var(--naranja);
+  border-color: var(--naranja);
+}
+
+.checkbox input:focus-visible + .checkbox-control {
+  outline: 3px solid rgba(249, 115, 22, 0.28);
+}
+
+.checkbox strong,
+.checkbox small {
+  display: block;
+}
+
+.checkbox strong {
+  color: var(--tinta);
+  font-size: 0.78rem;
+}
+
+.checkbox small {
+  margin-top: 3px;
+  color: var(--texto-suave);
+  font-size: 0.68rem;
+}
+
+.form-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  padding-top: 20px;
+  margin-top: 21px;
+  border-top: 1px solid #edf0f4;
+}
+
+.mensaje-error {
+  padding: 10px 12px;
+  margin: 17px 0 0;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 9px;
+  font-size: 0.78rem;
+}
+
+.seccion-panel {
+  margin-top: 33px;
+}
+
+.seccion-cabecera {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+
+.seccion-cabecera h2 {
+  margin: 0;
+  color: var(--tinta);
+  font-size: 1.2rem;
+}
+
+.seccion-cabecera p {
+  margin: 5px 0 0;
+  color: var(--texto-suave);
+  font-size: 0.78rem;
+}
+
+.seccion-cabecera > span {
+  color: #94a3b8;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.grilla-canchas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.tarjeta-cancha {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 13px;
+  padding: 16px;
+}
+
+.cancha-icono {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background:
+    radial-gradient(circle at 70% 20%, rgba(249, 115, 22, 0.7), transparent 38%),
+    #1e293b;
+  border-radius: 12px;
+  font-size: 1.35rem;
+  overflow: hidden;
+}
+
+.cancha-icono img { width: 100%; height: 100%; object-fit: cover; }
+
+.cancha-info {
+  min-width: 0;
+}
+
+.cancha-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+}
+
+.cancha-titulo h3 {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: 0.92rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.estado-publicacion {
+  padding: 4px 7px;
+  color: #047857;
+  background: #ecfdf5;
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 800;
+}
+
+.estado-publicacion.inactiva {
+  color: #64748b;
+  background: #f1f5f9;
+}
+
+.cancha-info > p {
+  margin: 6px 0 0;
+  overflow: hidden;
+  color: var(--texto-suave);
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cancha-datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.cancha-datos span {
+  padding: 4px 7px;
+  color: #475569;
+  background: #f1f5f9;
+  border-radius: 6px;
+  font-size: 0.66rem;
+  text-transform: capitalize;
+}
+
+.cancha-acciones {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  padding-top: 12px;
+  border-top: 1px solid #edf0f4;
+}
+
+.cambiar-foto-cancha { position: relative; overflow: hidden; }
+.cambiar-foto-cancha input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+
+.cancha-acciones .secondary-button,
+.cancha-acciones .danger-button {
+  min-height: 36px;
+  padding: 7px 11px;
+  font-size: 0.72rem;
+}
+
+.reservas-lista {
+  display: grid;
+  gap: 9px;
+}
+
+.tarjeta-reserva {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 135px auto auto;
+  align-items: center;
+  gap: 13px;
+  padding: 14px 16px;
+}
+
+.acciones-reserva { display: flex; gap: 6px; }
+.acciones-reserva button { min-height: 31px; padding: 6px 8px; border-radius: 7px; cursor: pointer; font-size: .65rem; font-weight: 800; }
+.confirmar-reserva { color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; }
+.rechazar-reserva { color: #b91c1c; background: #fef2f2; border: 1px solid #fecaca; }
+.acciones-reserva button:disabled { cursor: wait; opacity: .5; }
+
+.estados-reserva { display: grid; justify-items: start; gap: 5px; }
+.estado-pago { padding: 4px 7px; color: #1d4ed8; background: #eff6ff; border-radius: 999px; font-size: .56rem; font-weight: 850; text-transform: uppercase; white-space: nowrap; }
+.estado-pago.APROBADO { color: #047857; background: #ecfdf5; }
+.estado-pago.RECHAZADO { color: #b91c1c; background: #fef2f2; }
+.estado-pago.REEMBOLSADO, .estado-pago.SIN_INICIAR { color: #64748b; background: #f1f5f9; }
+
+.reserva-avatar {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(135deg, #475569, #1e293b);
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 850;
+}
+
+.reserva-info,
+.reserva-horario {
+  min-width: 0;
+}
+
+.reserva-info strong,
+.reserva-info span,
+.reserva-horario strong,
+.reserva-horario span {
+  display: block;
+}
+
+.reserva-info strong,
+.reserva-horario strong {
+  color: var(--tinta);
+  font-size: 0.78rem;
+}
+
+.reserva-info span,
+.reserva-horario span {
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--texto-suave);
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.estado {
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.estado.PENDIENTE {
+  color: #9a3412;
+  background: #fff7ed;
+}
+
+.estado.CONFIRMADA {
+  color: #047857;
+  background: #ecfdf5;
+}
+
+.estado.CANCELADA {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+.estado-carga {
+  min-height: 150px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  color: var(--texto-suave);
+}
+
+.estado-carga p {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.empty-state .primary-button,
+.empty-state .secondary-button {
+  margin-top: 17px;
+}
+
+.empty-state.compacta {
+  padding-block: 34px;
+}
+
+.estado-error .empty-state-icon {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+
+
+@media (max-width: 900px) {
+  .grilla-canchas {
+    grid-template-columns: 1fr;
+  }
+
+
+
+  .acciones-reserva { grid-column: 2 / -1; justify-content: flex-end; }
+
+  .reserva-horario {
+    grid-column: 2;
+  }
+
+
+}
+
+@media (max-width: 640px) {
+  .resumen-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .campos-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .campo-ancho {
+    grid-column: auto;
+  }
+
+  .form-cancha {
+    padding: 18px;
+  }
+
+  .paso-badge,
+  .seccion-cabecera > span {
+    display: none;
+  }
+
+  .form-acciones {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+
+
+
+}
+
+.cancha-acciones{flex-wrap:wrap}.tarjeta-reserva{flex-wrap:wrap}.reserva-filtros{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin:20px 0}.reserva-filtros label{display:grid;gap:7px;font-size:.85rem;font-weight:700}.reserva-filtros input,.reserva-filtros select{padding:10px;border:1px solid var(--borde);border-radius:8px;background:white}.tarjeta-cancha{flex-wrap:wrap}.cancha-acciones{width:100%;justify-content:flex-end}@media(max-width:640px){.reserva-filtros label{flex:1 1 140px}}
+
+.tarjeta-cancha{display:grid;grid-template-columns:64px minmax(0,1fr);gap:16px}.cancha-acciones{grid-column:1/-1}.tarjeta-reserva{display:flex;gap:16px;flex-wrap:wrap}.reserva-info{flex:1;min-width:155px}.reserva-horario{min-width:130px}.estados-reserva{min-width:100px}

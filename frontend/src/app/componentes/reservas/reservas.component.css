@@ -1,0 +1,476 @@
+.reservas-page {
+  max-width: 1050px;
+}
+
+.lista-reservas {
+  display: grid;
+  gap: 13px;
+}
+
+.alerta-accion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  margin-bottom: 14px;
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  font-size: 0.78rem;
+}
+
+.alerta-accion > span {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: #dc2626;
+  border-radius: 50%;
+  font-weight: 900;
+}
+
+.alerta-accion p {
+  flex: 1;
+  margin: 0;
+}
+
+.alerta-accion button {
+  color: #991b1b;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-size: 1.15rem;
+}
+
+.alerta-pago {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 14px;
+  margin-bottom: 15px;
+  color: #1e3a8a;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 11px;
+  font-size: 0.8rem;
+}
+
+.alerta-pago.exito {
+  color: #065f46;
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.alerta-pago.error {
+  color: #991b1b;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.alerta-pago-icono {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: #fff;
+  background: #2563eb;
+  border-radius: 50%;
+  font-weight: 900;
+}
+
+.alerta-pago.exito .alerta-pago-icono { background: #059669; }
+.alerta-pago.error .alerta-pago-icono { background: #dc2626; }
+.alerta-pago p { flex: 1; margin: 0; }
+.alerta-pago button { color: currentColor; background: transparent; border: 0; cursor: pointer; font-size: 1.15rem; }
+
+.tarjeta-reserva {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr) 125px auto;
+  align-items: center;
+  gap: 18px;
+  padding: 17px 19px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tarjeta-reserva:hover {
+  border-color: #fed7aa;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.09);
+}
+
+.fecha-bloque {
+  width: 62px;
+  overflow: hidden;
+  text-align: center;
+  background: #fff;
+  border: 1px solid var(--borde);
+  border-radius: 11px;
+}
+
+.fecha-bloque span,
+.fecha-bloque strong {
+  display: block;
+}
+
+.fecha-bloque span {
+  padding: 4px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--naranja), var(--naranja-oscuro));
+  font-size: 0.63rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fecha-bloque strong {
+  padding: 7px 4px 8px;
+  color: var(--tinta);
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.reserva-info {
+  min-width: 0;
+}
+
+.reserva-titulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.reserva-titulo h2 {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--tinta);
+  font-size: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.estado {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.estado.PENDIENTE {
+  color: #9a3412;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+}
+
+.estado.CONFIRMADA {
+  color: #047857;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+}
+
+.estado.CANCELADA {
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.estado-pago {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  color: #1d4ed8;
+  background: #eff6ff;
+  font-size: 0.6rem;
+  font-weight: 850;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.estado-pago.APROBADO { color: #047857; background: #ecfdf5; border-color: #a7f3d0; }
+.estado-pago.RECHAZADO { color: #b91c1c; background: #fef2f2; border-color: #fecaca; }
+.estado-pago.REEMBOLSADO { color: #475569; background: #f1f5f9; border-color: #cbd5e1; }
+
+.reserva-datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 9px;
+  color: var(--texto-suave);
+  font-size: 0.76rem;
+}
+
+.reserva-datos > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dato-icono {
+  color: var(--naranja-oscuro);
+  font-weight: 900;
+}
+
+.reserva-monto {
+  padding-left: 18px;
+  border-left: 1px solid #edf0f4;
+}
+
+.reserva-monto small,
+.reserva-monto strong {
+  display: block;
+}
+
+.reserva-monto small {
+  color: #94a3b8;
+  font-size: 0.68rem;
+}
+
+.reserva-monto strong {
+  margin-top: 3px;
+  color: var(--tinta);
+  font-size: 1.05rem;
+}
+
+.acciones {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.acciones .primary-button,
+.acciones .danger-button,
+.acciones .pago-button {
+  min-height: 38px;
+  padding: 8px 12px;
+  font-size: 0.76rem;
+}
+
+.acciones .transferencia-button {
+  min-height: 38px;
+  padding: 8px 12px;
+  color: #9a3412;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.acciones .transferencia-button:hover:not(:disabled) {
+  color: #fff;
+  background: var(--naranja-oscuro);
+  border-color: var(--naranja-oscuro);
+}
+
+.acciones .transferencia-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.pago-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #fff;
+  background: #009ee3;
+  border: 1px solid #009ee3;
+  border-radius: 9px;
+  cursor: pointer;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.pago-button:hover:not(:disabled) { background: #008ed0; border-color: #008ed0; }
+.pago-button:disabled { cursor: wait; opacity: 0.65; }
+.pago-button span { font-size: 1rem; }
+
+.nota-pago {
+  grid-column: 2 / -1;
+  margin: -6px 0 0;
+  color: #64748b;
+  font-size: 0.68rem;
+}
+
+.datos-transferencia {
+  grid-column: 2 / -1;
+  padding: 14px;
+  color: #475569;
+  background: #fffaf5;
+  border: 1px solid #fed7aa;
+  border-radius: 11px;
+}
+
+.transferencia-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.transferencia-cabecera > span {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--naranja-oscuro);
+  border-radius: 9px;
+  font-weight: 900;
+}
+
+.transferencia-cabecera div {
+  display: grid;
+  gap: 2px;
+}
+
+.transferencia-cabecera strong {
+  color: var(--tinta);
+  font-size: 0.78rem;
+}
+
+.transferencia-cabecera small {
+  color: #64748b;
+  font-size: 0.65rem;
+}
+
+.datos-transferencia dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin: 13px 0 0;
+}
+
+.datos-transferencia dl > div {
+  min-width: 0;
+  padding: 9px 10px;
+  background: #fff;
+  border: 1px solid #ffedd5;
+  border-radius: 8px;
+}
+
+.datos-transferencia dt {
+  color: #94a3b8;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+}
+
+.datos-transferencia dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  color: #1e293b;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.datos-transferencia > p {
+  margin: 11px 0 0;
+  color: #7c2d12;
+  font-size: 0.66rem;
+  line-height: 1.5;
+}
+
+.empty-state .primary-button,
+.empty-state .secondary-button {
+  margin-top: 18px;
+}
+
+.estado-error .empty-state-icon {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+.estado-carga {
+  min-height: 280px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  color: var(--texto-suave);
+}
+
+.estado-carga p {
+  margin: 0;
+  font-size: 0.86rem;
+}
+
+.spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid #fed7aa;
+  border-top-color: var(--naranja);
+  border-radius: 50%;
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 980px) {
+  .tarjeta-reserva {
+    grid-template-columns: 68px minmax(0, 1fr) auto;
+  }
+
+  .reserva-monto {
+    grid-column: 2;
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .acciones {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .nota-pago { grid-column: 2 / -1; }
+  .datos-transferencia { grid-column: 2 / -1; }
+}
+
+@media (max-width: 640px) {
+  .tarjeta-reserva {
+    grid-template-columns: 58px minmax(0, 1fr);
+    gap: 14px;
+    padding: 15px;
+  }
+
+  .fecha-bloque {
+    width: 56px;
+  }
+
+  .reserva-titulo {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .reserva-monto {
+    grid-column: 2;
+  }
+
+  .acciones {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-top: 13px;
+    border-top: 1px solid #edf0f4;
+  }
+
+  .acciones > :only-child {
+    grid-column: 1 / -1;
+  }
+
+  .nota-pago { grid-column: 1 / -1; margin-top: 0; }
+  .datos-transferencia { grid-column: 1 / -1; }
+  .datos-transferencia dl { grid-template-columns: 1fr; }
+}

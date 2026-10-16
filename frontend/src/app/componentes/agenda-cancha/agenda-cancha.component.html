@@ -1,0 +1,17 @@
+<section class="surface-card agenda" aria-label="Administrar disponibilidad">
+ <header class="page-header"><div><span class="page-eyebrow">Días y horarios</span><h2>{{cancha.nombre}}</h2><p>La agenda se repite cada semana. Los días sin horarios quedan cerrados.</p></div><button type="button" class="secondary-button" (click)="salir()">Cerrar agenda</button></header>
+ @if(cargando){<p role="status">Cargando disponibilidad…</p>}
+ @if(error){<p class="app-alert error" role="alert">{{error}}</p><button type="button" class="secondary-button" (click)="cargar()">Recargar agenda</button>}
+ @if(mensaje){<p class="app-alert success" role="status">{{mensaje}}</p>}
+ @if(!cargando){
+ <fieldset [disabled]="guardando"><legend>1. Elegí los días y agregá un rango</legend><div class="dias-selector">
+ @for(d of dias;track d.id){<button type="button" class="dia-chip" [class.elegido]="seleccion.includes(d.id)" [attr.aria-pressed]="seleccion.includes(d.id)" (click)="toggle(d.id)">{{d.nombre}}</button>}
+ </div><div class="agenda-form"><label>Desde<input type="time" [(ngModel)]="inicio" step="1800"></label><label>Hasta<input type="time" [(ngModel)]="fin" step="1800"></label><button type="button" class="secondary-button" (click)="agregar()">+ Agregar rango</button></div></fieldset>
+ <div class="semana">@for(d of dias;track d.id){<div class="dia-fila"><strong>{{d.nombre}}</strong><div>@for(h of porDia(d.id);track h){<span class="rango">{{h.horaInicio|slice:0:5}}–{{h.horaFin|slice:0:5}}<button type="button" [disabled]="guardando" (click)="quitar(h)" [attr.aria-label]="'Quitar horario del '+d.nombre">×</button></span>}@empty{<span class="cerrado">Cerrado</span>}</div></div>}</div>
+ <p class="nota">Se aceptan reservas de 30 minutos a 4 horas, hasta 90 días por adelantado. Los cambios de agenda y bloqueos conservan las reservas existentes; coordiná cualquier cancelación con el jugador.</p>
+ <button class="primary-button" type="button" [disabled]="guardando||!sucio" (click)="guardar()">{{guardando?'Guardando…':'Publicar horarios'}}</button>
+ <hr><h3>2. Bloqueá una fecha puntual</h3><form (ngSubmit)="bloquear()" class="bloqueo-form"><div class="agenda-form"><label>Fecha<input type="date" name="fecha" [(ngModel)]="fecha" [min]="hoy" required></label><label class="check-dia"><input type="checkbox" name="completo" [(ngModel)]="completo"> Todo el día</label>
+ @if(!completo){<label>Desde<input type="time" name="bi" [(ngModel)]="bloqueoInicio" required></label><label>Hasta<input type="time" name="bf" [(ngModel)]="bloqueoFin" required></label>}</div><label>Motivo (solo visible para vos)<input name="motivo" [(ngModel)]="motivo" maxlength="200" placeholder="Ej.: mantenimiento del césped"></label><button class="secondary-button" [disabled]="bloqueando">{{bloqueando?'Guardando…':'Bloquear fecha'}}</button></form>
+ <div class="bloqueos">@for(b of bloqueos;track b.id){<div class="bloqueo"><div><strong>{{b.fecha|date:'dd/MM/yyyy'}}</strong><span>{{b.horaInicio?(b.horaInicio|slice:0:5)+'–'+(b.horaFin|slice:0:5):'Todo el día'}}</span><small>{{b.motivo}}</small></div><button class="danger-button" type="button" (click)="desbloquear(b)">Quitar bloqueo</button></div>}@empty{<p class="nota">No tenés fechas bloqueadas.</p>}</div>
+ }
+</section>

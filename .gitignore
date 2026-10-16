@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+**/.idea/
+**/*.iml
+**/node_modules/
+**/dist/
+**/target/
+**/.angular/
+**/uploads/
+**/__pycache__/
+**/*.pyc
+backups/

@@ -1,0 +1,280 @@
+<section class="page-container feed-page">
+  <header class="page-header">
+    <div>
+      <span class="page-eyebrow">Comunidad</span>
+      <h1 class="page-title">El vestuario de Somos Fútbol</h1>
+      <p class="page-subtitle">
+        Encontrá jugadores, organizá partidos y compartí lo que pasa dentro y fuera de la cancha.
+      </p>
+    </div>
+  </header>
+
+  <div class="feed-columna">
+    <section class="surface-card nueva-publicacion">
+      <div class="publicacion-identidad">
+        <span class="avatar avatar-propio">
+          @if (usuarioActual?.avatar) {
+            <img [src]="usuarioActual.avatar" [alt]="usuarioActual.name" />
+          }
+          @if (!usuarioActual?.avatar) {
+            <span>{{ usuarioActual?.name?.charAt(0)?.toUpperCase() || 'J' }}</span>
+          }
+        </span>
+        <div>
+          <strong>{{ usuarioActual?.name || 'Jugador' }}</strong>
+          <span>Compartí algo con la comunidad</span>
+        </div>
+      </div>
+
+      <textarea
+        [(ngModel)]="nuevoContenido" maxlength="2000"
+        aria-label="Contenido de la publicación"
+        placeholder="¿Buscás jugadores, armás un picadito o querés compartir una jugada?"
+      ></textarea>
+
+      <!-- NUEVO: seleccionar video y vista previa antes de publicar -->
+      <input
+        #selectorVideo
+        class="entrada-video-oculta"
+        type="file"
+        accept="video/mp4,.mp4"
+        (change)="seleccionarVideo($event)"
+        aria-label="Seleccionar video MP4"
+      />
+
+      @if (videoPreviewUrl) {
+        <div class="vista-previa-video">
+          <div class="vista-previa-cabecera">
+            <strong>Video seleccionado</strong>
+            <button type="button" class="btn-quitar-video" (click)="quitarVideo()" [disabled]="publicando">
+              Quitar video
+            </button>
+          </div>
+          <video [src]="videoPreviewUrl" controls preload="metadata" playsinline></video>
+          <small>{{ videoSeleccionado?.name }}</small>
+        </div>
+      }
+
+      @if (mostrarCampoYoutube) {
+        <div class="youtube-editor">
+          <label for="url-youtube">Enlace de YouTube</label>
+          <div class="youtube-editor-entrada">
+            <input id="url-youtube" type="url" [(ngModel)]="youtubeUrl"
+                   placeholder="https://www.youtube.com/watch?v=..."
+                   maxlength="500" [disabled]="publicando" />
+            <button type="button" class="btn-quitar-video" (click)="quitarYoutube()"
+                    [disabled]="publicando">Quitar enlace</button>
+          </div>
+          @if (youtubePreviewId; as youtubeId) {
+            <div class="youtube-previa">
+              <img [src]="'https://i.ytimg.com/vi/' + youtubeId + '/hqdefault.jpg'"
+                   alt="Vista previa de video de YouTube" loading="lazy" />
+              <span>Video de YouTube listo para compartir</span>
+            </div>
+          } @else if (youtubeUrl.trim()) {
+            <p class="error-publicacion">El enlace de YouTube no es válido.</p>
+          }
+        </div>
+      }
+
+      @if (mostrarEtiquetas) {
+        <div class="selector-etiquetas">
+          <div class="selector-etiquetas-titulo">
+            <strong>Etiquetar amigos</strong>
+            <span>{{ mencionadosIds.length }} seleccionados</span>
+          </div>
+          @if (amigos.length) {
+            <div class="etiquetas-lista">
+              @for (amigo of amigos; track amigo) {
+                <button type="button" [class.seleccionado]="estaEtiquetado(amigo.userId)" (click)="alternarEtiqueta(amigo.userId)">
+                  <span>{{ amigo.nombre.charAt(0).toUpperCase() }}</span>
+                  {{ amigo.nombre }}
+                  <b>{{ estaEtiquetado(amigo.userId) ? '✓' : '+' }}</b>
+                </button>
+              }
+            </div>
+          }
+          @if (!amigos.length) {
+            <p>Agregá amigos para poder etiquetarlos.</p>
+          }
+        </div>
+      }
+
+      @if (errorPublicacion) {
+        <p class="error-publicacion" role="alert">{{ errorPublicacion }}</p>
+      }
+
+      <div class="composer-pie">
+        <div class="composer-acciones">
+          <button type="button" class="btn-agregar-video" (click)="activarYoutube()" [disabled]="publicando">
+            ▶️ {{ mostrarCampoYoutube ? 'Cancelar YouTube' : 'Enlace de YouTube' }}
+          </button>
+          <button type="button" class="btn-agregar-video" (click)="selectorVideo.click()" [disabled]="publicando">
+            🎥 {{ videoSeleccionado ? 'Cambiar video' : 'Agregar video' }}
+          </button>
+        <button type="button" class="btn-etiquetar" (click)="mostrarEtiquetas = !mostrarEtiquetas">
+          &#64; Etiquetar amigos @if (mencionadosIds.length) {
+          <span>{{ mencionadosIds.length }}</span>
+        }
+      </button>
+        </div>
+      <button
+        type="button"
+        class="primary-button"
+        [disabled]="!nuevoContenido.trim() || publicando"
+        (click)="publicar()"
+        >
+        {{ publicando ? 'Publicando...' : 'Publicar' }}
+      </button>
+    </div>
+  </section>
+
+  <nav class="feed-filtros" aria-label="Elegir tipo de publicaciones">
+    <button type="button" [class.activo]="modoFeed === 'para-vos'" [attr.aria-pressed]="modoFeed === 'para-vos'" (click)="cambiarModo('para-vos')">✨ Para vos</button>
+    <button type="button" [class.activo]="modoFeed === 'recientes'" [attr.aria-pressed]="modoFeed === 'recientes'" (click)="cambiarModo('recientes')">🕒 Recientes</button>
+    <button type="button" [class.activo]="modoFeed === 'amigos'" [attr.aria-pressed]="modoFeed === 'amigos'" (click)="cambiarModo('amigos')">👥 Amigos</button>
+    <button type="button" [class.activo]="modoFeed === 'cerca'" [attr.aria-pressed]="modoFeed === 'cerca'" (click)="cambiarModo('cerca')">📍 Cerca tuyo</button>
+  </nav>
+
+  @if (cargando) {
+    <div class="surface-card estado-feed" aria-live="polite">
+      <span class="spinner"></span>
+      <p>Cargando publicaciones...</p>
+    </div>
+  }
+
+  @if (error && !cargando) {
+    <div class="surface-card estado-feed estado-error" role="alert">
+      <span class="estado-icono">!</span>
+      <div>
+        <strong>No pudimos cargar el feed</strong>
+        <p>{{ error }}</p>
+      </div>
+      <button type="button" class="secondary-button" (click)="cargarFeed()">Reintentar</button>
+    </div>
+  }
+
+  @for (pub of publicaciones; track pub) {
+    <article class="surface-card publicacion">
+      <header class="cabecera-publicacion">
+        <div class="usuario-info">
+          <span class="avatar">
+            @if (pub.userAvatar) {
+              <img [src]="pub.userAvatar" [alt]="pub.userNombre" />
+            }
+            @if (!pub.userAvatar) {
+              <span>{{ pub.userNombre?.charAt(0)?.toUpperCase() || 'J' }}</span>
+            }
+          </span>
+          <div class="datos-usuario">
+            <strong>{{ pub.userNombre }}</strong>
+            <time>{{ pub.createdAt | date: 'dd/MM/yyyy · HH:mm' }}</time>
+          </div>
+        </div>
+        @if (esMia(pub)) {
+          <button
+            type="button"
+            class="btn-eliminar"
+            (click)="eliminar(pub)"
+            aria-label="Eliminar publicación"
+            >
+            Eliminar
+          </button>
+        }
+      </header>
+      <p class="contenido-post">{{ pub.contenido }}</p>
+      <!-- NUEVO: imagen existente y video reproducible dentro de la publicación -->
+      @if (pub.imagen) {
+        <div class="media-publicacion">
+          <img [src]="urlMedia(pub.imagen)" alt="Imagen de la publicación" loading="lazy" />
+        </div>
+      }
+      @if (pub.videoUrl) {
+        <div class="media-publicacion video-publicacion">
+          <video
+            [src]="urlMedia(pub.videoUrl)"
+            [poster]="urlMedia(pub.videoThumbnailUrl)"
+            controls
+            preload="metadata"
+            playsinline
+            aria-label="Video de la publicación">
+            Tu navegador no admite la reproducción de videos MP4.
+          </video>
+        </div>
+      }
+      @if (pub.youtubeVideoId && youtubeEmbedUrl(pub.youtubeVideoId); as youtubeEmbed) {
+        <div class="media-publicacion youtube-publicacion">
+          <iframe
+            [src]="youtubeEmbed"
+            title="Video de YouTube compartido"
+            loading="lazy"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen></iframe>
+        </div>
+      }
+      @if (pub.mencionados?.length) {
+        <div class="menciones-publicacion">
+          <span>Con</span>
+          @for (mencionado of pub.mencionados; track mencionado; let ultimo = $last) {
+            <strong>
+              {{ mencionado.name }}@if (!ultimo) {
+              ,
+            }
+          </strong>
+        }
+      </div>
+    }
+    <div class="acciones-publicacion">
+      <button type="button" class="btn-like" [class.liked]="pub.likeadoPorMi" [disabled]="ocupados.has(pub.id)" [attr.aria-pressed]="!!pub.likeadoPorMi" (click)="darLike(pub)">
+        <span aria-hidden="true">⚽</span>
+        Me gusta
+        <span class="contador">{{ pub.cantLikes || 0 }}</span>
+      </button>
+    </div>
+    <section class="comentarios">
+      <h2>Comentarios <span>{{ pub.comentarios?.length || 0 }}</span></h2>
+      @for (c of pub.comentarios; track c) {
+        <div class="comentario">
+          <span class="avatar avatar-comentario">
+            @if (c.userAvatar) {
+              <img [src]="c.userAvatar" [alt]="c.userNombre" />
+            }
+            @if (!c.userAvatar) {
+              <span>{{ c.userNombre?.charAt(0)?.toUpperCase() || 'J' }}</span>
+            }
+          </span>
+          <p><strong>{{ c.userNombre }}</strong> {{ c.contenido }}</p>
+        </div>
+      }
+      <div class="nuevo-comentario">
+        <input
+          type="text"
+          [(ngModel)]="comentarioTexto[pub.id]" maxlength="1000"
+          placeholder="Escribí un comentario..."
+          [attr.aria-label]="'Comentar la publicación de ' + pub.userNombre"
+          (keyup.enter)="comentar(pub)"
+          />
+        <button
+          type="button"
+          class="btn-comentar"
+          [disabled]="ocupados.has(pub.id)||!(comentarioTexto[pub.id] || '').trim()"
+          (click)="comentar(pub)"
+          >
+          Enviar
+        </button>
+      </div>
+    </section>
+  </article>
+}
+
+@if(!cargando && hayMas){<button type="button" class="secondary-button" [disabled]="cargandoMas" (click)="cargarMas()">{{cargandoMas?'Cargando…':'Ver más publicaciones'}}</button>}
+@if (!cargando && !error && publicaciones.length === 0) {
+  <div class="empty-state">
+    <span class="empty-state-icon">⚽</span>
+    <h2>La cancha está lista</h2>
+    <p>No hay publicaciones en esta sección todavía. Probá otra pestaña o compartí algo con la comunidad.</p>
+  </div>
+}
+</div>
+</section>

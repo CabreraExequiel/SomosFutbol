@@ -1,0 +1,63 @@
+<section class="page-container notificaciones-page">
+  <header class="page-header">
+    <div>
+      <span class="page-eyebrow">Actividad</span>
+      <h1 class="page-title">Notificaciones</h1>
+      <p class="page-subtitle">Solicitudes, mensajes, etiquetas, comentarios y novedades de tus reservas.</p>
+    </div>
+    <button type="button" class="secondary-button" [disabled]="noLeidas === 0 || procesando" (click)="marcarTodas()">
+      {{ procesando ? 'Actualizando...' : 'Marcar todas como leídas' }}
+    </button>
+  </header>
+
+  <div class="surface-card barra-filtros">
+    <button type="button" [class.activo]="filtro === 'todas'" (click)="filtro = 'todas'">Todas <span>{{ notificaciones.length }}</span></button>
+    <button type="button" [class.activo]="filtro === 'no-leidas'" (click)="filtro = 'no-leidas'">No leídas <span>{{ noLeidas }}</span></button>
+  </div>
+
+  <nav class="filter-tabs" aria-label="Tipo de notificación">@for(t of [['','Todas'],['RESERVA','Reservas'],['PAGO','Pagos'],['MENSAJE','Mensajes'],['SOLICITUD_AMISTAD','Solicitudes']];track t[0]){<button type="button" [class.active]="tipoFiltro===t[0]" [attr.aria-pressed]="tipoFiltro===t[0]" (click)="tipoFiltro=t[0]">{{t[1]}}</button>}</nav>
+  @if (error) {
+    <div class="alerta-error" role="alert">{{ error }}</div>
+  }
+
+  @if (cargando) {
+    <div class="estado-carga" aria-live="polite">
+      <span class="spinner"></span><p>Cargando notificaciones...</p>
+    </div>
+  }
+
+  @if (!cargando && visibles.length) {
+    <div class="surface-card lista-notificaciones">
+      @for (notificacion of visibles; track notificacion) {
+        <article
+          class="notificacion"
+          [class.no-leida]="!notificacion.leida"
+          (click)="abrir(notificacion)"
+          (keyup.enter)="abrir(notificacion)"
+          tabindex="0"
+          >
+          <div class="icono-notificacion" [attr.data-tipo]="notificacion.tipo">{{ icono(notificacion.tipo) }}</div>
+          <div class="contenido-notificacion">
+            <div class="titulo-notificacion">
+              <strong>{{ notificacion.titulo }}</strong>
+              @if (!notificacion.leida) {
+                <span class="punto-nuevo" aria-label="Sin leer"></span>
+              }
+            </div>
+            <p>{{ notificacion.mensaje }}</p>
+            <time>{{ notificacion.createdAt | date: 'dd/MM/yyyy · HH:mm' }}</time>
+          </div>
+          <button type="button" class="eliminar-notificacion" (click)="eliminar($event, notificacion)" aria-label="Eliminar notificación">×</button>
+        </article>
+      }
+    </div>
+  }
+
+  @if (!cargando && visibles.length === 0) {
+    <div class="empty-state">
+      <span class="empty-state-icon">✓</span>
+      <h2>{{ filtro === 'no-leidas' ? 'Estás al día' : 'Todavía no hay notificaciones' }}</h2>
+      <p>{{ filtro === 'no-leidas' ? 'No tenés actividad pendiente de lectura.' : 'Las novedades de tu cuenta aparecerán acá.' }}</p>
+    </div>
+  }
+</section>

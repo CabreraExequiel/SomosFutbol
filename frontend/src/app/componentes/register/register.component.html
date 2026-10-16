@@ -1,0 +1,172 @@
+
+<main class="contenedor-registro">
+  <form (ngSubmit)="onSubmit()" class="form-registro">
+
+    <a routerLink="/" class="marca" aria-label="Volver al inicio">
+      <span class="marca-icono" aria-hidden="true">⚽</span>
+      <span>Somos Fútbol</span>
+    </a>
+
+    <div class="cabecera-registro">
+      <span class="eyebrow">Nueva cuenta</span>
+      <h1>Creá tu perfil</h1>
+      <p>Reservá canchas o publicá tu complejo deportivo.</p>
+    </div>
+
+    <div class="campos-grid">
+
+      <label class="campo campo-ancho">
+        <span>Nombre completo *</span>
+        <input
+                type="text"
+                name="name"
+                [(ngModel)]="name"
+                minlength="2"
+                maxlength="100"
+                autocomplete="name"
+                required
+        />
+      </label>
+
+      <label class="campo campo-ancho">
+        <span>Correo electrónico *</span>
+        <input
+                type="email"
+                name="email"
+                [(ngModel)]="email"
+                maxlength="150"
+                autocomplete="email"
+                required
+        />
+      </label>
+
+      <label class="campo">
+        <span>Contraseña *</span>
+        <input
+                type="password"
+                name="password"
+                [(ngModel)]="password"
+                minlength="8"
+                maxlength="72"
+                autocomplete="new-password"
+                required
+        />
+        <small>Usá al menos 8 caracteres.</small>
+      </label>
+
+      <label class="campo">
+        <span>Teléfono *</span>
+        <input
+                type="tel"
+                name="telefono"
+                [(ngModel)]="telefono"
+                minlength="7"
+                maxlength="30"
+                pattern="[0-9+()\- ]+"
+                placeholder="Ej: +54 9 297 400-0000"
+                autocomplete="tel"
+                required
+        />
+      </label>
+
+      <label class="campo campo-ancho">
+        <span>Ciudad</span>
+        <input
+                type="text"
+                name="ciudad"
+                [(ngModel)]="ciudad"
+                maxlength="100"
+                placeholder="Ej: Comodoro Rivadavia"
+                autocomplete="address-level2"
+        />
+      </label>
+
+      <fieldset class="tipo-cuenta campo-ancho">
+        <legend>¿Cómo vas a usar Somos Fútbol?</legend>
+
+        <label [class.seleccionada]="role === 'usuario'">
+          <input
+                  type="radio"
+                  name="role"
+                  value="usuario"
+                  [(ngModel)]="role"
+          />
+          <span>
+            <strong>Jugador</strong>
+            <small>Quiero encontrar y reservar canchas.</small>
+          </span>
+        </label>
+
+        <label [class.seleccionada]="role === 'dueno'">
+          <input
+                  type="radio"
+                  name="role"
+                  value="dueno"
+                  [(ngModel)]="role"
+          />
+          <span>
+            <strong>Dueño de cancha</strong>
+            <small>Quiero publicar canchas y recibir reservas.</small>
+          </span>
+        </label>
+      </fieldset>
+
+    </div>
+
+    <section class="aceptaciones" aria-label="Aceptaciones legales">
+
+      <label>
+        <input
+                type="checkbox"
+                name="aceptaTerminos"
+                [(ngModel)]="aceptaTerminos"
+                required
+        />
+        <span>
+          Leí y acepto los
+          <a
+                  routerLink="/terminos-y-condiciones"
+                  target="_blank"
+                  rel="noopener"
+          >
+            Términos y Condiciones
+          </a>.
+        </span>
+      </label>
+
+      <label>
+        <input
+                type="checkbox"
+                name="aceptaPrivacidad"
+                [(ngModel)]="aceptaPrivacidad"
+                required
+        />
+        <span>
+          Leí y acepto la
+          <a
+                  routerLink="/politica-de-privacidad"
+                  target="_blank"
+                  rel="noopener"
+          >
+            Política de Privacidad
+          </a>.
+        </span>
+      </label>
+
+    </section>
+
+    @if (error) {
+    <p class="error" role="alert">{{ error }}</p>
+    }
+
+    <button type="submit" [disabled]="cargando">
+      {{ cargando ? 'Creando cuenta...' : 'Crear cuenta' }}
+    </button>
+
+    <p class="link">
+      ¿Ya tenés cuenta?
+      <a routerLink="/login">Iniciá sesión</a>
+    </p>
+
+  </form>
+</main>

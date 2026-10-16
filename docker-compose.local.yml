@@ -1,0 +1,9 @@
+# Usar junto a docker-compose.yml, con .env de desarrollo (PUBLIC_URL=http://localhost:8088).
+services:
+  backend:
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+  frontend:
+    ports: ["127.0.0.1:8088:80"]
+  gateway:
+    profiles: ["https"]

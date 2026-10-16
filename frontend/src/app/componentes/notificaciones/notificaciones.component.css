@@ -1,0 +1,29 @@
+.notificaciones-page { max-width: 900px; }
+.barra-filtros { display: flex; gap: 6px; padding: 7px; margin-bottom: 17px; box-shadow: none; }
+.barra-filtros button { min-height: 40px; padding: 0 14px; color: var(--texto-suave); background: transparent; border: 0; border-radius: 9px; cursor: pointer; font-weight: 750; }
+.barra-filtros button.activo { color: #9a3412; background: var(--naranja-suave); }
+.barra-filtros span { min-width: 21px; display: inline-grid; place-items: center; margin-left: 5px; padding: 2px 5px; background: #e2e8f0; border-radius: 999px; font-size: .65rem; }
+.lista-notificaciones { overflow: hidden; box-shadow: none; }
+.notificacion { position: relative; display: flex; align-items: flex-start; gap: 13px; padding: 17px 19px; border-bottom: 1px solid #edf0f4; cursor: pointer; transition: background .18s ease; }
+.notificacion:last-child { border-bottom: 0; }
+.notificacion:hover, .notificacion:focus-visible { background: #f8fafc; }
+.notificacion.no-leida { background: #fffaf5; }
+.notificacion.no-leida:hover { background: #fff7ed; }
+.icono-notificacion { width: 42px; height: 42px; display: grid; place-items: center; flex: 0 0 auto; color: #9a3412; background: var(--naranja-suave); border-radius: 12px; font-weight: 900; }
+.icono-notificacion[data-tipo='MENSAJE'] { color: #1d4ed8; background: #eff6ff; }
+.icono-notificacion[data-tipo='AMISTAD_ACEPTADA'] { color: #047857; background: #ecfdf5; }
+.icono-notificacion[data-tipo='RESERVA'] { color: #6d28d9; background: #f5f3ff; }
+.icono-notificacion[data-tipo='PAGO'] { color: #047857; background: #ecfdf5; }
+.contenido-notificacion { min-width: 0; flex: 1; }
+.titulo-notificacion { display: flex; align-items: center; gap: 8px; }
+.titulo-notificacion strong { color: var(--tinta); font-size: .88rem; }
+.punto-nuevo { width: 8px; height: 8px; flex: 0 0 auto; background: var(--naranja); border-radius: 50%; }
+.contenido-notificacion p { margin: 5px 0; color: var(--texto); font-size: .82rem; line-height: 1.5; }
+.contenido-notificacion time { color: #94a3b8; font-size: .68rem; }
+.eliminar-notificacion { width: 30px; height: 30px; display: grid; place-items: center; flex: 0 0 auto; color: #94a3b8; background: transparent; border: 0; border-radius: 8px; cursor: pointer; font-size: 1.1rem; }
+.eliminar-notificacion:hover { color: #b91c1c; background: #fef2f2; }
+.alerta-error { padding: 11px 14px; margin-bottom: 14px; color: #b91c1c; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; font-size: .78rem; }
+.estado-carga { min-height: 280px; display: grid; place-content: center; justify-items: center; gap: 12px; color: var(--texto-suave); }
+.spinner { width: 32px; height: 32px; border: 3px solid #fed7aa; border-top-color: var(--naranja); border-radius: 50%; animation: girar .8s linear infinite; }
+@keyframes girar { to { transform: rotate(360deg); } }
+@media (max-width: 600px) { .notificacion { padding: 14px; } .icono-notificacion { width: 38px; height: 38px; } .page-header .secondary-button { width: 100%; } }

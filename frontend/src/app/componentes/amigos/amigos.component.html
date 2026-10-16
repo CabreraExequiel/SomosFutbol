@@ -1,0 +1,212 @@
+<section class="page-container amigos-page">
+  <header class="page-header">
+    <div>
+      <span class="page-eyebrow">Comunidad</span>
+      <h1 class="page-title">Amigos y jugadores</h1>
+      <p class="page-subtitle">
+        Encontrá personas, administrá solicitudes y conversá con tus amigos de Somos Fútbol.
+      </p>
+    </div>
+    <button type="button" class="primary-button" (click)="cambiarSeccion('buscar')">
+      <span aria-hidden="true">+</span> Agregar amigos
+    </button>
+  </header>
+
+  <nav class="surface-card pestanas" aria-label="Secciones de amigos">
+    <button type="button" [class.activa]="seccion === 'amigos'" (click)="cambiarSeccion('amigos')">
+      Amigos <span>{{ amigos.length }}</span>
+    </button>
+    <button type="button" [class.activa]="seccion === 'solicitudes'" (click)="cambiarSeccion('solicitudes')">
+      Solicitudes <span [class.destacada]="recibidas.length > 0">{{ recibidas.length }}</span>
+    </button>
+    <button type="button" [class.activa]="seccion === 'buscar'" (click)="cambiarSeccion('buscar')">
+      Buscar personas
+    </button>
+  </nav>
+
+  @if (mensaje) {
+    <div class="alerta alerta-exito" role="status">{{ mensaje }}</div>
+  }
+  @if (error) {
+    <div class="alerta alerta-error" role="alert">
+      <span>{{ error }}</span>
+      @if (cargando) {
+        <button type="button" (click)="cargarTodo()">Reintentar</button>
+      }
+    </div>
+  }
+
+  @if (cargando) {
+    <div class="estado-carga" aria-live="polite">
+      <span class="spinner"></span>
+      <p>Cargando tu comunidad...</p>
+    </div>
+  }
+
+  @if (!cargando && seccion === 'amigos') {
+    <section class="contenido-seccion">
+      <div class="seccion-cabecera">
+        <div>
+          <h2>Tus amigos</h2>
+          <p>Personas con las que podés iniciar una conversación.</p>
+        </div>
+      </div>
+      @if (amigos.length) {
+        <div class="personas-grid">
+          @for (amigo of amigos; track amigo) {
+            <article class="surface-card persona-card">
+              <div class="avatar-persona">
+                @if (amigo.avatar) {
+                  <img [src]="amigo.avatar" [alt]="amigo.nombre" />
+                }
+                @if (!amigo.avatar) {
+                  <span>{{ iniciales(amigo.nombre) }}</span>
+                }
+              </div>
+              <div class="persona-info">
+                <h3>{{ amigo.nombre }}</h3>
+                <p>{{ amigo.ciudad || 'Ciudad sin completar' }}</p>
+                <span class="estado-amistad">✓ Amigos</span>
+              </div>
+              <div class="persona-acciones">
+                <button type="button" class="primary-button" [disabled]="procesandoId === amigo.userId" (click)="enviarMensaje(amigo.userId)">
+                  Mensaje
+                </button>
+                <button type="button" class="secondary-button" [disabled]="procesandoId === amigo.userId" (click)="eliminar(amigo)">
+                  Eliminar
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+      }
+      @if (!amigos.length) {
+        <div class="empty-state">
+          <span class="empty-state-icon">👥</span>
+          <h2>Todavía no agregaste amigos</h2>
+          <p>Buscá jugadores de la comunidad y enviá tu primera solicitud.</p>
+          <button type="button" class="primary-button" (click)="cambiarSeccion('buscar')">Buscar personas</button>
+        </div>
+      }
+    </section>
+  }
+
+  @if (!cargando && seccion === 'solicitudes') {
+    <section class="contenido-seccion solicitudes-grid">
+      <div>
+        <div class="seccion-cabecera">
+          <div><h2>Solicitudes recibidas</h2><p>Aceptá o rechazá las invitaciones pendientes.</p></div>
+        </div>
+        @if (recibidas.length) {
+          <div class="lista-solicitudes">
+            @for (solicitud of recibidas; track solicitud) {
+              <article class="surface-card solicitud">
+                <div class="avatar-persona compacto">
+                  @if (solicitud.avatar) {
+                    <img [src]="solicitud.avatar" [alt]="solicitud.nombre" />
+                  }
+                  @if (!solicitud.avatar) {
+                    <span>{{ iniciales(solicitud.nombre) }}</span>
+                  }
+                </div>
+                <div class="solicitud-info"><strong>{{ solicitud.nombre }}</strong><span>{{ solicitud.ciudad || 'Sin ciudad' }}</span></div>
+                <div class="solicitud-acciones">
+                  <button type="button" class="primary-button" [disabled]="procesandoId === solicitud.id" (click)="aceptar(solicitud)">Aceptar</button>
+                  <button type="button" class="secondary-button" [disabled]="procesandoId === solicitud.id" (click)="rechazar(solicitud)">Rechazar</button>
+                </div>
+              </article>
+            }
+          </div>
+        }
+        @if (!recibidas.length) {
+          <div class="empty-state compacta"><span class="empty-state-icon">✓</span><h3>No hay solicitudes pendientes</h3></div>
+        }
+      </div>
+      <div>
+        <div class="seccion-cabecera">
+          <div><h2>Solicitudes enviadas</h2><p>Invitaciones que todavía esperan respuesta.</p></div>
+        </div>
+        @if (enviadas.length) {
+          <div class="lista-solicitudes">
+            @for (solicitud of enviadas; track solicitud) {
+              <article class="surface-card solicitud">
+                <div class="avatar-persona compacto">
+                  @if (solicitud.avatar) {
+                    <img [src]="solicitud.avatar" [alt]="solicitud.nombre" />
+                  }
+                  @if (!solicitud.avatar) {
+                    <span>{{ iniciales(solicitud.nombre) }}</span>
+                  }
+                </div>
+                <div class="solicitud-info"><strong>{{ solicitud.nombre }}</strong><span>{{ solicitud.ciudad || 'Sin ciudad' }}</span></div>
+                <span class="pendiente-badge">Pendiente</span>
+              </article>
+            }
+          </div>
+        }
+        @if (!enviadas.length) {
+          <div class="empty-state compacta"><span class="empty-state-icon">↗</span><h3>No enviaste solicitudes</h3></div>
+        }
+      </div>
+    </section>
+  }
+
+  @if (!cargando && seccion === 'buscar') {
+    <section class="contenido-seccion">
+      <form class="surface-card buscador" (ngSubmit)="buscar()">
+        <label for="buscar-personas">Buscar por nombre o correo</label>
+        <div>
+          <input id="buscar-personas" type="search" name="busqueda" [(ngModel)]="busqueda" placeholder="Ej: Martina o martina@email.com" />
+          <button type="submit" class="primary-button" [disabled]="buscando">{{ buscando ? 'Buscando...' : 'Buscar' }}</button>
+        </div>
+      </form>
+      @if (resultados.length) {
+        <div class="personas-grid resultados-grid">
+          @for (usuario of resultados; track usuario) {
+            <article class="surface-card persona-card">
+              <div class="avatar-persona">
+                @if (usuario.avatar) {
+                  <img [src]="usuario.avatar" [alt]="usuario.name" />
+                }
+                @if (!usuario.avatar) {
+                  <span>{{ iniciales(usuario.name) }}</span>
+                }
+              </div>
+              <div class="persona-info">
+                <h3>{{ usuario.name }}</h3>
+                <p>{{ usuario.ciudad || 'Ciudad sin completar' }}</p>
+                @if (usuario.relacion === 'AMIGOS') {
+                  <span class="estado-amistad">✓ Amigos</span>
+                }
+                @if (usuario.relacion === 'PENDIENTE_ENVIADA') {
+                  <span class="pendiente-badge">Solicitud enviada</span>
+                }
+                @if (usuario.relacion === 'PENDIENTE_RECIBIDA') {
+                  <span class="pendiente-badge">Te envió una solicitud</span>
+                }
+              </div>
+              <div class="persona-acciones">
+                @if (usuario.relacion === 'NINGUNA') {
+                  <button type="button" class="primary-button" [disabled]="procesandoId === usuario.id" (click)="enviarSolicitud(usuario)">Agregar</button>
+                }
+                @if (usuario.relacion === 'AMIGOS') {
+                  <button type="button" class="primary-button" [disabled]="procesandoId === usuario.id" (click)="enviarMensaje(usuario.id)">Mensaje</button>
+                }
+                @if (usuario.relacion === 'PENDIENTE_RECIBIDA' && usuario.solicitudId) {
+                  <button type="button" class="primary-button" [disabled]="procesandoId === usuario.solicitudId" (click)="aceptarUsuario(usuario)">Aceptar</button>
+                }
+              </div>
+            </article>
+          }
+        </div>
+      }
+      @if (!buscando && resultados.length === 0) {
+        <div class="empty-state">
+          <span class="empty-state-icon">⌕</span>
+          <h2>No encontramos personas</h2>
+          <p>Probá con otro nombre o revisá el correo ingresado.</p>
+        </div>
+      }
+    </section>
+  }
+</section>

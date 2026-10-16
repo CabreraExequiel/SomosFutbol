@@ -1,0 +1,147 @@
+<section class="page-container detalle-page">
+  <a routerLink="/canchas" class="volver-link">
+    <span aria-hidden="true">←</span>
+    Volver a canchas
+  </a>
+
+  @if (cargando) {
+    <div class="detalle-cargando" aria-live="polite">
+      <span class="spinner"></span>
+      <p>Cargando información de la cancha...</p>
+    </div>
+  }
+
+  @if (errorCarga && !cargando) {
+    <div class="empty-state estado-error" role="alert">
+      <span class="empty-state-icon">!</span>
+      <h2>No pudimos abrir esta cancha</h2>
+      <p>{{ errorCarga }}</p>
+      <a routerLink="/canchas" class="secondary-button">Volver al listado</a>
+    </div>
+  }
+
+  @if (cancha && !cargando) {
+    <div class="detalle-grid">
+      <div class="columna-informacion">
+        <div class="surface-card galeria-cancha">
+          <div class="imagen-placeholder" aria-hidden="true">
+            <span>⚽</span>
+            <small>Somos Fútbol</small>
+          </div>
+          @if (cancha.imagen) {
+            <img
+              [src]="cancha.imagen"
+              [alt]="cancha.nombre"
+              (error)="ocultarImagen($event)"
+              />
+          }
+          <span class="tipo-badge">{{ cancha.tipo || 'Fútbol' }}</span>
+          @if (cancha.techada) {
+            <span class="techada-badge">Cancha techada</span>
+          }
+        </div>
+        <article class="surface-card info-cancha">
+          <div class="encabezado-cancha">
+            <div>
+              <span class="page-eyebrow">Cancha disponible</span>
+              <h1>{{ cancha.nombre }}</h1>
+              <p class="ubicacion">
+                <span aria-hidden="true">⌖</span>
+                {{ cancha.direccion || 'Dirección a confirmar' }} · {{ cancha.ciudadNombre }}
+              </p>
+            </div>
+            <div class="precio-destacado">
+              <strong>$ {{ cancha.precioHora | number: '1.0-0' }}</strong>
+              <span>por hora</span>
+            </div>
+          </div>
+          <div class="caracteristicas">
+            <div>
+              <span class="caracteristica-icono">⚽</span>
+              <small>Modalidad</small>
+              <strong>{{ cancha.tipo || 'A confirmar' }}</strong>
+            </div>
+            <div>
+              <span class="caracteristica-icono">👥</span>
+              <small>Capacidad</small>
+              <strong>{{ cancha.cantJugadores || '—' }} jugadores</strong>
+            </div>
+            <div>
+              <span class="caracteristica-icono">▦</span>
+              <small>Superficie</small>
+              <strong>{{ cancha.superficie || 'A confirmar' }}</strong>
+            </div>
+          </div>
+          <section class="agenda-publica"><h2>Agenda semanal</h2>@for(d of dias;track d.id){<div><strong>{{d.nombre}}</strong><span>@for(h of horariosDia(d.id);track h.id){ {{h.horaInicio|slice:0:5}}–{{h.horaFin|slice:0:5}} }@empty{Cerrado}</span></div>}</section>
+          <section class="descripcion">
+            <h2>Sobre la cancha</h2>
+            <p>{{ cancha.descripcion || 'El dueño todavía no agregó una descripción para esta cancha.' }}</p>
+          </section>
+          <div class="dueno-card">
+            <span class="dueno-avatar">{{ cancha.duenoNombre?.charAt(0)?.toUpperCase() || 'D' }}</span>
+            <div>
+              <small>Publicada por</small>
+              <strong>{{ cancha.duenoNombre }}</strong>
+            </div>
+            <a [routerLink]="['/duenos',cancha.duenoId]" class="secondary-button">Ver todas sus canchas →</a>
+          </div>
+        </article>
+      </div>
+      <aside class="surface-card reservar-card">
+        <div class="reservar-cabecera">
+          <span class="calendario-icono" aria-hidden="true">📅</span>
+          <div>
+            <h2>Reservá tu horario</h2>
+            <p>Horarios de Argentina · hasta 90 días de anticipación.</p>
+          </div>
+        </div>
+        <form (ngSubmit)="reservar()">
+          <label class="campo campo-completo">
+            <span>Fecha del partido</span>
+            <input
+              type="date"
+              name="fecha"
+              [(ngModel)]="fecha"
+              [min]="fechaMinima"
+              (change)="consultarDisponibilidad()"
+              required
+              />
+          </label>
+          <div class="fila-horarios">
+            <label class="campo">
+              <span>Desde</span>
+              <input type="time" name="horaInicio" [(ngModel)]="horaInicio" step="1800" [disabled]="consultando||!disponibilidad||reservando" required />
+            </label>
+            <label class="campo">
+              <span>Hasta</span>
+              <input type="time" name="horaFin" [(ngModel)]="horaFin" step="1800" [disabled]="consultando||!disponibilidad||reservando" required />
+            </label>
+          </div>
+          @if(consultando){<p role="status">Consultando horarios…</p>}
+          @if(disponibilidad && !consultando){
+            <div class="libres"><strong>Disponibilidad del día</strong>@for(f of disponibilidad.libres;track $index){<p>{{f.horaInicio|slice:0:5}}–{{f.horaFin|slice:0:5}}</p>}@empty{<p>No quedan horarios disponibles. Elegí otra fecha.</p>}</div>
+            @if(turnos.length){<p class="slot-title">Elegí un turno de 1 hora o ajustá el rango arriba</p><div class="slots">@for(t of turnos;track t.horaInicio){<button type="button" [class.selected]="horaInicio===t.horaInicio&&horaFin===t.horaFin" [attr.aria-pressed]="horaInicio===t.horaInicio&&horaFin===t.horaFin" (click)="elegir(t)">{{t.horaInicio}}</button>}</div>}
+            @if(horaInicio && horaFin && !seleccionValida){<p class="app-alert error">Elegí un rango libre, en intervalos de 30 minutos (máximo 4 horas).</p>}
+          }
+          @if (mensaje) {
+            <p class="mensaje" role="alert">{{ mensaje }}</p>
+          }
+          <div class="resumen-precio">
+            <span>{{seleccionValida?'Total de la reserva':'Precio por hora'}}</span>
+            <strong>$ {{ (seleccionValida?total:cancha.precioHora) | number: '1.2-2' }}</strong>
+          </div>
+          <button
+            type="submit"
+            class="primary-button btn-reservar"
+            [disabled]="!seleccionValida || reservando"
+            >
+            {{reservando ? 'Reservando…' : 'Crear reserva'}}
+            <span aria-hidden="true">→</span>
+          </button>
+        </form>
+        <p class="nota-reserva">La reserva quedará pendiente hasta completar el pago o recibir la confirmación correspondiente.</p>
+      </aside>
+    </div>
+    <section class="otras-canchas"><header class="page-header"><div><span class="page-eyebrow">Más del mismo dueño</span><h2>Otras canchas de {{cancha.duenoNombre}}</h2></div><a [routerLink]="['/duenos',cancha.duenoId]" class="secondary-button">Ver complejo</a></header><div class="otras-grid">@for(c of otras;track c.id){<a class="surface-card otra-cancha" [routerLink]="['/canchas',c.id]">@if(c.imagen){<img [src]="c.imagen" [alt]="c.nombre" loading="lazy">}<div><h3>{{c.nombre}}</h3><p>{{c.tipo}} · {{c.ciudadNombre}}</p><strong>{{c.precioHora|currency:'ARS':'symbol-narrow':'1.0-0'}} / hora →</strong></div></a>}@empty{<p>Esta es la única cancha publicada de este dueño.</p>}</div></section>
+  }
+</section>

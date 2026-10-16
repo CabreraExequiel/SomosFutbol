@@ -1,0 +1,142 @@
+<section class="page-container chat-page">
+  <header class="page-header">
+    <div>
+      <span class="page-eyebrow">Comunidad</span>
+      <h1 class="page-title">Mensajes</h1>
+      <p class="page-subtitle">Seleccioná un amigo, coordiná partidos y mantenete en contacto.</p>
+    </div>
+  </header>
+
+  <div class="surface-card chat-contenedor" [class.tiene-activa]="conversacionActiva">
+    <aside class="lista-conversaciones">
+      <div class="panel-cabecera">
+        <div>
+          <h2>Conversaciones</h2>
+          <span>{{ conversaciones.length }} {{ conversaciones.length === 1 ? 'contacto' : 'contactos' }}</span>
+        </div>
+        <button type="button" class="nuevo-chat" (click)="mostrarAmigos = !mostrarAmigos" [attr.aria-expanded]="mostrarAmigos" title="Nueva conversación">+</button>
+      </div>
+
+      @if (mostrarAmigos) {
+        <div class="selector-amigos">
+          <div class="selector-titulo">
+            <strong>Nueva conversación</strong>
+            <button type="button" (click)="mostrarAmigos = false" aria-label="Cerrar">×</button>
+          </div>
+          <input type="search" [(ngModel)]="filtroAmigos" placeholder="Buscar entre tus amigos" aria-label="Buscar amigos" />
+          <div class="amigos-scroll">
+            @for (amigo of amigosFiltrados; track amigo) {
+              <button type="button" class="amigo-chat" [disabled]="iniciandoConId === amigo.userId" (click)="iniciarConversacion(amigo)">
+                <span class="avatar-contacto">
+                  @if (amigo.avatar) {
+                    <img [src]="amigo.avatar" [alt]="amigo.nombre" />
+                  }
+                  @if (!amigo.avatar) {
+                    <span>{{ iniciales(amigo.nombre) }}</span>
+                  }
+                </span>
+                <span>{{ amigo.nombre }}</span>
+              </button>
+            }
+            @if (amigosFiltrados.length === 0) {
+              <p class="sin-amigos">Agregá amigos para poder iniciar una conversación.</p>
+            }
+          </div>
+        </div>
+      }
+
+      @if (cargandoConversaciones) {
+        <div class="lista-estado" aria-live="polite">
+          <span class="spinner"></span><p>Cargando...</p>
+        </div>
+      }
+
+      @if (errorConversaciones && !cargandoConversaciones) {
+        <div class="lista-estado lista-error" role="alert">
+          <strong>{{ errorConversaciones }}</strong>
+          <button type="button" (click)="cargarConversaciones()">Reintentar</button>
+        </div>
+      }
+
+      @if (!cargandoConversaciones && !errorConversaciones) {
+        <div class="conversaciones-scroll">
+          @for (conv of conversaciones; track conv) {
+            <button type="button" class="conversacion" (click)="abrirConversacion(conv)" [class.activa]="conversacionActiva?.id === conv.id">
+              <span class="avatar-contacto">
+                @if (otroUsuario(conv).avatar) {
+                  <img [src]="otroUsuario(conv).avatar" [alt]="otroUsuario(conv).name" />
+                }
+                @if (!otroUsuario(conv).avatar) {
+                  <span>{{ iniciales(otroUsuario(conv).name) }}</span>
+                }
+              </span>
+              <span class="contacto-info">
+                <strong>{{ otroUsuario(conv).name }}</strong>
+                <small>{{ conv.ultimoMensaje || 'Conversación iniciada' }}</small>
+              </span>
+              @if (conv.noLeidos > 0) {
+                <span class="mensajes-no-leidos">{{ conv.noLeidos > 9 ? '9+' : conv.noLeidos }}</span>
+              }
+              @if (!conv.noLeidos) {
+                <span class="chevron" aria-hidden="true">›</span>
+              }
+            </button>
+          }
+          @if (conversaciones.length === 0) {
+            <div class="sin-conversaciones">
+              <span>💬</span><strong>Todavía no hay mensajes</strong><p>Usá el botón + para elegir un amigo.</p>
+            </div>
+          }
+        </div>
+      }
+    </aside>
+
+    @if (conversacionActiva) {
+      <section class="ventana-chat">
+        <header class="chat-cabecera">
+          <button type="button" class="volver-conversaciones" (click)="cerrarConversacion()" aria-label="Volver a conversaciones">←</button>
+          <span class="avatar-contacto avatar-activo">
+            @if (otroUsuario(conversacionActiva).avatar) {
+              <img [src]="otroUsuario(conversacionActiva).avatar" [alt]="otroUsuario(conversacionActiva).name" />
+            }
+            @if (!otroUsuario(conversacionActiva).avatar) {
+              <span>{{ iniciales(otroUsuario(conversacionActiva).name) }}</span>
+            }
+          </span>
+          <div><h2>{{ otroUsuario(conversacionActiva).name }}</h2><span>Amigo · conversación privada</span></div>
+        </header>
+        <div class="mensajes" aria-live="polite">
+          @if (cargandoMensajes) {
+            <div class="mensajes-estado"><span class="spinner"></span><p>Cargando conversación...</p></div>
+          }
+          @if (errorMensajes && !cargandoMensajes) {
+            <div class="mensajes-estado mensaje-error" role="alert"><p>{{ errorMensajes }}</p><button type="button" (click)="abrirConversacion(conversacionActiva)">Reintentar</button></div>
+          }
+          @if (!cargandoMensajes && !errorMensajes && mensajes.length === 0) {
+            <div class="mensajes-estado"><span class="inicio-icono">👋</span><strong>Empezá la conversación</strong><p>Escribí el primer mensaje para coordinar.</p></div>
+          }
+          @for (m of mensajes; track m) {
+            <div class="mensaje-fila" [class.mio]="esMio(m)">
+              <div class="mensaje"><p>{{ m.contenido }}</p><time>{{ m.createdAt | date: 'HH:mm' }}</time></div>
+            </div>
+          }
+        </div>
+        @if (errorEnvio) {
+          <p class="error-envio" role="alert">{{ errorEnvio }}</p>
+        }
+        <form class="enviar-mensaje" (ngSubmit)="enviar()">
+          <input type="text" name="nuevoMensaje" [(ngModel)]="nuevoMensaje" maxlength="2000" placeholder="Escribí un mensaje..." autocomplete="off" aria-label="Nuevo mensaje" />
+          <button type="submit" [disabled]="enviando||!nuevoMensaje.trim()" aria-label="Enviar mensaje"><span>{{enviando?'Enviando…':'Enviar'}}</span><span aria-hidden="true">➜</span></button>
+        </form>
+      </section>
+    }
+
+    @if (!conversacionActiva) {
+      <section class="ventana-chat chat-vacio">
+        <div class="vacio-ilustracion" aria-hidden="true"><span>💬</span></div>
+        <h2>Elegí una conversación</h2>
+        <p>Seleccioná un contacto o iniciá un chat nuevo con uno de tus amigos.</p>
+      </section>
+    }
+  </div>
+</section>

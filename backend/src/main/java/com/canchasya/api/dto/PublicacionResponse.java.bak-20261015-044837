@@ -1,0 +1,72 @@
+
+package com.canchasya.api.dto;
+
+import com.canchasya.api.model.Publicacion;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Getter
+@AllArgsConstructor
+public class PublicacionResponse {
+
+    private Long id;
+    private Long userId;
+    private String userNombre;
+    private String userAvatar;
+
+    private String contenido;
+    private String imagen;
+
+    // NUEVO: Videos
+    private String videoUrl;
+    private String videoPublicId;
+    private String videoThumbnailUrl;
+
+    private LocalDateTime createdAt;
+    private int cantLikes;
+    private boolean likeadoPorMi;
+
+    private List<ComentarioResponse> comentarios;
+    private List<UsuarioMencionResponse> mencionados;
+
+    public static PublicacionResponse fromEntity(
+            Publicacion p,
+            boolean likeadoPorMi
+    ) {
+
+        List<ComentarioResponse> comentarios =
+                p.getComentarios().stream()
+                        .map(ComentarioResponse::fromEntity)
+                        .toList();
+
+        List<UsuarioMencionResponse> mencionados =
+                p.getMencionados().stream()
+                        .map(UsuarioMencionResponse::fromEntity)
+                        .toList();
+
+        return new PublicacionResponse(
+                p.getId(),
+                p.getUser().getId(),
+                p.getUser().getName(),
+                p.getUser().getAvatar(),
+
+                p.getContenido(),
+                p.getImagen(),
+
+                // NUEVO: Datos del video
+                p.getVideoUrl(),
+                p.getVideoPublicId(),
+                p.getVideoThumbnailUrl(),
+
+                p.getCreatedAt(),
+                p.getLikes().size(),
+                likeadoPorMi,
+
+                comentarios,
+                mencionados
+        );
+    }
+}

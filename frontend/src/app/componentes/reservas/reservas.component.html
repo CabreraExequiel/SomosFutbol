@@ -1,0 +1,176 @@
+<section class="page-container reservas-page">
+  <header class="page-header">
+    <div>
+      <span class="page-eyebrow">Tu agenda</span>
+      <h1 class="page-title">Mis reservas</h1>
+      <p class="page-subtitle">
+        Consultá tus próximos partidos y cancelá una reserva cuando sea necesario.
+      </p>
+    </div>
+    <a routerLink="/canchas" class="primary-button">Buscar una cancha</a>
+  </header>
+
+  <nav class="filter-tabs" aria-label="Filtrar reservas">@for(f of [['proximas','Próximos partidos'],['PENDIENTE','Pendientes'],['CONFIRMADA','Confirmadas'],['todas','Historial']];track f[0]){<button type="button" [class.active]="filtro===f[0]" [attr.aria-pressed]="filtro===f[0]" (click)="filtro=f[0]">{{f[1]}}</button>}</nav>
+  @if (cargando) {
+    <div class="estado-carga" aria-live="polite">
+      <span class="spinner"></span>
+      <p>Cargando tus reservas...</p>
+    </div>
+  }
+
+  @if (error && !cargando) {
+    <div class="empty-state estado-error" role="alert">
+      <span class="empty-state-icon">!</span>
+      <h2>No pudimos cargar tus reservas</h2>
+      <p>{{ error }}</p>
+      <button type="button" class="secondary-button" (click)="cargar()">Volver a intentar</button>
+    </div>
+  }
+
+  @if (mensajeAccion) {
+    <div class="alerta-accion" role="alert">
+      <span aria-hidden="true">!</span>
+      <p>{{ mensajeAccion }}</p>
+      <button type="button" (click)="mensajeAccion = ''" aria-label="Cerrar mensaje">×</button>
+    </div>
+  }
+
+  @if (mensajePago) {
+    <div class="alerta-pago" [ngClass]="tipoMensajePago" role="status">
+      <span class="alerta-pago-icono" aria-hidden="true">
+        {{ tipoMensajePago === 'exito' ? '✓' : (tipoMensajePago === 'error' ? '!' : '…') }}
+      </span>
+      <p>{{ mensajePago }}</p>
+      <button type="button" (click)="mensajePago = ''" aria-label="Cerrar mensaje">×</button>
+    </div>
+  }
+
+  @if (!cargando && !error && reservas.length > 0) {
+    <div class="lista-reservas">
+      @for (r of visibles; track r.id) {
+        <article class="surface-card tarjeta-reserva">
+          <div class="fecha-bloque" aria-label="Fecha de la reserva">
+            <span>{{ mesReserva(r.fecha) }}</span>
+            <strong>{{ diaReserva(r.fecha) }}</strong>
+          </div>
+          <div class="reserva-info">
+            <div class="reserva-titulo">
+              <h2>{{ r.canchaNombre }}</h2>
+              <span class="estado" [ngClass]="r.estado">{{ vencida(r)?'Vencida':etiquetaEstado(r.estado) }}</span>
+              @if (r.estadoPago) {
+                <span
+                  class="estado-pago"
+                  [ngClass]="r.estadoPago"
+                  >
+                  {{ etiquetaEstadoPago(r.estadoPago) }}
+                </span>
+              }
+            </div>
+            <div class="reserva-datos">
+              <span>
+                <span class="dato-icono" aria-hidden="true">◷</span>
+                {{ r.horaInicio }} a {{ r.horaFin }}
+              </span>
+              <span>
+                <span class="dato-icono" aria-hidden="true">#</span>
+                Reserva {{ r.id }}
+              </span>
+            </div>
+          </div>
+          <div class="reserva-monto">
+            <small>Monto total</small>
+            <strong>$ {{ r.monto | number: '1.0-0' }}</strong>
+          </div>
+          <div class="acciones">
+            @if (puedePagar(r)) {
+              <button
+                type="button"
+                class="pago-button"
+                [disabled]="pagandoId === r.id || cancelandoId === r.id"
+                (click)="pagar(r)"
+                >
+                <span aria-hidden="true">$</span>
+                {{ textoBotonPago(r) }}
+              </button>
+            }
+            @if (puedeVerTransferencia(r)) {
+              <button
+                type="button"
+                class="transferencia-button"
+                [disabled]="cargandoTransferenciaId === r.id || cancelandoId === r.id"
+                (click)="verDatosTransferencia(r)"
+                >
+                {{ cargandoTransferenciaId === r.id
+                  ? 'Cargando...'
+                  : (datosTransferencia[r.id] ? 'Ocultar transferencia' : 'Ver datos para transferir') }}
+              </button>
+            }
+            @if (puedeCancelar(r)) {
+              <button
+                type="button"
+                class="danger-button"
+                [disabled]="cancelandoId === r.id || pagandoId === r.id"
+                (click)="cancelar(r)"
+                >
+                {{ cancelandoId === r.id ? 'Cancelando...' : 'Cancelar' }}
+              </button>
+            }
+          </div>
+          @if(r.expiresAt && r.estado==='PENDIENTE'){<p class="nota-pago">{{vencida(r)?'El plazo de pago venció. Creá una nueva reserva.':'Pagá y coordiná la confirmación antes de '}} @if(!vencida(r)){ {{r.expiresAt|date:'dd/MM HH:mm':'-0300'}} (Argentina) }</p>}
+          @if (r.pagoRequerido && r.estado === 'PENDIENTE') {
+            <p class="nota-pago">
+              La reserva se confirma automáticamente cuando Mercado Pago aprueba el cobro.
+            </p>
+          }
+          @if (datosTransferencia[r.id]; as transferencia) {
+            <section class="datos-transferencia" aria-label="Datos para realizar la transferencia">
+              <div class="transferencia-cabecera">
+                <span aria-hidden="true">$</span>
+                <div>
+                  <strong>Transferencia al dueño de la cancha</strong>
+                  <small>Verificá el destinatario antes de enviar el dinero.</small>
+                </div>
+              </div>
+              @if(copiado){<p role="status">{{copiado}}</p>}
+              <dl>
+                <div>
+                  <dt>Destinatario informado</dt>
+                  <dd>{{ transferencia.duenoNombre }}</dd>
+                </div>
+                @if (transferencia.aliasMercadoPago) {
+                  <div>
+                    <dt>Alias</dt>
+                    <dd>{{ transferencia.aliasMercadoPago }} <button class="text-button" type="button" (click)="copiar(transferencia.aliasMercadoPago)">Copiar</button></dd>
+                  </div>
+                }
+                @if (transferencia.cbuCvu) {
+                  <div>
+                    <dt>CBU/CVU</dt>
+                    <dd>{{ transferencia.cbuCvu }} <button class="text-button" type="button" (click)="copiar(transferencia.cbuCvu)">Copiar</button></dd>
+                  </div>
+                }
+                <div>
+                  <dt>Monto</dt>
+                  <dd>$ {{ transferencia.monto | number: '1.2-2' }}</dd>
+                </div>
+              </dl>
+              <p>
+                Guardá el comprobante y coordiná con el dueño. La transferencia manual no se verifica automáticamente;
+                el dueño debe confirmar la reserva después de recibirla.
+              </p>
+            </section>
+          }
+        </article>
+      }
+    </div>
+  }
+
+  @if (!cargando && !error && visibles.length === 0) {
+    <div class="empty-state">
+      <span class="empty-state-icon">📅</span>
+      <h2>No hay reservas en esta vista</h2>
+      <p>Explorá las canchas disponibles y elegí el horario para tu próximo partido.</p>
+      <a routerLink="/canchas" class="primary-button">Ver canchas</a>
+    </div>
+  }
+</section>
