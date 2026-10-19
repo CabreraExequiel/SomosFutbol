@@ -9,8 +9,10 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/* \
-    && groupadd --system app && useradd --system --gid app app \
-    && mkdir -p /app/uploads && chown -R app:app /app
+       && groupadd --system app && useradd --system --gid app app \
+       && (getent group 1000 || groupadd --gid 1000 rendersecrets) \
+       && usermod -aG 1000 app \
+       && mkdir -p /app/uploads && chown -R app:app /app
 COPY --from=build /workspace/target/api-*.jar /app/app.jar
 USER app
 EXPOSE 8080
