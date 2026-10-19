@@ -32,16 +32,14 @@ class RegisterRequestValidationTest {
                 .contains("telefono");
     }
 
-    @Test
-    void rechazaDuenoSinCuentaDeCobro() {
-        RegisterRequest request = registroValido(Role.DUENO);
+@Test
+void aceptaDuenoSinCuentaDeCobro() {
+    RegisterRequest request = registroValido(Role.DUENO);
 
-        Set<ConstraintViolation<RegisterRequest>> errores = validator.validate(request);
+    Set<ConstraintViolation<RegisterRequest>> errores = validator.validate(request);
 
-        assertThat(errores)
-                .extracting(error -> error.getPropertyPath().toString())
-                .contains("cuentaCobroInformada");
-    }
+    assertThat(errores).isEmpty();
+}
 
     @Test
     void aceptaDuenoConAliasValido() {
