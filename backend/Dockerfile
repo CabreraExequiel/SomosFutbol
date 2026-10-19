@@ -14,4 +14,4 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
 COPY --from=build /workspace/target/api-*.jar /app/app.jar
 USER app
 EXPOSE 8080
-ENTRYPOINT ["java", "-Duser.timezone=America/Argentina/Buenos_Aires", "-XX:MaxRAMPercentage=75", "-jar", "/app/app.jar"]
+ENTRYPOINT ["/bin/sh", "-c", "keytool -importcert -noprompt -trustcacerts -alias aiven-ca -file /etc/secrets/ca.pem -keystore /tmp/aiven-truststore.p12 -storetype PKCS12 -storepass changeit && exec java -Duser.timezone=America/Argentina/Buenos_Aires -XX:MaxRAMPercentage=75 -jar /app/app.jar"]
