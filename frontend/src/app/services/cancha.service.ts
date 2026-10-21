@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Horario, Bloqueo, DuenoPublico } from '../models/agenda';
+import { CanchaPublica } from '../models/cancha';
 import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -10,11 +11,11 @@ export class CanchaService {
 
   constructor(private http: HttpClient) {}
 
-  listar(filtros: { ciudadId?: number; tipo?: string } = {}): Observable<any> {
+  listar(filtros: { ciudadId?: number; tipo?: string } = {}): Observable<CanchaPublica[]> {
     let params = new HttpParams();
     if (filtros.ciudadId) params = params.set('ciudadId', filtros.ciudadId);
     if (filtros.tipo) params = params.set('tipo', filtros.tipo);
-    return this.http.get(`${this.apiUrl}/canchas`, { params });
+    return this.http.get<CanchaPublica[]>(`${this.apiUrl}/canchas`, { params });
   }
 
   obtener(id: number): Observable<any> {

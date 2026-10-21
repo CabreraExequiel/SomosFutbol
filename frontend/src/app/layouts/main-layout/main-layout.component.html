@@ -3,13 +3,13 @@
   <header class="topbar">
     <div class="topbar-izquierda">
       <button
-        type="button"
-        class="btn-menu"
-        (click)="alternarMenu()"
-        [attr.aria-expanded]="menuAbierto"
-        aria-controls="navegacion-principal"
-        aria-label="Abrir o cerrar el menú"
-        >
+              type="button"
+              class="btn-menu"
+              (click)="alternarMenu()"
+              [attr.aria-expanded]="menuAbierto"
+              aria-controls="navegacion-principal"
+              aria-label="Abrir o cerrar el menú"
+      >
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 7h16M4 12h16M4 17h16"></path>
         </svg>
@@ -27,7 +27,7 @@
           <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"></path>
         </svg>
         @if (noLeidas > 0) {
-          <span class="badge-notificaciones">{{ noLeidas > 99 ? '99+' : noLeidas }}</span>
+        <span class="badge-notificaciones">{{ noLeidas > 99 ? '99+' : noLeidas }}</span>
         }
       </a>
 
@@ -56,11 +56,11 @@
   </header>
 
   <button
-    type="button"
-    class="sidebar-backdrop"
-    [class.visible]="menuAbierto"
-    (click)="cerrarMenu()"
-    aria-label="Cerrar menú"
+          type="button"
+          class="sidebar-backdrop"
+          [class.visible]="menuAbierto"
+          (click)="cerrarMenu()"
+          aria-label="Cerrar menú"
   ></button>
 
   <aside id="navegacion-principal" class="sidebar">
@@ -70,12 +70,12 @@
 
     <nav class="sidebar-nav" aria-label="Navegación principal">
       <a
-        routerLink="/inicio"
-        routerLinkActive="activo"
-        [routerLinkActiveOptions]="{ exact: true }"
-        class="nav-item"
-        (click)="cerrarMenu()"
-        >
+              routerLink="/inicio"
+              routerLinkActive="activo"
+              [routerLinkActiveOptions]="{ exact: true }"
+              class="nav-item"
+              (click)="cerrarMenu()"
+      >
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M3 11.5 12 4l9 7.5M5.5 10v10h13V10M9.5 20v-6h5v6"></path>
         </svg>
@@ -121,7 +121,7 @@
         </svg>
         <span>Notificaciones</span>
         @if (noLeidas > 0) {
-          <span class="nav-badge">{{ noLeidas > 99 ? '99+' : noLeidas }}</span>
+        <span class="nav-badge">{{ noLeidas > 99 ? '99+' : noLeidas }}</span>
         }
       </a>
 
@@ -133,18 +133,25 @@
         <span>Mi perfil</span>
       </a>
 
+      @if (authService.esAdmin()) {
+      <a routerLink="/admin" routerLinkActive="activo" class="nav-item" (click)="cerrarMenu()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v16H3zM3 9h18M8 9v11M12 13h6M12 17h6"></path></svg>
+        <span>Administración</span>
+      </a>
+      }
+
       @if (authService.esDueno() || authService.esAdmin()) {
-        <a
-          routerLink="/mis-canchas"
-          routerLinkActive="activo"
-          class="nav-item"
-          (click)="cerrarMenu()"
-          >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 20V8l9-5 9 5v12M3 10h18M7 20v-6h10v6M12 10v4"></path>
-          </svg>
-          <span>Mis canchas</span>
-        </a>
+      <a
+              routerLink="/mis-canchas"
+              routerLinkActive="activo"
+              class="nav-item"
+              (click)="cerrarMenu()"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 20V8l9-5 9 5v12M3 10h18M7 20v-6h10v6M12 10v4"></path>
+        </svg>
+        <span>Mis canchas</span>
+      </a>
       }
     </nav>
 
@@ -161,6 +168,6 @@
 
   <main class="contenido-app">
     <span id="contenido-principal" tabindex="-1"></span>
-      <router-outlet></router-outlet>
+    <router-outlet></router-outlet>
   </main>
 </div>

@@ -55,34 +55,36 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                    "/api/auth/**",
-                    "/api/pagos/webhook",
-                    "/api/pagos/retorno/**",
-                    "/api/mercadopago/callback",
-                    "/actuator/health"
-                ).permitAll()
-                    .requestMatchers(org.springframework.http.HttpMethod.GET,
-                            "/api/config",
-                            "/api/ciudades",
-                            "/api/canchas",
-                            "/api/canchas/*",
-                            "/api/canchas/*/horarios",
-                            "/api/canchas/duenos/*",
-                            "/api/media/**",
-                            "/api/publicaciones/videos/archivo/*"
-                    ).permitAll()
-                .anyRequest().authenticated()
-            )
-            .exceptionHandling(errors -> errors
-                .authenticationEntryPoint((req,res,ex) -> {res.setStatus(401);res.setContentType("application/json;charset=UTF-8");res.getWriter().write("{\"message\":\"Tu sesión venció o necesitás iniciar sesión\"}");})
-                .accessDeniedHandler((req,res,ex) -> {res.setStatus(403);res.setContentType("application/json;charset=UTF-8");res.getWriter().write("{\"message\":\"No tenés permiso para realizar esta operación\"}");}))
-            .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        // La autorización del administrador se controla en el backend.
+                        .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/api/pagos/webhook",
+                                "/api/pagos/retorno/**",
+                                "/api/mercadopago/callback",
+                                "/actuator/health"
+                        ).permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET,
+                                "/api/config",
+                                "/api/ciudades",
+                                "/api/canchas",
+                                "/api/canchas/*",
+                                "/api/canchas/*/horarios",
+                                "/api/canchas/duenos/*",
+                                "/api/media/**",
+                                "/api/publicaciones/videos/archivo/*"
+                        ).permitAll()
+                        .anyRequest().authenticated()
+                )
+                .exceptionHandling(errors -> errors
+                        .authenticationEntryPoint((req,res,ex) -> {res.setStatus(401);res.setContentType("application/json;charset=UTF-8");res.getWriter().write("{\"message\":\"Tu sesión venció o necesitás iniciar sesión\"}");})
+                        .accessDeniedHandler((req,res,ex) -> {res.setStatus(403);res.setContentType("application/json;charset=UTF-8");res.getWriter().write("{\"message\":\"No tenés permiso para realizar esta operación\"}");}))
+                .authenticationProvider(authenticationProvider())
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

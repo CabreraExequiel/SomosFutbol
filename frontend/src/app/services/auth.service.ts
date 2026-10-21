@@ -11,6 +11,7 @@ export interface Usuario {
   ciudad?: string;
   role: 'usuario' | 'dueno' | 'administrador';
   avatar?: string;
+  nombreComplejo?: string;
 }
 
 export interface RegistroRequest {
@@ -60,7 +61,7 @@ export class AuthService {
     );
   }
 
-  actualizarPerfil(data: Pick<Usuario, 'name' | 'telefono' | 'ciudad'>): Observable<Usuario> {
+  actualizarPerfil(data: Pick<Usuario, 'name' | 'telefono' | 'ciudad'> & { nombreComplejo?: string }): Observable<Usuario> {
     return this.http.put<Usuario>(`${this.usersApiUrl}/me`, data).pipe(
       tap((usuario) => this.guardarUsuario(usuario))
     );

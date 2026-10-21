@@ -1,8 +1,103 @@
-<section class="page-container canchas-page"><header class="page-header"><div><span class="page-eyebrow">Elegí el lugar. Armá el partido.</span><h1 class="page-title">Encontrá dónde jugar</h1><p class="page-subtitle">Explorá los dueños y complejos que publicaron canchas. Entrá para ver todos sus espacios y horarios.</p></div></header>
- <section class="surface-card filtros-panel" aria-label="Filtros"><div class="filtros"><label><span>Buscar dueño o ciudad</span><input type="search" [(ngModel)]="texto" placeholder="Nombre del dueño o ciudad"></label><label><span>Ciudad</span><select [(ngModel)]="ciudadSeleccionada" (change)="buscar()"><option value="">Todas las ciudades</option>@for(c of ciudades;track c.id){<option [value]="c.id">{{c.nombre}}</option>}</select></label><label><span>Formato</span><select [(ngModel)]="tipoSeleccionado" (change)="buscar()"><option value="">Todos los formatos</option><option value="futbol 5">Fútbol 5</option><option value="futbol 7">Fútbol 7</option><option value="futbol 11">Fútbol 11</option></select></label><label><span>Ordenar</span><select [(ngModel)]="orden"><option value="nombre">Nombre</option><option value="precio">Menor precio</option></select></label></div></section>
- @if(cargando){<div class="estado-carga" role="status"><span class="spinner"></span>Buscando complejos…</div>}
- @if(error){<div class="app-alert error" role="alert">{{error}} <button type="button" class="secondary-button" (click)="buscar()">Reintentar</button></div>}
- @if(!cargando && !error){<div class="resultados-cabecera"><strong>{{visibles.length}} {{visibles.length===1?'dueño encontrado':'dueños encontrados'}}</strong><button type="button" class="text-button" (click)="limpiarFiltros()">Limpiar filtros</button></div><div class="grilla-canchas">
- @for(d of visibles;track d.id){<a class="tarjeta-cancha owner-card" [routerLink]="['/duenos',d.id]"><div class="cancha-media"><div class="imagen-placeholder" aria-hidden="true"><span>⚽</span><small>Tu próximo partido</small></div>@if(d.imagen){<img [src]="d.imagen" [alt]="'Canchas de '+d.nombre" loading="lazy" (error)="ocultarImagen($event)">}<span class="tipo-badge">{{d.cantidadCanchas}} {{d.cantidadCanchas===1?'cancha':'canchas'}}</span></div><div class="info"><div class="titulo-cancha"><h2>{{d.nombre}}</h2><span class="flecha">↗</span></div><p class="ubicacion">{{d.ciudades.join(' · ')}}</p><div class="datos-cancha">@for(t of d.tipos;track t){<span>{{t}}</span>}</div><div class="pie-cancha"><span class="dueno">Ver todas sus canchas</span><span class="precio"><small>Desde</small><strong>{{d.precioDesde|currency:'ARS':'symbol-narrow':'1.0-0'}}</strong><small>/ hora</small></span></div></div></a>}
- </div>@if(visibles.length===0){<div class="empty-state"><span class="empty-state-icon">⚽</span><h2>No encontramos complejos</h2><p>Probá otra ciudad, nombre o formato.</p><button type="button" class="secondary-button" (click)="limpiarFiltros()">Ver todos</button></div>}}
+<section class="page-container canchas-page">
+ <header class="page-header">
+  <div>
+   <span class="page-eyebrow">Elegí el lugar. Armá el partido.</span>
+   <h1 class="page-title">Encontrá dónde jugar</h1>
+   <p class="page-subtitle">Encontrá un complejo deportivo y entrá para ver todas sus canchas y horarios disponibles.</p>
+  </div>
+ </header>
+
+ <section class="surface-card filtros-panel" aria-label="Filtros de canchas">
+  <div class="filtros">
+   <label>
+    <span>Buscar complejo o ciudad</span>
+    <input type="search" [(ngModel)]="texto" placeholder="Ej: La Gambeta, Concordia" />
+   </label>
+   <label>
+    <span>Ciudad</span>
+    <select [(ngModel)]="ciudadSeleccionada" (change)="buscar()">
+     <option value="">Todas las ciudades</option>
+     @for (c of ciudades; track c.id) {
+     <option [value]="c.id">{{ c.nombre }}</option>
+     }
+    </select>
+   </label>
+   <label>
+    <span>Formato</span>
+    <select [(ngModel)]="tipoSeleccionado" (change)="buscar()">
+     <option value="">Todos los formatos</option>
+     <option value="futbol 5">Fútbol 5</option>
+     <option value="futbol 7">Fútbol 7</option>
+     <option value="futbol 11">Fútbol 11</option>
+    </select>
+   </label>
+   <label>
+    <span>Ordenar</span>
+    <select [(ngModel)]="orden">
+     <option value="nombre">Nombre</option>
+     <option value="precio">Menor precio</option>
+    </select>
+   </label>
+  </div>
+ </section>
+
+ @if (errorCiudades) {
+ <p class="app-alert error" role="alert">{{ errorCiudades }}</p>
+ }
+ @if (cargando) {
+ <div class="estado-carga" role="status"><span class="spinner"></span>Buscando canchas…</div>
+ }
+ @if (error) {
+ <div class="app-alert error" role="alert">
+  {{ error }}
+  <button type="button" class="secondary-button" (click)="buscar()">Reintentar</button>
+ </div>
+ }
+
+ @if (!cargando && !error) {
+ <div class="resultados-cabecera">
+  <strong>{{ visibles.length }} {{ visibles.length === 1 ? 'complejo encontrado' : 'complejos encontrados' }}</strong>
+  <button type="button" class="text-button" (click)="limpiarFiltros()">Limpiar filtros</button>
+ </div>
+
+ <div class="grilla-canchas">
+  @for (complejo of visibles; track complejo.id) {
+  <a class="tarjeta-cancha owner-card" [routerLink]="['/duenos', complejo.id]" [attr.aria-label]="'Ver canchas del complejo ' + complejo.nombre">
+   <div class="cancha-media">
+    <div class="imagen-placeholder" aria-hidden="true"><span>⚽</span><small>Elegí dónde jugar</small></div>
+    @if (complejo.imagen) {
+    <img [src]="complejo.imagen" [alt]="complejo.nombre" loading="lazy" (error)="ocultarImagen($event)" />
+    }
+    <span class="tipo-badge">Complejo deportivo</span>
+    <span class="techada-badge">{{ complejo.cantidadCanchas }} {{ complejo.cantidadCanchas === 1 ? 'cancha' : 'canchas' }}</span>
+   </div>
+   <div class="info">
+    <div class="titulo-cancha"><h2>{{ complejo.nombre }}</h2><span class="flecha" aria-hidden="true">↗</span></div>
+    <p class="ubicacion">{{ complejo.ciudades.join(' · ') || 'Ubicación disponible en el detalle' }}</p>
+    <div class="datos-cancha">
+     @for (tipo of complejo.tipos; track tipo) {
+     <span>{{ tipo }}</span>
+     }
+    </div>
+    <div class="pie-cancha">
+     <span class="accion-cancha">Ver todas las canchas →</span>
+     <span class="precio">
+                <small>Desde / hora</small>
+                <strong>{{ complejo.precioDesde | currency:'ARS':'symbol-narrow':'1.0-0' }}</strong>
+              </span>
+    </div>
+   </div>
+  </a>
+  }
+ </div>
+
+ @if (visibles.length === 0) {
+ <div class="empty-state">
+  <span class="empty-state-icon">⚽</span>
+  <h2>No encontramos complejos</h2>
+  <p>Probá otro nombre de complejo, ciudad o formato.</p>
+  <button type="button" class="secondary-button" (click)="limpiarFiltros()">Ver todas</button>
+ </div>
+ }
+ }
 </section>

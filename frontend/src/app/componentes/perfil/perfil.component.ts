@@ -12,6 +12,7 @@ interface PerfilForm {
   name: string;
   telefono: string;
   ciudad: string;
+  nombreComplejo: string;
 }
 
 interface CuentaCobroForm {
@@ -150,6 +151,7 @@ export class PerfilComponent implements OnInit {
       name: this.formulario.name.trim(),
       telefono: this.formulario.telefono.trim(),
       ciudad: this.formulario.ciudad.trim(),
+      nombreComplejo: this.formulario.nombreComplejo.trim(),
     };
 
     if (datos.name.length < 2) {
@@ -165,8 +167,17 @@ export class PerfilComponent implements OnInit {
       return;
     }
 
+    if (this.usuario?.role === 'dueno' && datos.nombreComplejo.length < 2) {
+      this.errorGuardado = 'Ingresá el nombre comercial de tu complejo (al menos 2 caracteres).';
+      return;
+    }
+
     this.guardando = true;
-    this.authService.actualizarPerfil(datos).subscribe({
+    // Los usuarios comunes no pueden cambiar el nombre comercial de un complejo.
+    const payload = this.usuario?.role === 'dueno'
+      ? datos
+      : { name: datos.name, telefono: datos.telefono, ciudad: datos.ciudad };
+    this.authService.actualizarPerfil(payload).subscribe({
       next: (usuario) => {
         this.aplicarUsuario(usuario);
         this.guardando = false;
@@ -275,6 +286,7 @@ export class PerfilComponent implements OnInit {
       name: usuario.name || '',
       telefono: usuario.telefono || '',
       ciudad: usuario.ciudad || '',
+      nombreComplejo: usuario.nombreComplejo || '',
     };
     this.formularioOriginal = { ...this.formulario };
     if (usuario.role === 'dueno' && !this.cuentaCobroSolicitada) {
@@ -307,7 +319,7 @@ export class PerfilComponent implements OnInit {
   }
 
   private formularioVacio(): PerfilForm {
-    return { name: '', telefono: '', ciudad: '' };
+    return { name: '', telefono: '', ciudad: '', nombreComplejo: '' };
   }
 
   private cuentaCobroVacia(): CuentaCobroForm {

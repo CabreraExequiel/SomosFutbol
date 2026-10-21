@@ -10,222 +10,230 @@
   </header>
 
   @if (cargando) {
-    <div class="estado-carga" aria-live="polite">
-      <span class="spinner"></span>
-      <p>Cargando tu perfil...</p>
-    </div>
+  <div class="estado-carga" aria-live="polite">
+    <span class="spinner"></span>
+    <p>Cargando tu perfil...</p>
+  </div>
   }
 
   @if (errorCarga && !cargando) {
-    <div class="empty-state estado-error" role="alert">
-      <span class="empty-state-icon">!</span>
-      <h2>No pudimos abrir tu perfil</h2>
-      <p>{{ errorCarga }}</p>
-      <button type="button" class="secondary-button" (click)="reintentar()">Volver a intentar</button>
-    </div>
+  <div class="empty-state estado-error" role="alert">
+    <span class="empty-state-icon">!</span>
+    <h2>No pudimos abrir tu perfil</h2>
+    <p>{{ errorCarga }}</p>
+    <button type="button" class="secondary-button" (click)="reintentar()">Volver a intentar</button>
+  </div>
   }
 
   @if (usuario && !cargando && !errorCarga) {
-    <div class="perfil-grid">
-      <aside class="surface-card perfil-resumen">
-        <div class="portada-perfil">
-          <span class="patron patron-uno"></span>
-          <span class="patron patron-dos"></span>
-        </div>
-        <div class="identidad-perfil">
-          <div class="avatar-grande">
-            @if ((avatarPreview || usuario.avatar) && !avatarError) {
-              <img
-                [src]="avatarPreview || usuario.avatar"
-                [alt]="usuario.name"
-                (error)="ocultarAvatar()"
-                />
-            }
-            @if ((!avatarPreview && !usuario.avatar) || avatarError) {
-              <span>{{ iniciales }}</span>
-            }
-          </div>
-          <span class="rol-badge">{{ etiquetaRol }}</span>
-          <h2>{{ usuario.name }}</h2>
-          <p>{{ usuario.email }}</p>
-          <div class="acciones-avatar">
-            <label class="cambiar-foto">
-              <input type="file" accept="image/jpeg,image/png" (change)="seleccionarAvatar($event)" />
-              {{ usuario.avatar ? 'Cambiar foto' : 'Agregar foto' }}
-            </label>
-            @if (avatarSeleccionado) {
-              <button type="button" class="guardar-foto" [disabled]="subiendoAvatar" (click)="subirAvatar()">
-                {{ subiendoAvatar ? 'Subiendo...' : 'Guardar foto' }}
-              </button>
-            }
-          </div>
-          <small class="ayuda-foto">JPG o PNG · máximo 5 MB</small>
-        </div>
-        <div class="completitud">
-          <div>
-            <strong>Perfil completado</strong>
-            <span>{{ perfilCompleto }}%</span>
-          </div>
-          <div class="barra-progreso" role="progressbar" [attr.aria-valuenow]="perfilCompleto" aria-valuemin="0" aria-valuemax="100">
-            <span [style.width.%]="perfilCompleto"></span>
-          </div>
-          @if (perfilCompleto < 100) {
-            <small>Completá tu teléfono y ciudad para llegar al 100%.</small>
+  <div class="perfil-grid">
+    <aside class="surface-card perfil-resumen">
+      <div class="portada-perfil">
+        <span class="patron patron-uno"></span>
+        <span class="patron patron-dos"></span>
+      </div>
+      <div class="identidad-perfil">
+        <div class="avatar-grande">
+          @if ((avatarPreview || usuario.avatar) && !avatarError) {
+          <img
+                  [src]="avatarPreview || usuario.avatar"
+                  [alt]="usuario.name"
+                  (error)="ocultarAvatar()"
+          />
           }
-          @if (perfilCompleto === 100) {
-            <small>Tu información principal está completa.</small>
+          @if ((!avatarPreview && !usuario.avatar) || avatarError) {
+          <span>{{ iniciales }}</span>
           }
         </div>
-        <dl class="datos-resumen">
-          <div>
-            <dt><span aria-hidden="true">⌖</span> Ciudad</dt>
-            <dd>{{ usuario.ciudad || 'Sin completar' }}</dd>
-          </div>
-          <div>
-            <dt><span aria-hidden="true">◉</span> Teléfono</dt>
-            <dd>{{ usuario.telefono || 'Sin completar' }}</dd>
-          </div>
-          <div>
-            <dt><span aria-hidden="true">#</span> Identificador</dt>
-            <dd>Usuario {{ usuario.id }}</dd>
-          </div>
-        </dl>
-      </aside>
-      <main class="columna-formulario">
-        @if (avisoCarga) {
-          <div class="alerta alerta-aviso" role="status">
-            <span aria-hidden="true">i</span>
-            <p>{{ avisoCarga }}</p>
-          </div>
+        <span class="rol-badge">{{ etiquetaRol }}</span>
+        <h2>{{ usuario.name }}</h2>
+        <p>{{ usuario.email }}</p>
+        <div class="acciones-avatar">
+          <label class="cambiar-foto">
+            <input type="file" accept="image/jpeg,image/png" (change)="seleccionarAvatar($event)" />
+            {{ usuario.avatar ? 'Cambiar foto' : 'Agregar foto' }}
+          </label>
+          @if (avatarSeleccionado) {
+          <button type="button" class="guardar-foto" [disabled]="subiendoAvatar" (click)="subirAvatar()">
+            {{ subiendoAvatar ? 'Subiendo...' : 'Guardar foto' }}
+          </button>
+          }
+        </div>
+        <small class="ayuda-foto">JPG o PNG · máximo 5 MB</small>
+      </div>
+      <div class="completitud">
+        <div>
+          <strong>Perfil completado</strong>
+          <span>{{ perfilCompleto }}%</span>
+        </div>
+        <div class="barra-progreso" role="progressbar" [attr.aria-valuenow]="perfilCompleto" aria-valuemin="0" aria-valuemax="100">
+          <span [style.width.%]="perfilCompleto"></span>
+        </div>
+        @if (perfilCompleto < 100) {
+        <small>Completá tu teléfono y ciudad para llegar al 100%.</small>
         }
-        @if (mensajeExito) {
-          <div class="alerta alerta-exito" role="status">
-            <span aria-hidden="true">✓</span>
-            <p>{{ mensajeExito }}</p>
-          </div>
+        @if (perfilCompleto === 100) {
+        <small>Tu información principal está completa.</small>
         }
-        @if (errorGuardado) {
-          <div class="alerta alerta-error" role="alert">
-            <span aria-hidden="true">!</span>
-            <p>{{ errorGuardado }}</p>
+      </div>
+      <dl class="datos-resumen">
+        <div>
+          <dt><span aria-hidden="true">⌖</span> Ciudad</dt>
+          <dd>{{ usuario.ciudad || 'Sin completar' }}</dd>
+        </div>
+        <div>
+          <dt><span aria-hidden="true">◉</span> Teléfono</dt>
+          <dd>{{ usuario.telefono || 'Sin completar' }}</dd>
+        </div>
+        <div>
+          <dt><span aria-hidden="true">#</span> Identificador</dt>
+          <dd>Usuario {{ usuario.id }}</dd>
+        </div>
+      </dl>
+    </aside>
+    <main class="columna-formulario">
+      @if (avisoCarga) {
+      <div class="alerta alerta-aviso" role="status">
+        <span aria-hidden="true">i</span>
+        <p>{{ avisoCarga }}</p>
+      </div>
+      }
+      @if (mensajeExito) {
+      <div class="alerta alerta-exito" role="status">
+        <span aria-hidden="true">✓</span>
+        <p>{{ mensajeExito }}</p>
+      </div>
+      }
+      @if (errorGuardado) {
+      <div class="alerta alerta-error" role="alert">
+        <span aria-hidden="true">!</span>
+        <p>{{ errorGuardado }}</p>
+      </div>
+      }
+      <form class="surface-card formulario-perfil" (ngSubmit)="guardar()">
+        <div class="form-cabecera">
+          <div>
+            <h2>Información personal</h2>
+            <p>Tu nombre y foto identifican tu perfil. Tu correo y teléfono se comparten con el dueño cuando reservás una cancha.</p>
           </div>
-        }
-        <form class="surface-card formulario-perfil" (ngSubmit)="guardar()">
-          <div class="form-cabecera">
-            <div>
-              <h2>Información personal</h2>
-              <p>Tu nombre y foto identifican tu perfil. Tu correo y teléfono se comparten con el dueño cuando reservás una cancha.</p>
-            </div>
-            <span class="edicion-badge">Editable</span>
-          </div>
-          <div class="campos-grid">
-            <label class="campo campo-ancho">
-              <span>Nombre completo *</span>
-              <input
-                type="text"
-                name="name"
-                [(ngModel)]="formulario.name"
-                minlength="2"
-                maxlength="100"
-                autocomplete="name"
-                required
-                />
-            </label>
-            <label class="campo campo-ancho">
-              <span>Correo electrónico</span>
-              <input type="email" [value]="usuario.email" disabled />
-              <small>El correo identifica tu cuenta y no se puede cambiar desde el perfil.</small>
-            </label>
-            <label class="campo">
-              <span>Teléfono *</span>
-              <input
-                type="tel"
-                name="telefono"
-                [(ngModel)]="formulario.telefono"
-                minlength="7"
-                maxlength="30"
-                pattern="[0-9+()\- ]+"
-                placeholder="Ej: 297 400-0000"
-                autocomplete="tel"
-                required
-                />
-            </label>
-            <label class="campo">
-              <span>Ciudad</span>
-              <input
-                type="text"
-                name="ciudad"
-                [(ngModel)]="formulario.ciudad"
-                maxlength="100"
-                placeholder="Elegí o escribí tu ciudad"
-                list="ciudades-disponibles"
-                autocomplete="address-level2"
-                />
-              <datalist id="ciudades-disponibles">
-                @for (ciudad of ciudades; track ciudad) {
-                  <option [value]="ciudad.nombre">
-                    {{ ciudad.provincia }}
-                  </option>
-                }
-              </datalist>
-            </label>
-          </div>
-          <div class="form-acciones">
-            <button
-              type="button"
-              class="secondary-button"
-              [disabled]="!hayCambios || guardando"
-              (click)="cancelarCambios()"
-              >
-              Descartar cambios
-            </button>
-            <button type="submit" class="primary-button" [disabled]="!hayCambios || guardando">
-              {{ guardando ? 'Guardando...' : 'Guardar cambios' }}
-            </button>
-          </div>
-        </form>
-        @if (usuario.role === 'dueno') {
-          <section class="surface-card formulario-perfil"><span class="page-eyebrow">Cobros online</span><h2>Tu cuenta de Mercado Pago</h2><p>Vinculá tu cuenta para que los pagos de tus canchas se acrediten directamente a vos.</p>
-          @if(avisoMp){<p class="app-alert success" role="status">{{avisoMp}}</p>}
-          @if(errorMp){<p class="app-alert error" role="alert">{{errorMp}}</p><button type="button" class="secondary-button" (click)="cargarMp()">Reintentar</button>}
-          @if(estadoMp;as mp){
-            @if(mp.habilitado){<p>{{mp.vinculada?'Cuenta vinculada: '+mp.cuenta:'Todavía no vinculaste una cuenta.'}} @if(mp.pruebas){<strong>Entorno de prueba</strong>}</p><button type="button" class="primary-button" [disabled]="vinculando" (click)="vincularMp()">{{vinculando?'Abriendo…':(mp.vinculada?'Volver a autorizar':'Vincular Mercado Pago')}}</button>}
-            @else{<p class="app-alert">Por ahora, las reservas se abonan por transferencia directa. Configurá la cuenta debajo.</p>}
-          }</section>
-          <form class="surface-card formulario-perfil cuenta-cobro-card" (ngSubmit)="guardarCuentaCobro()">
-            <div class="form-cabecera">
-              <div>
-                <h2>Cuenta para transferencias</h2>
-                <p>Estos datos se usan para coordinar el cobro de tus reservas y no se incluyen en tu perfil público.</p>
-              </div>
-              <span class="cobro-badge">Privado</span>
-            </div>
-
-            @if (cargandoCuentaCobro) {
-              <div class="cuenta-cargando" role="status">
-                <span class="spinner spinner-chico"></span>
-                <span>Cargando datos de cobro...</span>
-              </div>
-            }
-
-            @if (!cargandoCuentaCobro) {
-              @if (mensajeCuentaCobro) {
-                <div class="alerta alerta-exito" role="status">
-                  <span aria-hidden="true">✓</span>
-                  <p>{{ mensajeCuentaCobro }}</p>
-                </div>
+          <span class="edicion-badge">Editable</span>
+        </div>
+        <div class="campos-grid">
+          <label class="campo campo-ancho">
+            <span>Nombre completo *</span>
+            <input
+                    type="text"
+                    name="name"
+                    [(ngModel)]="formulario.name"
+                    minlength="2"
+                    maxlength="100"
+                    autocomplete="name"
+                    required
+            />
+          </label>
+          <label class="campo campo-ancho">
+            <span>Correo electrónico</span>
+            <input type="email" [value]="usuario.email" disabled />
+            <small>El correo identifica tu cuenta y no se puede cambiar desde el perfil.</small>
+          </label>
+          <label class="campo">
+            <span>Teléfono *</span>
+            <input
+                    type="tel"
+                    name="telefono"
+                    [(ngModel)]="formulario.telefono"
+                    minlength="7"
+                    maxlength="30"
+                    pattern="[0-9+()\- ]+"
+                    placeholder="Ej: 297 400-0000"
+                    autocomplete="tel"
+                    required
+            />
+          </label>
+          <label class="campo">
+            <span>Ciudad</span>
+            <input
+                    type="text"
+                    name="ciudad"
+                    [(ngModel)]="formulario.ciudad"
+                    maxlength="100"
+                    placeholder="Elegí o escribí tu ciudad"
+                    list="ciudades-disponibles"
+                    autocomplete="address-level2"
+            />
+            <datalist id="ciudades-disponibles">
+              @for (ciudad of ciudades; track ciudad) {
+              <option [value]="ciudad.nombre">
+                {{ ciudad.provincia }}
+              </option>
               }
-              @if (errorCuentaCobro) {
-                <div class="alerta alerta-error" role="alert">
-                  <span aria-hidden="true">!</span>
-                  <p>{{ errorCuentaCobro }}</p>
-                </div>
-              }
+            </datalist>
+          </label>
+          @if (usuario.role === 'dueno') {
+          <label class="campo campo-ancho">
+            <span>Nombre comercial del complejo *</span>
+            <input type="text" name="nombreComplejo" [(ngModel)]="formulario.nombreComplejo"
+                   minlength="2" maxlength="150" placeholder="Ej: Complejo La Gambeta" required />
+            <small>Este nombre se mostrará en Buscar canchas en lugar de tu nombre personal. Todas tus canchas quedarán agrupadas aquí.</small>
+          </label>
+          }
+        </div>
+        <div class="form-acciones">
+          <button
+                  type="button"
+                  class="secondary-button"
+                  [disabled]="!hayCambios || guardando"
+                  (click)="cancelarCambios()"
+          >
+            Descartar cambios
+          </button>
+          <button type="submit" class="primary-button" [disabled]="!hayCambios || guardando">
+            {{ guardando ? 'Guardando...' : 'Guardar cambios' }}
+          </button>
+        </div>
+      </form>
+      @if (usuario.role === 'dueno') {
+      <section class="surface-card formulario-perfil"><span class="page-eyebrow">Cobros online</span><h2>Tu cuenta de Mercado Pago</h2><p>Vinculá tu cuenta para que los pagos de tus canchas se acrediten directamente a vos.</p>
+        @if(avisoMp){<p class="app-alert success" role="status">{{avisoMp}}</p>}
+        @if(errorMp){<p class="app-alert error" role="alert">{{errorMp}}</p><button type="button" class="secondary-button" (click)="cargarMp()">Reintentar</button>}
+        @if(estadoMp;as mp){
+        @if(mp.habilitado){<p>{{mp.vinculada?'Cuenta vinculada: '+mp.cuenta:'Todavía no vinculaste una cuenta.'}} @if(mp.pruebas){<strong>Entorno de prueba</strong>}</p><button type="button" class="primary-button" [disabled]="vinculando" (click)="vincularMp()">{{vinculando?'Abriendo…':(mp.vinculada?'Volver a autorizar':'Vincular Mercado Pago')}}</button>}
+        @else{<p class="app-alert">Por ahora, las reservas se abonan por transferencia directa. Configurá la cuenta debajo.</p>}
+        }</section>
+      <form class="surface-card formulario-perfil cuenta-cobro-card" (ngSubmit)="guardarCuentaCobro()">
+        <div class="form-cabecera">
+          <div>
+            <h2>Cuenta para transferencias</h2>
+            <p>Estos datos se usan para coordinar el cobro de tus reservas y no se incluyen en tu perfil público.</p>
+          </div>
+          <span class="cobro-badge">Privado</span>
+        </div>
 
-              <div class="campos-grid cuenta-campos">
-                <label class="campo">
-                  <span>CBU o CVU</span>
-                  <input
+        @if (cargandoCuentaCobro) {
+        <div class="cuenta-cargando" role="status">
+          <span class="spinner spinner-chico"></span>
+          <span>Cargando datos de cobro...</span>
+        </div>
+        }
+
+        @if (!cargandoCuentaCobro) {
+        @if (mensajeCuentaCobro) {
+        <div class="alerta alerta-exito" role="status">
+          <span aria-hidden="true">✓</span>
+          <p>{{ mensajeCuentaCobro }}</p>
+        </div>
+        }
+        @if (errorCuentaCobro) {
+        <div class="alerta alerta-error" role="alert">
+          <span aria-hidden="true">!</span>
+          <p>{{ errorCuentaCobro }}</p>
+        </div>
+        }
+
+        <div class="campos-grid cuenta-campos">
+          <label class="campo">
+            <span>CBU o CVU</span>
+            <input
                     type="text"
                     inputmode="numeric"
                     name="cbuCvu"
@@ -233,12 +241,12 @@
                     maxlength="30"
                     placeholder="22 dígitos"
                     autocomplete="off"
-                    />
-                  <small>Podés escribirlo con espacios o guiones.</small>
-                </label>
-                <label class="campo">
-                  <span>Alias de Mercado Pago</span>
-                  <input
+            />
+            <small>Podés escribirlo con espacios o guiones.</small>
+          </label>
+          <label class="campo">
+            <span>Alias de Mercado Pago</span>
+            <input
                     type="text"
                     name="aliasMercadoPago"
                     [(ngModel)]="cuentaCobro.aliasMercadoPago"
@@ -247,50 +255,50 @@
                     pattern="[A-Za-z0-9.\-]{6,20}"
                     placeholder="ejemplo.mp"
                     autocomplete="off"
-                    />
-                  <small>Ingresá al menos una de las dos opciones.</small>
-                </label>
-              </div>
-              <div class="proteccion-dato">
-                <span aria-hidden="true">🔒</span>
-                <p>La API entrega estos datos solo al dueño autenticado y evita que el navegador los almacene en caché.</p>
-              </div>
-              <div class="form-acciones">
-                <button
+            />
+            <small>Ingresá al menos una de las dos opciones.</small>
+          </label>
+        </div>
+        <div class="proteccion-dato">
+          <span aria-hidden="true">🔒</span>
+          <p>La API entrega estos datos solo al dueño autenticado y evita que el navegador los almacene en caché.</p>
+        </div>
+        <div class="form-acciones">
+          <button
                   type="button"
                   class="secondary-button"
                   [disabled]="!hayCambiosCuentaCobro || guardandoCuentaCobro"
                   (click)="cancelarCuentaCobro()"
-                  >
-                  Descartar cambios
-                </button>
-                <button type="submit" class="primary-button" [disabled]="!hayCambiosCuentaCobro || guardandoCuentaCobro">
-                  {{ guardandoCuentaCobro ? 'Guardando...' : 'Guardar cuenta' }}
-                </button>
-              </div>
-            }
-          </form>
+          >
+            Descartar cambios
+          </button>
+          <button type="submit" class="primary-button" [disabled]="!hayCambiosCuentaCobro || guardandoCuentaCobro">
+            {{ guardandoCuentaCobro ? 'Guardando...' : 'Guardar cuenta' }}
+          </button>
+        </div>
         }
-        <section class="surface-card seguridad-card">
-          <span class="seguridad-icono" aria-hidden="true">✓</span>
+      </form>
+      }
+      <section class="surface-card seguridad-card">
+        <span class="seguridad-icono" aria-hidden="true">✓</span>
+        <div>
+          <h2>Cuenta protegida</h2>
+          <p>Tu contraseña no se muestra ni se envía desde esta pantalla.</p>
+        </div>
+        <span class="estado-cuenta">Activa</span>
+      </section>
+      <section class="surface-card amigos-perfil">
+        <div class="form-cabecera amigos-cabecera">
           <div>
-            <h2>Cuenta protegida</h2>
-            <p>Tu contraseña no se muestra ni se envía desde esta pantalla.</p>
+            <h2>Mis amigos</h2>
+            <p>Personas con las que podés conversar y organizar partidos.</p>
           </div>
-          <span class="estado-cuenta">Activa</span>
-        </section>
-        <section class="surface-card amigos-perfil">
-          <div class="form-cabecera amigos-cabecera">
-            <div>
-              <h2>Mis amigos</h2>
-              <p>Personas con las que podés conversar y organizar partidos.</p>
-            </div>
-            <a routerLink="/amigos" class="secondary-button">Ver todos</a>
-          </div>
-          @if (amigos.length) {
-            <div class="amigos-lista">
-              @for (amigo of amigos | slice:0:6; track amigo) {
-                <a routerLink="/amigos" class="amigo-mini">
+          <a routerLink="/amigos" class="secondary-button">Ver todos</a>
+        </div>
+        @if (amigos.length) {
+        <div class="amigos-lista">
+          @for (amigo of amigos | slice:0:6; track amigo) {
+          <a routerLink="/amigos" class="amigo-mini">
                   <span class="amigo-avatar">
                     @if (amigo.avatar) {
                       <img [src]="amigo.avatar" [alt]="amigo.nombre" />
@@ -299,20 +307,20 @@
                       <span>{{ amigo.nombre.charAt(0).toUpperCase() }}</span>
                     }
                   </span>
-                  <strong>{{ amigo.nombre }}</strong>
-                </a>
-              }
-            </div>
+            <strong>{{ amigo.nombre }}</strong>
+          </a>
           }
-          @if (!amigos.length) {
-            <div class="amigos-vacio">
-              <span>👥</span>
-              <p>Todavía no agregaste amigos.</p>
-              <a routerLink="/amigos" class="primary-button">Buscar personas</a>
-            </div>
-          }
-        </section>
-      </main>
-    </div>
+        </div>
+        }
+        @if (!amigos.length) {
+        <div class="amigos-vacio">
+          <span>👥</span>
+          <p>Todavía no agregaste amigos.</p>
+          <a routerLink="/amigos" class="primary-button">Buscar personas</a>
+        </div>
+        }
+      </section>
+    </main>
+  </div>
   }
 </section>

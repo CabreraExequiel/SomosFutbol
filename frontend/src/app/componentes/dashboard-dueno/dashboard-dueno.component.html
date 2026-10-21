@@ -13,6 +13,10 @@
     </button>
   </header>
 
+  <p class="surface-card aviso-complejo">
+    La búsqueda muestra una sola ficha por complejo con todas tus canchas.
+    <a routerLink="/perfil">Configurá el nombre comercial de tu complejo en Mi perfil →</a>
+  </p>
   @if(mensajeExito){<p class="app-alert success" role="status">{{mensajeExito}}</p>}
   <div class="resumen-grid">
     <article class="surface-card resumen-card">
@@ -39,126 +43,126 @@
   </div>
 
   @if (mostrarFormulario) {
-    <form class="surface-card form-cancha" (ngSubmit)="formCancha.valid && crearCancha()" #formCancha="ngForm">
-      <div class="form-cabecera">
-        <div>
-          <span class="page-eyebrow">{{editandoId?'Editar publicación':'Nueva publicación'}}</span>
-          <h2>Datos de la cancha</h2>
-          <p>Completá la información para que los jugadores puedan encontrarla y reservarla.</p>
-        </div>
-        <span class="paso-badge">Información general</span>
+  <form class="surface-card form-cancha" (ngSubmit)="formCancha.valid && crearCancha()" #formCancha="ngForm">
+    <div class="form-cabecera">
+      <div>
+        <span class="page-eyebrow">{{editandoId?'Editar publicación':'Nueva publicación'}}</span>
+        <h2>Datos de la cancha</h2>
+        <p>Completá la información para que los jugadores puedan encontrarla y reservarla.</p>
       </div>
-      <div class="campos-grid">
-        <label class="campo campo-ancho">
-          <span>Nombre de la cancha *</span>
+      <span class="paso-badge">Información general</span>
+    </div>
+    <div class="campos-grid">
+      <label class="campo campo-ancho">
+        <span>Nombre de la cancha *</span>
+        <input
+                type="text"
+                placeholder="Ej: Complejo La Gambeta"
+                [(ngModel)]="nuevaCancha.nombre"
+                name="nombre"
+                maxlength="150" required
+        />
+      </label>
+      <label class="campo">
+        <span>Ciudad *</span>
+        <select [(ngModel)]="nuevaCancha.ciudadId" name="ciudadId" required>
+          <option value="" disabled>Seleccioná una ciudad</option>
+          @for (c of ciudades; track c) {
+          <option [value]="c.id">{{ c.nombre }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo">
+        <span>Dirección</span>
+        <input
+                type="text"
+                placeholder="Calle, número y barrio"
+                [(ngModel)]="nuevaCancha.direccion"
+                name="direccion" maxlength="255"
+        />
+      </label>
+      <label class="campo">
+        <span>Tipo de cancha</span>
+        <select [(ngModel)]="nuevaCancha.tipo" name="tipo">
+          <option value="futbol 5">Fútbol 5</option>
+          <option value="futbol 7">Fútbol 7</option>
+          <option value="futbol 11">Fútbol 11</option>
+        </select>
+      </label>
+      <label class="campo">
+        <span>Superficie</span>
+        <select [(ngModel)]="nuevaCancha.superficie" name="superficie">
+          <option value="sintetico">Césped sintético</option>
+          <option value="natural">Césped natural</option>
+          <option value="cemento">Cemento</option>
+          <option value="parquet">Parquet</option>
+        </select>
+      </label>
+      <label class="campo">
+        <span>Cantidad de jugadores</span>
+        <input
+                type="number"
+                min="2"
+                placeholder="10"
+                [(ngModel)]="nuevaCancha.cantJugadores"
+                name="cantJugadores"
+        />
+      </label>
+      <label class="campo">
+        <span>Precio por hora *</span>
+        <div class="input-prefijo">
+          <span>$</span>
           <input
-            type="text"
-            placeholder="Ej: Complejo La Gambeta"
-            [(ngModel)]="nuevaCancha.nombre"
-            name="nombre"
-            maxlength="150" required
-            />
-        </label>
-        <label class="campo">
-          <span>Ciudad *</span>
-          <select [(ngModel)]="nuevaCancha.ciudadId" name="ciudadId" required>
-            <option value="" disabled>Seleccioná una ciudad</option>
-            @for (c of ciudades; track c) {
-              <option [value]="c.id">{{ c.nombre }}</option>
-            }
-          </select>
-        </label>
-        <label class="campo">
-          <span>Dirección</span>
-          <input
-            type="text"
-            placeholder="Calle, número y barrio"
-            [(ngModel)]="nuevaCancha.direccion"
-            name="direccion" maxlength="255"
-            />
-        </label>
-        <label class="campo">
-          <span>Tipo de cancha</span>
-          <select [(ngModel)]="nuevaCancha.tipo" name="tipo">
-            <option value="futbol 5">Fútbol 5</option>
-            <option value="futbol 7">Fútbol 7</option>
-            <option value="futbol 11">Fútbol 11</option>
-          </select>
-        </label>
-        <label class="campo">
-          <span>Superficie</span>
-          <select [(ngModel)]="nuevaCancha.superficie" name="superficie">
-            <option value="sintetico">Césped sintético</option>
-            <option value="natural">Césped natural</option>
-            <option value="cemento">Cemento</option>
-            <option value="parquet">Parquet</option>
-          </select>
-        </label>
-        <label class="campo">
-          <span>Cantidad de jugadores</span>
-          <input
-            type="number"
-            min="2"
-            placeholder="10"
-            [(ngModel)]="nuevaCancha.cantJugadores"
-            name="cantJugadores"
-            />
-        </label>
-        <label class="campo">
-          <span>Precio por hora *</span>
-          <div class="input-prefijo">
-            <span>$</span>
-            <input
-              type="number"
-              min="1"
-              placeholder="0"
-              [(ngModel)]="nuevaCancha.precioHora"
-              name="precioHora"
-              required
-              />
+                  type="number"
+                  min="1"
+                  placeholder="0"
+                  [(ngModel)]="nuevaCancha.precioHora"
+                  name="precioHora"
+                  required
+          />
+        </div>
+      </label>
+      <label class="campo campo-ancho">
+        <span>Descripción</span>
+        <textarea
+                placeholder="Contá qué incluye el complejo, servicios disponibles y cualquier detalle útil..."
+                [(ngModel)]="nuevaCancha.descripcion"
+                name="descripcion" maxlength="2000"
+        ></textarea>
+      </label>
+      <label class="campo campo-ancho foto-cancha-campo">
+        <span>Foto principal de la cancha</span>
+        <div class="selector-foto" [class.con-preview]="imagenPreview">
+          @if (imagenPreview) {
+          <img [src]="imagenPreview" alt="Vista previa de la cancha" />
+          }
+          <div class="selector-foto-texto">
+            <strong>{{ imagenSeleccionada ? imagenSeleccionada.name : 'Elegí una foto' }}</strong>
+            <small>JPG o PNG · máximo 5 MB</small>
           </div>
-        </label>
-        <label class="campo campo-ancho">
-          <span>Descripción</span>
-          <textarea
-            placeholder="Contá qué incluye el complejo, servicios disponibles y cualquier detalle útil..."
-            [(ngModel)]="nuevaCancha.descripcion"
-            name="descripcion" maxlength="2000"
-          ></textarea>
-        </label>
-        <label class="campo campo-ancho foto-cancha-campo">
-          <span>Foto principal de la cancha</span>
-          <div class="selector-foto" [class.con-preview]="imagenPreview">
-            @if (imagenPreview) {
-              <img [src]="imagenPreview" alt="Vista previa de la cancha" />
-            }
-            <div class="selector-foto-texto">
-              <strong>{{ imagenSeleccionada ? imagenSeleccionada.name : 'Elegí una foto' }}</strong>
-              <small>JPG o PNG · máximo 5 MB</small>
-            </div>
-            <input type="file" accept="image/jpeg,image/png" (change)="seleccionarImagen($event)" />
-            <span class="secondary-button">Seleccionar</span>
-          </div>
-        </label>
-        <label class="checkbox campo-ancho">
-          <input type="checkbox" [(ngModel)]="nuevaCancha.techada" name="techada" />
-          <span class="checkbox-control" aria-hidden="true">✓</span>
-          <span>
+          <input type="file" accept="image/jpeg,image/png" (change)="seleccionarImagen($event)" />
+          <span class="secondary-button">Seleccionar</span>
+        </div>
+      </label>
+      <label class="checkbox campo-ancho">
+        <input type="checkbox" [(ngModel)]="nuevaCancha.techada" name="techada" />
+        <span class="checkbox-control" aria-hidden="true">✓</span>
+        <span>
             <strong>Cancha techada</strong>
             <small>Marcá esta opción si se puede jugar protegidos del clima.</small>
           </span>
-        </label>
-      </div>
-      @if (errorFormulario) {
-        <p class="mensaje-error" role="alert">{{ errorFormulario }}</p>
-      }
-      <div class="form-acciones">
-        <button type="button" class="secondary-button" (click)="alternarFormulario()">Cancelar</button>
-        <button type="submit" class="primary-button" [disabled]="guardando || formCancha.invalid">
-          {{ guardando ? 'Publicando...' : 'Guardar cancha' }}
-        </button>
-      </div>
-    </form>
+      </label>
+    </div>
+    @if (errorFormulario) {
+    <p class="mensaje-error" role="alert">{{ errorFormulario }}</p>
+    }
+    <div class="form-acciones">
+      <button type="button" class="secondary-button" (click)="alternarFormulario()">Cancelar</button>
+      <button type="submit" class="primary-button" [disabled]="guardando || formCancha.invalid">
+        {{ guardando ? 'Publicando...' : 'Guardar cancha' }}
+      </button>
+    </div>
+  </form>
   }
 
   @if(agendaCancha){<app-agenda-cancha [cancha]="agendaCancha" (cerrar)="agendaCancha=null"/>}
@@ -172,77 +176,77 @@
     </div>
 
     @if (cargandoCanchas) {
-      <div class="estado-carga" aria-live="polite">
-        <span class="spinner"></span>
-        <p>Cargando canchas...</p>
-      </div>
+    <div class="estado-carga" aria-live="polite">
+      <span class="spinner"></span>
+      <p>Cargando canchas...</p>
+    </div>
     }
 
     @if (errorCanchas && !cargandoCanchas) {
-      <div class="empty-state estado-error" role="alert">
-        <span class="empty-state-icon">!</span>
-        <h3>No pudimos cargar tus canchas</h3>
-        <p>{{ errorCanchas }}</p>
-        <button type="button" class="secondary-button" (click)="cargarCanchas()">Reintentar</button>
-      </div>
+    <div class="empty-state estado-error" role="alert">
+      <span class="empty-state-icon">!</span>
+      <h3>No pudimos cargar tus canchas</h3>
+      <p>{{ errorCanchas }}</p>
+      <button type="button" class="secondary-button" (click)="cargarCanchas()">Reintentar</button>
+    </div>
     }
 
     @if (!cargandoCanchas && !errorCanchas && canchas.length > 0) {
-      <div class="grilla-canchas">
-        @for (c of canchas; track c) {
-          <article class="surface-card tarjeta-cancha">
-            <div class="cancha-icono">
-              @if (c.imagen) {
-                <img [src]="c.imagen" [alt]="c.nombre" />
-              }
-              @if (!c.imagen) {
-                <span aria-hidden="true">⚽</span>
-              }
-            </div>
-            <div class="cancha-info">
-              <div class="cancha-titulo">
-                <h3>{{ c.nombre }}</h3>
-                <span class="estado-publicacion" [class.inactiva]="!c.activa">
+    <div class="grilla-canchas">
+      @for (c of canchas; track c) {
+      <article class="surface-card tarjeta-cancha">
+        <div class="cancha-icono">
+          @if (c.imagen) {
+          <img [src]="c.imagen" [alt]="c.nombre" />
+          }
+          @if (!c.imagen) {
+          <span aria-hidden="true">⚽</span>
+          }
+        </div>
+        <div class="cancha-info">
+          <div class="cancha-titulo">
+            <h3>{{ c.nombre }}</h3>
+            <span class="estado-publicacion" [class.inactiva]="!c.activa">
                   {{ c.activa ? 'Activa' : 'Inactiva' }}
                 </span>
-              </div>
-              <p>{{ c.ciudadNombre }}@if (c.direccion) {
-                · {{ c.direccion }}
-              }</p>
-              <div class="cancha-datos">
-                <span>{{ c.tipo }}</span>
-                <span>$ {{ c.precioHora | number: '1.0-0' }} / hora</span>
-              </div>
-            </div>
-            <div class="cancha-acciones">
-              <label class="secondary-button cambiar-foto-cancha">
-                <input type="file" accept="image/jpeg,image/png" [disabled]="subiendoImagenId === c.id" (change)="cambiarImagen(c, $event)" />
-                {{ subiendoImagenId === c.id ? 'Subiendo...' : (c.imagen ? 'Cambiar foto' : 'Agregar foto') }}
-              </label>
-              <button type="button" class="secondary-button" (click)="editar(c)">Editar</button>
-              <button type="button" class="primary-button" (click)="agendaCancha=c">Días y horarios</button>
-              @if(c.activa){<a [routerLink]="['/canchas', c.id]" class="secondary-button">Ver</a>}
-              <button
-                type="button"
-                class="danger-button"
-                [disabled]="eliminandoId === c.id"
-                (click)="cambiarPublicacion(c)"
-                >
-                {{ eliminandoId === c.id ? 'Guardando…' : (c.activa?'Pausar':'Publicar') }}
-              </button>
-            </div>
-          </article>
-        }
-      </div>
+          </div>
+          <p>{{ c.ciudadNombre }}@if (c.direccion) {
+            · {{ c.direccion }}
+            }</p>
+          <div class="cancha-datos">
+            <span>{{ c.tipo }}</span>
+            <span>$ {{ c.precioHora | number: '1.0-0' }} / hora</span>
+          </div>
+        </div>
+        <div class="cancha-acciones">
+          <label class="secondary-button cambiar-foto-cancha">
+            <input type="file" accept="image/jpeg,image/png" [disabled]="subiendoImagenId === c.id" (change)="cambiarImagen(c, $event)" />
+            {{ subiendoImagenId === c.id ? 'Subiendo...' : (c.imagen ? 'Cambiar foto' : 'Agregar foto') }}
+          </label>
+          <button type="button" class="secondary-button" (click)="editar(c)">Editar</button>
+          <button type="button" class="primary-button" (click)="agendaCancha=c">Días y horarios</button>
+          @if(c.activa){<a [routerLink]="['/canchas', c.id]" class="secondary-button">Ver</a>}
+          <button
+                  type="button"
+                  class="danger-button"
+                  [disabled]="eliminandoId === c.id"
+                  (click)="cambiarPublicacion(c)"
+          >
+            {{ eliminandoId === c.id ? 'Guardando…' : (c.activa?'Pausar':'Publicar') }}
+          </button>
+        </div>
+      </article>
+      }
+    </div>
     }
 
     @if (!cargandoCanchas && !errorCanchas && canchas.length === 0) {
-      <div class="empty-state">
-        <span class="empty-state-icon">🏟️</span>
-        <h3>Todavía no publicaste canchas</h3>
-        <p>Creá tu primera publicación para empezar a recibir reservas.</p>
-        <button type="button" class="primary-button" (click)="alternarFormulario()">Publicar una cancha</button>
-      </div>
+    <div class="empty-state">
+      <span class="empty-state-icon">🏟️</span>
+      <h3>Todavía no publicaste canchas</h3>
+      <p>Creá tu primera publicación para empezar a recibir reservas.</p>
+      <button type="button" class="primary-button" (click)="alternarFormulario()">Publicar una cancha</button>
+    </div>
     }
   </section>
 
@@ -257,67 +261,67 @@
 
     <div class="reserva-filtros"><label>Estado<select [(ngModel)]="filtroEstado"><option value="">Todos</option><option value="PENDIENTE">Pendientes</option><option value="CONFIRMADA">Confirmadas</option><option value="CANCELADA">Canceladas</option></select></label><label>Cancha<select [(ngModel)]="filtroCancha"><option value="">Todas</option>@for(c of canchas;track c.id){<option [value]="c.id">{{c.nombre}}</option>}</select></label><label>Fecha<input type="date" [(ngModel)]="filtroFecha"></label><button type="button" class="secondary-button" (click)="filtroEstado='';filtroCancha='';filtroFecha=''">Limpiar</button></div>
     @if (cargandoReservas) {
-      <div class="estado-carga" aria-live="polite">
-        <span class="spinner"></span>
-        <p>Cargando reservas...</p>
-      </div>
+    <div class="estado-carga" aria-live="polite">
+      <span class="spinner"></span>
+      <p>Cargando reservas...</p>
+    </div>
     }
 
     @if (errorReservas && !cargandoReservas) {
-      <div class="empty-state estado-error" role="alert">
-        <span class="empty-state-icon">!</span>
-        <h3>No pudimos cargar las reservas</h3>
-        <p>{{ errorReservas }}</p>
-        <button type="button" class="secondary-button" (click)="cargarReservas()">Reintentar</button>
-      </div>
+    <div class="empty-state estado-error" role="alert">
+      <span class="empty-state-icon">!</span>
+      <h3>No pudimos cargar las reservas</h3>
+      <p>{{ errorReservas }}</p>
+      <button type="button" class="secondary-button" (click)="cargarReservas()">Reintentar</button>
+    </div>
     }
 
     @if (!cargandoReservas && !errorReservas && reservas.length > 0) {
-      <div class="reservas-lista">
-        @for (r of reservasFiltradas; track r.id) {
-          <article class="surface-card tarjeta-reserva">
-            <span class="reserva-avatar">{{ r.userNombre?.charAt(0)?.toUpperCase() || 'J' }}</span>
-            <div class="reserva-info">
-              <strong>{{ r.userNombre }}</strong>
-              <span>reservó <b>{{ r.canchaNombre }}</b></span>
-            </div>
-            <div class="reserva-horario">
-              <strong>{{ r.fecha }}</strong>
-              <span>{{ r.horaInicio }} a {{ r.horaFin }}</span>
-            </div>
-            <div class="estados-reserva">
-              <span class="estado" [ngClass]="r.estado">{{ reservaVencida(r)?'Vencida':etiquetaEstado(r.estado) }}</span>
-              @if (r.pagoRequerido) {
-                <span class="estado-pago" [ngClass]="r.estadoPago || 'SIN_INICIAR'">
+    <div class="reservas-lista">
+      @for (r of reservasFiltradas; track r.id) {
+      <article class="surface-card tarjeta-reserva">
+        <span class="reserva-avatar">{{ r.userNombre?.charAt(0)?.toUpperCase() || 'J' }}</span>
+        <div class="reserva-info">
+          <strong>{{ r.userNombre }}</strong>
+          <span>reservó <b>{{ r.canchaNombre }}</b></span>
+        </div>
+        <div class="reserva-horario">
+          <strong>{{ r.fecha }}</strong>
+          <span>{{ r.horaInicio }} a {{ r.horaFin }}</span>
+        </div>
+        <div class="estados-reserva">
+          <span class="estado" [ngClass]="r.estado">{{ reservaVencida(r)?'Vencida':etiquetaEstado(r.estado) }}</span>
+          @if (r.pagoRequerido) {
+          <span class="estado-pago" [ngClass]="r.estadoPago || 'SIN_INICIAR'">
                   {{ etiquetaEstadoPago(r.estadoPago) }}
                 </span>
-              }
-            </div>
-            <button type="button" class="secondary-button" (click)="reservaSeleccionada=r.id">Ver reserva y jugador →</button>
-            @if (r.estado === 'PENDIENTE'&&!reservaVencida(r)) {
-              <div class="acciones-reserva">
-                @if (!r.pagoRequerido) {
-                  <button
-                    type="button"
-                    class="confirmar-reserva"
-                    [disabled]="procesandoReservaId === r.id"
-                    (click)="confirmarReserva(r)"
-                  >Confirmar</button>
-                }
-                <button type="button" class="rechazar-reserva" [disabled]="procesandoReservaId === r.id" (click)="rechazarReserva(r)">Rechazar</button>
-              </div>
-            }
-          </article>
+          }
+        </div>
+        <button type="button" class="secondary-button" (click)="reservaSeleccionada=r.id">Ver reserva y jugador →</button>
+        @if (r.estado === 'PENDIENTE'&&!reservaVencida(r)) {
+        <div class="acciones-reserva">
+          @if (!r.pagoRequerido) {
+          <button
+                  type="button"
+                  class="confirmar-reserva"
+                  [disabled]="procesandoReservaId === r.id"
+                  (click)="confirmarReserva(r)"
+          >Confirmar</button>
+          }
+          <button type="button" class="rechazar-reserva" [disabled]="procesandoReservaId === r.id" (click)="rechazarReserva(r)">Rechazar</button>
+        </div>
         }
-      </div>
+      </article>
+      }
+    </div>
     }
 
     @if (!cargandoReservas && !errorReservas && reservasFiltradas.length === 0) {
-      <div class="empty-state compacta">
-        <span class="empty-state-icon">📅</span>
-        <h3>Aún no recibiste reservas</h3>
-        <p>Las nuevas reservas aparecerán en esta sección.</p>
-      </div>
+    <div class="empty-state compacta">
+      <span class="empty-state-icon">📅</span>
+      <h3>Aún no recibiste reservas</h3>
+      <p>Las nuevas reservas aparecerán en esta sección.</p>
+    </div>
     }
   </section>
 </section>

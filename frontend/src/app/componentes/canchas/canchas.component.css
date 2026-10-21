@@ -386,3 +386,14 @@
 }
 
 .filtros{grid-template-columns:2fr 1fr 1fr 1fr}.filtros input{width:100%;padding:12px;border:1px solid var(--borde);border-radius:10px}.owner-card{text-decoration:none;color:inherit;display:block}.text-button{border:0;background:transparent;color:var(--naranja-oscuro);font-weight:700;cursor:pointer}@media(max-width:900px){.filtros{grid-template-columns:1fr 1fr}}@media(max-width:540px){.filtros{grid-template-columns:1fr}}
+
+/* Etapa 1b: una tarjeta por complejo (actualmente, uno por propietario). */
+.accion-cancha {
+  color: var(--naranja-oscuro);
+  font-weight: 750;
+  font-size: 0.75rem;
+}
+.tarjeta-cancha:focus-visible {
+  outline: 3px solid var(--naranja);
+  outline-offset: 3px;
+}

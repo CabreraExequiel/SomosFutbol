@@ -42,6 +42,10 @@ public class User implements UserDetails {
     @Column(length = 500)
     private String avatar;
 
+    // Un dueño administra un complejo; es independiente de su nombre personal.
+    @Column(name = "nombre_complejo", length = 150)
+    private String nombreComplejo;
+
     @Column(name = "cbu_cvu", length = 22)
     private String cbuCvu;
 

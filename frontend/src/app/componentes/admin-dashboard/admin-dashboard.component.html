@@ -1,0 +1,55 @@
+<section class="page-container sf-admin">
+    <header class="page-header sf-admin-header">
+        <div>
+            <span class="page-eyebrow">Somos Fútbol · Administración</span>
+            <h1 class="page-title">Panel de administración</h1>
+            <p class="page-subtitle">Vista general de la plataforma. Acceso exclusivo para administradores.</p>
+        </div>
+        <a routerLink="/inicio" class="secondary-button">Volver a la comunidad</a>
+    </header>
+
+    @if (cargando()) {
+    <div role="status" class="surface-card sf-admin-message">Cargando resumen administrativo...</div>
+    }
+    @if (error()) {
+    <div role="alert" class="app-alert error sf-admin-alert">
+        <p>{{ error() }}</p>
+        <button type="button" class="secondary-button" (click)="cargar()">Reintentar</button>
+    </div>
+    }
+
+    @if (resumen(); as datos) {
+    <div class="sf-admin-stats">
+        <article class="surface-card sf-admin-stat"><span>Usuarios registrados</span><strong>{{ datos.usuarios }}</strong></article>
+        <article class="surface-card sf-admin-stat"><span>Canchas creadas</span><strong>{{ datos.canchas }}</strong></article>
+        <article class="surface-card sf-admin-stat"><span>Reservas totales</span><strong>{{ datos.reservas }}</strong></article>
+        <article class="surface-card sf-admin-stat"><span>Publicaciones</span><strong>{{ datos.publicaciones }}</strong></article>
+    </div>
+
+    <section class="surface-card sf-admin-section">
+        <div class="sf-admin-section-title">
+            <div><span class="page-eyebrow">Cuentas</span><h2>Últimos usuarios registrados</h2></div>
+            <small>Solo lectura · Últimas 8 cuentas</small>
+        </div>
+        <div class="sf-admin-table-wrapper">
+            <table class="sf-admin-table">
+                <thead><tr><th scope="col">Usuario</th><th scope="col">Email</th><th scope="col">Rol</th></tr></thead>
+                <tbody>
+                @for (usuario of datos.ultimosUsuarios; track usuario.id) {
+                <tr><td>{{ usuario.nombre }}</td><td>{{ usuario.email }}</td><td><span class="sf-admin-role">{{ usuario.rol }}</span></td></tr>
+                } @empty {
+                <tr><td colspan="3">Todavía no hay usuarios registrados.</td></tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="surface-card sf-admin-section sf-admin-next">
+        <span class="page-eyebrow">Próxima implementación</span>
+        <h2>Bitácora de eventos y errores</h2>
+        <p>El acceso administrativo ya está preparado. En la siguiente etapa incorporaremos los errores de Angular y Spring Boot, códigos de referencia y filtros de soporte.</p>
+        <p class="sf-admin-note">Los datos de este panel son reales, pero esta versión no permite editar, suspender ni eliminar usuarios.</p>
+    </section>
+    }
+</section>

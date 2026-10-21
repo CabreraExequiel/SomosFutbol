@@ -21,4 +21,8 @@ public class UserUpdateRequest {
     @Size(max = 100, message = "La ciudad no puede superar los 100 caracteres")
     private String ciudad;
 
+    @Size(min = 2, max = 150, message = "El nombre del complejo debe tener entre 2 y 150 caracteres")
+    @Pattern(regexp = ".*\\S.*", message = "El nombre del complejo no puede estar vacío")
+    private String nombreComplejo;
+
 }
