@@ -38,6 +38,7 @@ export const routes: Routes = [
       { path: 'amigos', title:'Amigos | Somos Fútbol', loadComponent: () => import('./componentes/amigos/amigos.component').then(m => m.AmigosComponent) },
       { path: 'notificaciones', title:'Notificaciones | Somos Fútbol', loadComponent: () => import('./componentes/notificaciones/notificaciones.component').then(m => m.NotificacionesComponent) },
       { path: 'admin', title: 'Administración | Somos Fútbol', loadComponent: () => import('./componentes/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent), canActivate: [adminGuard] },
+      { path: 'admin/bitacora', title: 'Bitácora | Somos Fútbol', loadComponent: () => import('./componentes/admin-bitacora/admin-bitacora.component').then(m => m.AdminBitacoraComponent), canActivate: [adminGuard] },
       { path: 'mis-canchas', title:'Panel de dueño | Somos Fútbol', loadComponent: () => import('./componentes/dashboard-dueno/dashboard-dueno.component').then(m => m.DashboardDuenoComponent), canActivate: [duenoGuard] },
     ],
   },

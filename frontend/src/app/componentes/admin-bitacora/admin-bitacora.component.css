@@ -1,0 +1,43 @@
+.sf-bitacora { max-width: 1100px; margin: 0 auto; }
+.sf-bitacora-header { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:1rem; }
+.sf-bitacora-filtros { padding:1.2rem; display:flex; align-items:flex-end; flex-wrap:wrap; gap:1rem; margin:1rem 0; }
+.sf-bitacora-filtros label { display:grid; gap:.4rem; flex:1 1 180px; font-weight:600; }
+.sf-bitacora-filtros select { border:1px solid #ced9d1; background:var(--surface,#fff); color:var(--text,#15291e); border-radius:9px; padding:.65rem; }
+.sf-bitacora-contador { margin:1.25rem 0; font-size:.9rem; opacity:.8; }
+.sf-bitacora-lista { display:grid; gap:1rem; }
+.sf-bitacora-evento { padding:1.2rem 1.5rem; border-left:4px solid #1e8b50; overflow-wrap:anywhere; }
+.sf-bitacora-error { border-left-color:#c04c39; }
+.sf-bitacora-evento-top { display:flex; align-items:center; justify-content:space-between; gap:.8rem; flex-wrap:wrap; }
+.sf-bitacora-etiqueta { font-size:.75rem; font-weight:700; color:var(--text-muted,#64748b); }
+.sf-bitacora-evento p { margin:.55rem 0 .9rem; }
+.sf-bitacora-meta { display:flex; gap:.4rem 1.2rem; flex-wrap:wrap; font-size:.8rem; color:var(--text-muted,#64748b); margin-bottom:.6rem; }
+.sf-bitacora-codigo { font-size:.76rem; color:var(--text-muted,#64748b); user-select:all; }
+.sf-bitacora-mensaje { padding:1.35rem; }
+.sf-bitacora-paginacion { display:flex; align-items:center; justify-content:center; gap:1rem; flex-wrap:wrap; margin:1.5rem 0; }
+.sf-bitacora-nota { font-size:.85rem; color:var(--text-muted,#64748b); }
+
+/* Tarjetas accesibles mediante mouse, teclado y táctil. */
+.sf-bitacora-abrir { display:block; width:100%; text-align:left; cursor:pointer;
+  font:inherit; color:inherit; background:var(--surface,#fff); }
+.sf-bitacora-abrir:hover { border-top-color:#80af92; background:#f9fdfa; }
+.sf-bitacora-abrir:focus-visible { outline:3px solid #16854a; outline-offset:3px; }
+.sf-bitacora-pie { display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; }
+.sf-bitacora-ver { font-weight:700; color:#167446; }
+.sf-bitacora-dialog { border:0; border-radius:16px; width:min(720px,calc(100% - 2rem));
+  max-height:min(86vh,900px); overflow-y:auto; padding:clamp(1rem,3vw,2rem);
+  box-shadow:0 22px 80px #0004; color:var(--text,#15291e); background:var(--surface,#fff); }
+.sf-bitacora-dialog::backdrop { background:rgba(9,23,17,.7); }
+.sf-dialog-cabecera { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; }
+.sf-dialog-cabecera h2 { margin:.35rem 0 .5rem; }
+.sf-dialog-cerrar { border:0; border-radius:8px; font-size:1.8rem; line-height:1;
+  background:transparent; cursor:pointer; padding:.15rem .55rem; color:inherit; }
+.sf-dialog-cerrar:focus-visible { outline:3px solid #16854a; }
+.sf-dialog-datos { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem; margin:1rem 0 1.4rem; }
+.sf-dialog-datos > div { background:#f4f7f5; border-radius:8px; padding:.75rem; min-width:0; }
+.sf-dialog-datos dt { font-size:.8rem; color:#526459; font-weight:700; margin-bottom:.3rem; }
+.sf-dialog-datos dd { margin:0; font-size:.95rem; overflow-wrap:anywhere; }
+.sf-dialog-codigo { user-select:all; font-family:monospace; font-size:.82rem!important; }
+.sf-dialog-diagnostico { border-left:4px solid #e39b38; padding:.8rem 1rem; background:#fff9e9; border-radius:6px; }
+.sf-dialog-aviso { font-size:.85rem; color:#526459; }
+.sf-dialog-acciones { display:flex; justify-content:flex-end; margin-top:1.4rem; }
+@media(max-width:580px){.sf-dialog-datos{grid-template-columns:1fr}}

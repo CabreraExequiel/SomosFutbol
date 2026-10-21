@@ -33,6 +33,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final BitacoraService bitacora;
 
     @Value("${app.legal.terms-version}")
     private String termsVersion;
@@ -101,6 +102,7 @@ public class AuthService {
         user.setPrivacyVersion(privacyVersion);
 
         userRepository.save(user);
+        bitacora.evento("USUARIO_REGISTRADO", "USUARIO", user.getId(), user.getId());
 
         // Envío de bienvenida desactivado
         // mailService.enviarBienvenida(user);

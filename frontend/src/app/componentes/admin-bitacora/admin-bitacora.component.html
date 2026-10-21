@@ -1,0 +1,110 @@
+<section class="page-container sf-bitacora">
+    <header class="page-header sf-bitacora-header">
+        <div>
+            <span class="page-eyebrow">Administración · Soporte técnico</span>
+            <h1 class="page-title">Bitácora de errores y eventos</h1>
+            <p class="page-subtitle">Diagnósticos y acciones importantes, sin exponer contraseñas ni contenido privado.</p>
+        </div>
+        <a routerLink="/admin" class="secondary-button">← Volver al panel</a>
+    </header>
+
+    <form class="surface-card sf-bitacora-filtros" (ngSubmit)="cargar(0)">
+        <label>Gravedad
+            <select name="nivel" [(ngModel)]="nivel">
+                <option value="">Todas</option><option value="ERROR">Errores</option><option value="INFO">Eventos</option>
+            </select>
+        </label>
+        <label>Origen
+            <select name="origen" [(ngModel)]="origen">
+                <option value="">Todos</option><option value="BACKEND">Spring Boot</option>
+                <option value="FRONTEND">Angular</option><option value="AUDITORIA">Auditoría</option>
+            </select>
+        </label>
+        <button type="submit" class="primary-button">Filtrar</button>
+    </form>
+    @if (cargando()) { <div role="status" class="surface-card sf-bitacora-mensaje">Consultando bitácora…</div> }
+    @if (error()) {
+    <div role="alert" class="app-alert error sf-bitacora-mensaje">{{ error() }}
+        <button type="button" class="secondary-button" (click)="cargar(0)">Reintentar</button>
+    </div>
+    }
+    @if (pagina(); as datos) {
+    <div class="sf-bitacora-contador">{{ datos.totalElements }} registros encontrados</div>
+    <div class="sf-bitacora-lista">
+        @for (evento of datos.content; track evento.id) {
+        <button type="button" class="surface-card sf-bitacora-evento sf-bitacora-abrir"
+                [class.sf-bitacora-error]="evento.nivel === 'ERROR'"
+                [attr.aria-label]="'Ver detalle de ' + evento.tipo.replaceAll('_', ' ') + ', ' + evento.codigo"
+                (click)="abrir(evento)">
+            <div class="sf-bitacora-evento-top">
+                <strong>{{ evento.tipo.replaceAll('_', ' ') }}</strong>
+                <span class="sf-bitacora-etiqueta">{{ evento.nivel }}</span>
+            </div>
+            <p>{{ evento.descripcion }}</p>
+            <div class="sf-bitacora-meta">
+                <span>{{ evento.fecha | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+                <span>{{ evento.origen }} · {{ evento.ambiente }}</span>
+                @if (evento.ruta) { <span>Ruta: {{ evento.ruta }}</span> }
+                @if (evento.referenciaTipo) {
+                <span>{{ evento.referenciaTipo }} #{{ evento.referenciaId }}</span>
+                }
+                @if (evento.actorId) { <span>Usuario #{{ evento.actorId }}</span> }
+            </div>
+            <div class="sf-bitacora-pie"><code class="sf-bitacora-codigo">{{ evento.codigo }}</code>
+                <span class="sf-bitacora-ver">Ver detalle →</span></div>
+        </button>
+        } @empty {
+        <div class="surface-card sf-bitacora-mensaje">Todavía no hay registros con estos filtros. Probá crear una cancha o una reserva en local.</div>
+        }
+    </div>
+    <nav class="sf-bitacora-paginacion" aria-label="Páginas de la bitácora">
+        <button type="button" class="secondary-button" [disabled]="datos.number === 0" (click)="cargar(datos.number - 1)">← Anterior</button>
+        <span>Página {{ datos.number + 1 }} de {{ datos.totalPages || 1 }}</span>
+        <button type="button" class="secondary-button" [disabled]="datos.number + 1 >= datos.totalPages" (click)="cargar(datos.number + 1)">Siguiente →</button>
+    </nav>
+    }
+    <dialog #detalleDialog class="sf-bitacora-dialog" aria-labelledby="sf-bitacora-titulo"
+            (close)="seleccionado.set(null)" (cancel)="seleccionado.set(null)">
+        @if (seleccionado(); as e) {
+        <div class="sf-dialog-cabecera">
+            <div>
+                <span class="page-eyebrow">Diagnóstico · {{ e.origen }} · {{ e.ambiente }}</span>
+                <h2 id="sf-bitacora-titulo">{{ e.tipo.replaceAll('_', ' ') }}</h2>
+            </div>
+            <button type="button" class="sf-dialog-cerrar" aria-label="Cerrar detalle" (click)="cerrar()">×</button>
+        </div>
+        <p>{{ e.descripcion }}</p>
+        <dl class="sf-dialog-datos">
+            <div><dt>Fecha y hora</dt><dd>{{ e.fecha | date:'dd/MM/yyyy HH:mm:ss' }}</dd></div>
+            <div><dt>Gravedad</dt><dd>{{ e.nivel }}</dd></div>
+            <div><dt>Código de referencia</dt><dd class="sf-dialog-codigo">{{ e.codigo }}</dd></div>
+            <div><dt>Ruta de API o pantalla</dt><dd>{{ e.ruta || 'No disponible' }}</dd></div>
+            @if (e.referenciaTipo) { <div><dt>Registro relacionado</dt><dd>{{ e.referenciaTipo }} #{{ e.referenciaId }}</dd></div> }
+            @if (e.actorId) { <div><dt>Usuario relacionado</dt><dd>#{{ e.actorId }}</dd></div> }
+        </dl>
+        @if (e.nivel === 'ERROR') {
+        <h3>Localización del error</h3>
+        <dl class="sf-dialog-datos">
+            <div><dt>Función o método detectado</dt>
+                <dd><code>{{ e.funcionOrigen || 'No identificado en este registro' }}</code></dd></div>
+            <div><dt>Clase o componente</dt><dd><code>{{ e.claseOrigen || 'No identificada' }}</code></dd></div>
+            <div><dt>Archivo / línea</dt><dd><code>{{ e.archivoOrigen || 'No disponible' }}@if (e.lineaOrigen) { :{{ e.lineaOrigen }} }</code></dd></div>
+            @if (e.sqlState || e.codigoSql) {
+            <div><dt>Error de base de datos</dt>
+                <dd>SQLState: {{ e.sqlState || '—' }} · Código: {{ e.codigoSql ?? '—' }}</dd></div>
+            }
+        </dl>
+        <h3>Diagnóstico orientativo</h3>
+        <p class="sf-dialog-diagnostico">{{ e.causaProbable || 'Registro anterior a esta mejora: no se almacenó el origen técnico. Consultá la consola de Spring Boot o los logs externos usando la fecha y el código.' }}</p>
+        <p class="sf-dialog-aviso">La función indicada corresponde a un marco detectado en la excepción, no necesariamente a la causa lógica del problema. En Angular el nombre es orientativo y puede faltar en versiones compiladas.</p>
+        } @else {
+        <p class="sf-dialog-aviso">Este es un evento de auditoría, no una excepción de software.</p>
+        }
+        <div class="sf-dialog-acciones"><button type="button" class="primary-button" (click)="cerrar()">Cerrar detalle</button></div>
+        }
+    </dialog>
+    <p class="sf-bitacora-nota">Los errores de infraestructura o base de datos deben revisarse también en los logs de Render y Spring Boot, porque no siempre es posible guardarlos en MySQL.</p>
+</section>
+
+
+

@@ -1,10 +1,10 @@
 package com.canchasya.api.repository;
 import com.canchasya.api.model.OAuthEstado;
 import org.springframework.data.jpa.repository.*;
-import jakarta.persistence.LockModeType;
 import java.time.Instant;
+import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 public interface OAuthEstadoRepository extends JpaRepository<OAuthEstado,String> {
- @Lock(LockModeType.PESSIMISTIC_WRITE) @Query("select e from OAuthEstado e where e.hash=:hash") Optional<OAuthEstado> bloquear(String hash);
+ @Query(value="SELECT e.* FROM oauth_estados e WHERE e.hash=:hash FOR UPDATE", nativeQuery=true) Optional<OAuthEstado> bloquear(@Param("hash") String hash);
  void deleteByExpiresAtBefore(Instant ahora);
 }

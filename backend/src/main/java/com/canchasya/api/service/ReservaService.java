@@ -38,6 +38,7 @@ public class ReservaService {
     private final DisponibilidadService disponibilidadService;
     private final Clock clock;
     private final MercadoPagoCuentaService cuentasMp;
+    private final BitacoraService bitacora;
 
     @Value("${app.payments.enabled:false}")
     private boolean paymentsEnabled;
@@ -112,6 +113,7 @@ public class ReservaService {
         reserva.setExpiresAt(limite.isBefore(inicio)?limite:inicio);
 
         reservaRepository.save(reserva);
+        bitacora.evento("RESERVA_CREADA", "RESERVA", reserva.getId(), user.getId());
         notificacionService.crear(
                 cancha.getDueno(),
                 user,
@@ -131,7 +133,7 @@ public class ReservaService {
     public ReservaDetalleResponse detalle(Long id, User user) {
         Reserva reserva=obtener(id);validarAcceso(reserva,user);
         return new ReservaDetalleResponse(respuesta(reserva),UserResponse.fromEntity(reserva.getUser()),
-            reserva.getCancha().getDireccion(),reserva.getCancha().getCiudad().getNombre());
+                reserva.getCancha().getDireccion(),reserva.getCancha().getCiudad().getNombre());
     }
 
     public ReservaResponse ver(Long id, User user) {
@@ -191,6 +193,7 @@ public class ReservaService {
         if (reserva.getEstado()==EstadoReserva.CONFIRMADA) throw new ApiException("Una reserva confirmada requiere coordinar la cancelación y el reintegro con el dueño",HttpStatus.CONFLICT);
         reserva.setEstado(EstadoReserva.CANCELADA);
         reservaRepository.save(reserva);
+        bitacora.evento("RESERVA_CANCELADA", "RESERVA", reserva.getId(), user.getId());
 
         User destinatario = reserva.getUser().getId().equals(user.getId())
                 ? reserva.getCancha().getDueno()
@@ -237,6 +240,7 @@ public class ReservaService {
 
         reserva.setEstado(EstadoReserva.CONFIRMADA);
         reservaRepository.save(reserva);
+        bitacora.evento("RESERVA_CONFIRMADA", "RESERVA", reserva.getId(), user.getId());
         notificacionService.crear(
                 reserva.getUser(),
                 user,
@@ -251,7 +255,7 @@ public class ReservaService {
 
     private BigDecimal calcularMonto(BigDecimal precioHora, LocalTime inicio, LocalTime fin) {
         return precioHora.multiply(BigDecimal.valueOf(Duration.between(inicio,fin).toMinutes()))
-            .divide(BigDecimal.valueOf(60),2,RoundingMode.HALF_UP);
+                .divide(BigDecimal.valueOf(60),2,RoundingMode.HALF_UP);
     }
 
     private Reserva obtener(Long id) {

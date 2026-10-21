@@ -31,6 +31,7 @@ public class CanchaService {
     private final CiudadRepository ciudadRepository;
     private final HorarioDisponibleRepository horarioRepository;
     private final ArchivoService archivoService;
+    private final BitacoraService bitacora;
 
     public List<CanchaResponse> buscar(Long ciudadId, String tipo) {
         List<Cancha> canchas;
@@ -97,6 +98,7 @@ public class CanchaService {
         aplicarDatos(cancha, request);
 
         canchaRepository.save(cancha);
+        bitacora.evento("CANCHA_CREADA", "CANCHA", cancha.getId(), dueno.getId());
         return CanchaResponse.fromEntity(cancha);
     }
 
@@ -112,6 +114,7 @@ public class CanchaService {
         aplicarDatos(cancha, request);
 
         canchaRepository.save(cancha);
+        bitacora.evento("CANCHA_EDITADA", "CANCHA", cancha.getId(), dueno.getId());
         return CanchaResponse.fromEntity(cancha);
     }
 
@@ -121,6 +124,7 @@ public class CanchaService {
         validarPropietario(cancha, dueno);
         cancha.setActiva(false);
         canchaRepository.save(cancha);
+        bitacora.evento("CANCHA_DESACTIVADA", "CANCHA", cancha.getId(), dueno.getId());
     }
 
     @Transactional

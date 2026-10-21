@@ -2,11 +2,9 @@ package com.canchasya.api.repository;
 
 import com.canchasya.api.model.Pago;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import jakarta.persistence.LockModeType;
 
 import java.util.Collection;
 import java.util.List;
@@ -20,11 +18,10 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
 
     List<Pago> findByReservaIdIn(Collection<Long> reservaIds);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select p from Pago p where p.id = :id")
+    // Mantiene el bloqueo sin delegar la clausula FOR UPDATE a Hibernate.
+    @Query(value = "SELECT p.* FROM pagos p WHERE p.id = :id FOR UPDATE", nativeQuery = true)
     Optional<Pago> findByIdForUpdate(@Param("id") Long id);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select p from Pago p where p.reserva.id = :reservaId")
+    @Query(value = "SELECT p.* FROM pagos p WHERE p.reserva_id = :reservaId FOR UPDATE", nativeQuery = true)
     Optional<Pago> findByReservaIdForUpdate(@Param("reservaId") Long reservaId);
 }

@@ -2,6 +2,9 @@ package com.canchasya.api.config;
 
 import com.canchasya.api.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
+import com.canchasya.api.service.BitacoraService;
+import lombok.RequiredArgsConstructor;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +22,9 @@ import java.util.Map;
 
 @RestControllerAdvice
 @Slf4j
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+    private final BitacoraService bitacora;
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<Map<String, String>> handleApiException(ApiException ex) {
@@ -72,7 +77,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message","No tenés permiso para realizar esta operación"));
     }
     @ExceptionHandler({org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
-        org.springframework.web.bind.MissingServletRequestParameterException.class})
+            org.springframework.web.bind.MissingServletRequestParameterException.class})
     public ResponseEntity<Map<String,String>> handleBadParameter(Exception ex) {
         return ResponseEntity.badRequest().body(Map.of("message","Revisá los parámetros de la solicitud"));
     }
@@ -81,12 +86,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message","Recurso no encontrado"));
     }
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleGeneric(Exception ex) {
+    public ResponseEntity<Map<String, String>> handleGeneric(Exception ex, HttpServletRequest solicitud) {
 
-        log.error("Error no controlado", ex);
+        log.error("Error no controlado: {}", ex.getClass().getSimpleName());
 
         Map<String, String> body = new HashMap<>();
         body.put("message", "Ocurrió un error interno");
+        body.put("codigo", bitacora.errorServidor(ex, solicitud.getRequestURI()));
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
