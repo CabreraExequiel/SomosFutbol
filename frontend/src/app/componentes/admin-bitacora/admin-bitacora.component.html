@@ -7,7 +7,6 @@
         </div>
         <a routerLink="/admin" class="secondary-button">← Volver al panel</a>
     </header>
-
     <form class="surface-card sf-bitacora-filtros" (ngSubmit)="cargar(0)">
         <label>Gravedad
             <select name="nivel" [(ngModel)]="nivel">
@@ -38,7 +37,9 @@
                 (click)="abrir(evento)">
             <div class="sf-bitacora-evento-top">
                 <strong>{{ evento.tipo.replaceAll('_', ' ') }}</strong>
-                <span class="sf-bitacora-etiqueta">{{ evento.nivel }}</span>
+                <span class="sf-bitacora-etiqueta">{{ evento.nivel }}
+              @if (evento.nivel === 'ERROR') { · {{ etiquetaEstado(evento.estado) }} }
+            </span>
             </div>
             <p>{{ evento.descripcion }}</p>
             <div class="sf-bitacora-meta">
@@ -74,6 +75,20 @@
             <button type="button" class="sf-dialog-cerrar" aria-label="Cerrar detalle" (click)="cerrar()">×</button>
         </div>
         <p>{{ e.descripcion }}</p>
+        @if (e.nivel === 'ERROR') {
+        <section class="sf-gestion-incidente" aria-label="Gestión del incidente">
+            <strong>Estado: {{ etiquetaEstado(e.estado) }}</strong>
+            <div class="sf-gestion-botones">
+                <button type="button" class="secondary-button" [disabled]="guardando() || e.estado === 'PENDIENTE'"
+                        (click)="cambiarEstado('PENDIENTE')">Pendiente</button>
+                <button type="button" class="secondary-button" [disabled]="guardando() || e.estado === 'EN_INVESTIGACION'"
+                        (click)="cambiarEstado('EN_INVESTIGACION')">En investigación</button>
+                <button type="button" class="secondary-button" [disabled]="guardando() || e.estado === 'RESUELTO'"
+                        (click)="cambiarEstado('RESUELTO')">Resuelto</button>
+            </div>
+            @if (e.atendidoEn) { <small>Última gestión: {{ e.atendidoEn | date:'dd/MM/yyyy HH:mm' }} · Admin #{{ e.atendidoPorId }}</small> }
+        </section>
+        }
         <dl class="sf-dialog-datos">
             <div><dt>Fecha y hora</dt><dd>{{ e.fecha | date:'dd/MM/yyyy HH:mm:ss' }}</dd></div>
             <div><dt>Gravedad</dt><dd>{{ e.nivel }}</dd></div>
@@ -100,11 +115,12 @@
         } @else {
         <p class="sf-dialog-aviso">Este es un evento de auditoría, no una excepción de software.</p>
         }
-        <div class="sf-dialog-acciones"><button type="button" class="primary-button" (click)="cerrar()">Cerrar detalle</button></div>
+        @if (mensajeAccion()) { <p role="status" class="sf-dialog-estado">{{ mensajeAccion() }}</p> }
+        <div class="sf-dialog-acciones">
+            <button type="button" class="secondary-button" (click)="copiarDiagnostico()">Copiar diagnóstico</button>
+            <button type="button" class="primary-button" (click)="cerrar()">Cerrar detalle</button>
+        </div>
         }
     </dialog>
     <p class="sf-bitacora-nota">Los errores de infraestructura o base de datos deben revisarse también en los logs de Render y Spring Boot, porque no siempre es posible guardarlos en MySQL.</p>
 </section>
-
-
-

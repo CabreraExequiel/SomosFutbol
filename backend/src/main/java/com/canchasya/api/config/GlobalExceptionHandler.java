@@ -16,6 +16,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.HandlerMapping;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -92,7 +94,15 @@ public class GlobalExceptionHandler {
 
         Map<String, String> body = new HashMap<>();
         body.put("message", "Ocurrió un error interno");
-        body.put("codigo", bitacora.errorServidor(ex, solicitud.getRequestURI()));
+        // El método asignado a la URL es una pista: no implica que el error haya ocurrido dentro de él.
+        Object asignado = solicitud.getAttribute(HandlerMapping.BEST_MATCHING_HANDLER_ATTRIBUTE);
+        String claseRuta = null;
+        String metodoRuta = null;
+        if (asignado instanceof HandlerMethod handler) {
+            claseRuta = handler.getBeanType().getName();
+            metodoRuta = handler.getMethod().getName();
+        }
+        body.put("codigo", bitacora.errorServidor(ex, solicitud.getRequestURI(), claseRuta, metodoRuta));
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)

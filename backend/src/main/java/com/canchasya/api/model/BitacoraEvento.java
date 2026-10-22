@@ -70,4 +70,14 @@ public class BitacoraEvento {
 
     @Column(name = "codigo_sql")
     private Integer codigoSql;
+
+    // Gestión administrativa del incidente (sin modificar el diagnóstico original).
+    @Column(nullable = false, length = 20)
+    private String estado = "PENDIENTE";
+
+    @Column(name = "atendido_por_id")
+    private Long atendidoPorId;
+
+    @Column(name = "atendido_en")
+    private Instant atendidoEn;
 }

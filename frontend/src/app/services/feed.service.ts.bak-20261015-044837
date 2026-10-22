@@ -1,48 +1,65 @@
-import { Injectable } from '@angular/core';
+import { ErrorHandler, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
 
-@Injectable({ providedIn: 'root' })
-export class FeedService {
-  private apiUrl = `${environment.apiUrl}`;
+type Ubicacion = { funcion: string | null; clase: string | null; archivo: string | null; linea: number | null };
 
-  constructor(private http: HttpClient) {}
+@Injectable()
+export class FrontendErrorHandler implements ErrorHandler {
+  private ultimo = 0;
+  constructor(private readonly http: HttpClient, private readonly auth: AuthService) {}
 
-  listar(page=0, modo: 'para-vos' | 'recientes' | 'amigos' | 'cerca' = 'para-vos'): Observable<any> {
-    return this.http.get(`${this.apiUrl}/publicaciones`, {params: {page, size: 10, modo}});
+  handleError(error: unknown): void {
+    console.error(error);
+    if (!this.auth.estaLogueado()) return;
+    const ahora = Date.now();
+    if (ahora - this.ultimo < 15_000) return;
+    this.ultimo = ahora;
+    const original = this.errorOriginal(error);
+    const ubicacion = this.ubicacionDeAplicacion(original?.stack);
+    // NO se envía stack, mensaje, querystring, tokens ni contenido privado.
+    this.http.post(`${environment.apiUrl}/diagnostico/frontend`, {
+      nombre: (original?.name || 'Error').slice(0, 70),
+      ruta: window.location.pathname.slice(0, 180),
+      ...ubicacion,
+    }).subscribe({ error: () => { /* El diagnóstico nunca debe impedir usar la app. */ } });
   }
 
-  publicar(data: { contenido: string; imagen?: string; mencionadosIds?: number[] }): Observable<any> {
-    return this.http.post(`${this.apiUrl}/publicaciones`, data);
-  }
-
-
-  // Envía la descripción y el video al endpoint multipart de Spring Boot.
-  publicarVideo(
-    contenido: string,
-    video: File,
-    mencionadosIds: number[] = []
-  ): Observable<any> {
-    const formData = new FormData();
-    formData.append('contenido', contenido);
-    formData.append('video', video, video.name);
-    for (const id of mencionadosIds) {
-      formData.append('mencionadosIds', String(id));
+  private errorOriginal(error: unknown): Error | null {
+    if (error instanceof Error) {
+      const original = (error as Error & { ngOriginalError?: unknown }).ngOriginalError;
+      return original instanceof Error ? original : error;
     }
-    // No establecer manualmente Content-Type: el navegador agrega el boundary.
-    return this.http.post(`${this.apiUrl}/publicaciones/videos`, formData);
+    return null;
   }
 
-  eliminar(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/publicaciones/${id}`);
-  }
-
-  comentar(publicacionId: number, contenido: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/publicaciones/${publicacionId}/comentarios`, { contenido });
-  }
-
-  darLike(publicacionId: number): Observable<any> {
-    return this.http.post(`${this.apiUrl}/publicaciones/${publicacionId}/like`, {});
+  private ubicacionDeAplicacion(stack?: string): Ubicacion {
+    const vacio: Ubicacion = { funcion: null, clase: null, archivo: null, linea: null };
+    if (!stack) return vacio;
+    // Compatible con Chrome/Vite y Firefox; elegir un marco de código propio,
+    // no el primero de Angular, Zone o RxJS.
+    for (const lineaStack of stack.split('\n').slice(1, 30)) {
+      let nombre = '';
+      let ubicacion = '';
+      const chrome = lineaStack.match(/^\s*at\s+(?:(\S+)\s+\()?(.+?):(\d+):(\d+)\)?\s*$/);
+      const firefox = !chrome && lineaStack.match(/^([^@]+)@(.+?):(\d+):(\d+)$/);
+      const match = chrome || firefox;
+      if (!match) continue;
+      nombre = (match[1] || '').trim();
+      ubicacion = match[2].replace(/\\/g, '/');
+      const deApp = /(?:\.component\.ts|\.service\.ts|\.guard\.ts|\.interceptor\.ts|\/src\/app\/.*\.ts)(?:[?#]|$)/.test(ubicacion);
+      const metodoPropio = /(?:[A-Za-z0-9_$]+Component|[A-Za-z0-9_$]+Service)\.[A-Za-z_$][A-Za-z0-9_$]*/.test(nombre);
+      if (!deApp && !metodoPropio) continue;
+      const valido = /^[A-Za-z_$][A-Za-z0-9_$.]{0,119}$/.test(nombre);
+      const funcion = valido ? nombre : null;
+      const punto = funcion?.lastIndexOf('.') ?? -1;
+      const clase = punto > 0 ? funcion!.slice(0, punto) : null;
+      const fuente = ubicacion.split(/[?#]/)[0].split('/').pop() || '';
+      const archivo = deApp && /^[A-Za-z0-9_.-]{1,147}\.ts$/.test(fuente) ? fuente : null;
+      const linea = archivo ? Number(match[3]) : null;
+      if (funcion || archivo) return { funcion, clase, archivo, linea: linea && linea > 0 ? linea : null };
+    }
+    return vacio;
   }
 }

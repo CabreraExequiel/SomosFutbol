@@ -41,3 +41,13 @@
 .sf-dialog-aviso { font-size:.85rem; color:#526459; }
 .sf-dialog-acciones { display:flex; justify-content:flex-end; margin-top:1.4rem; }
 @media(max-width:580px){.sf-dialog-datos{grid-template-columns:1fr}}
+
+/* Gestión de incidentes y acciones en el modal. */
+.sf-gestion-incidente { display:grid; gap:.65rem; padding:1rem; border:1px solid #d9e8dc;
+  border-radius:10px; background:#f8fbf8; margin:1rem 0; }
+.sf-gestion-incidente strong { color:#174d30; }
+.sf-gestion-incidente small { color:#526459; }
+.sf-gestion-botones { display:flex; gap:.5rem; flex-wrap:wrap; }
+.sf-gestion-botones button:disabled { opacity:.48; cursor:default; }
+.sf-dialog-acciones { display:flex; gap:.7rem; flex-wrap:wrap; }
+.sf-dialog-estado { font-size:.9rem; color:#17693f; }

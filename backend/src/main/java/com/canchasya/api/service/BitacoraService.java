@@ -25,17 +25,32 @@ public class BitacoraService {
 
     /** Errores inesperados: guardar únicamente categoría, ruta sin query y código de referencia. */
     public String errorServidor(Exception exception, String ruta) {
+        return errorServidor(exception, ruta, null, null);
+    }
+
+    /**
+     * Los marcos de la excepción tienen prioridad. Si no hay marco propio, se guarda
+     * el controlador que recibió la petición, como CONTEXTO y no como origen probado.
+     */
+    public String errorServidor(Exception exception, String ruta,
+                                String claseRuta, String metodoRuta) {
         String codigo = codigo();
         BitacoraEvento evento = nuevo(codigo, "ERROR", "BACKEND", "EXCEPCION_NO_CONTROLADA",
                 "Error interno: " + claseSegura(exception.getClass().getSimpleName()));
         evento.setRuta(rutaSegura(ruta));
         evento.setClaseOrigen(claseSeguraNombre(exception.getClass().getName(), 180));
         StackTraceElement marco = primerMarcoDeAplicacion(exception);
+        boolean metodoSoloAsociado = false;
         if (marco != null) {
             evento.setClaseOrigen(claseSeguraNombre(marco.getClassName(), 180));
             evento.setFuncionOrigen(claseSeguraNombre(marco.getMethodName(), 120));
             evento.setArchivoOrigen(claseSeguraNombre(marco.getFileName(), 150));
             if (marco.getLineNumber() > 0) evento.setLineaOrigen(marco.getLineNumber());
+        } else if (claseRuta != null && claseRuta.startsWith("com.canchasya.api.controller.")
+                && metodoRuta != null) {
+            evento.setClaseOrigen(claseSeguraNombre(claseRuta, 180));
+            evento.setFuncionOrigen(claseSeguraNombre(metodoRuta, 120));
+            metodoSoloAsociado = true;
         }
         SQLException sql = causaSql(exception);
         if (sql != null) {
@@ -43,25 +58,45 @@ public class BitacoraService {
             if (estado != null && estado.matches("[A-Z0-9]{5}")) evento.setSqlState(estado);
             if (sql.getErrorCode() > 0) evento.setCodigoSql(sql.getErrorCode());
         }
-        evento.setCausaProbable(causaConocida(exception, sql));
+        String orientacion = causaConocida(exception, sql);
+        if (exception instanceof org.springframework.web.context.request.async.AsyncRequestNotUsableException) {
+            orientacion = "Respuesta HTTP inutilizable durante el envío: posible desconexión/cancelación del cliente. "
+                    + "No confirma un defecto del video ni del controlador.";
+        }
+        if (metodoSoloAsociado) {
+            orientacion += " La función mostrada atendió la ruta, NO es el lugar probado de la excepción.";
+        }
+        evento.setCausaProbable(orientacion);
         intentarGuardar(evento);
         return codigo;
     }
 
-    /** Error del navegador: NO recibir ni persistir stack traces, tokens o mensajes arbitrarios. */
-    public String errorFrontend(String nombreExcepcion, String ruta, String funcionInformada, Long actorId) {
+    /** Error del navegador: sólo campos estructurados, nunca stack ni mensaje arbitrario. */
+    public String errorFrontend(String nombreExcepcion, String ruta, String funcionInformada,
+                                String claseInformada, String archivoInformado, Integer lineaInformada,
+                                Long actorId) {
         String codigo = codigo();
         BitacoraEvento evento = nuevo(codigo, "ERROR", "FRONTEND", "ERROR_INTERFAZ",
                 "Excepción de interfaz: " + claseSegura(nombreExcepcion));
         evento.setActorId(actorId);
         evento.setRuta(rutaSegura(ruta));
-        // Dato informado por el navegador: orientativo, no verificado por el servidor.
-        if (funcionInformada != null && funcionInformada.matches("[A-Za-z_$][A-Za-z0-9_$.]{0,119}")) {
-            evento.setFuncionOrigen(funcionInformada);
+        // El navegador puede manipular estos campos: son pistas orientativas, no prueba fiable.
+        evento.setFuncionOrigen(simboloFrontend(funcionInformada, 120));
+        evento.setClaseOrigen(simboloFrontend(claseInformada, 180));
+        if (archivoInformado != null && archivoInformado.matches("[A-Za-z0-9_.-]{1,150}\\.ts")) {
+            evento.setArchivoOrigen(archivoInformado);
+        }
+        if (lineaInformada != null && lineaInformada > 0 && lineaInformada <= 1_000_000) {
+            evento.setLineaOrigen(lineaInformada);
         }
         evento.setCausaProbable("Error JavaScript no controlado; revisar consola y mapa de fuentes (source maps) de Angular.");
         intentarGuardar(evento);
         return codigo;
+    }
+
+    private static String simboloFrontend(String entrada, int max) {
+        if (entrada == null || entrada.isBlank() || entrada.length() > max) return null;
+        return entrada.matches("[A-Za-z_$][A-Za-z0-9_$.]{0,179}") ? entrada : null;
     }
 
     /** Se guarda DESPUÉS de confirmar la transacción de negocio, para no auditar rollbacks. */

@@ -6,6 +6,7 @@ import com.canchasya.api.repository.BitacoraRepository;
 import com.canchasya.api.service.BitacoraService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -18,6 +19,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequiredArgsConstructor
@@ -48,8 +52,32 @@ public class BitacoraController {
                                                          @AuthenticationPrincipal User usuario) {
         // Limitación adicional por usuario implementada en FrontendReportLimiter.
         frontendReportLimiter.permitir(usuario.getId());
-        String codigo = bitacora.errorFrontend(peticion.nombre(), peticion.ruta(), peticion.funcion(), usuario.getId());
+        String codigo = bitacora.errorFrontend(peticion.nombre(), peticion.ruta(), peticion.funcion(),
+                peticion.clase(), peticion.archivo(), peticion.linea(), usuario.getId());
         return ResponseEntity.accepted().cacheControl(CacheControl.noStore()).body(new CodigoRespuesta(codigo));
+    }
+
+    /** El cambio de estado no edita el diagnóstico ni afecta la transacción de negocio. */
+    @PatchMapping("/api/admin/bitacora/{id}/estado")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @Transactional
+    public ResponseEntity<EventoRespuesta> cambiarEstado(@PathVariable Long id,
+                                                         @Valid @RequestBody CambiarEstadoRequest solicitud,
+                                                         @AuthenticationPrincipal User administrador) {
+        BitacoraEvento evento = repository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Incidente inexistente"));
+        if (!"ERROR".equals(evento.getNivel())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Sólo se gestionan incidentes de error");
+        }
+        String estado = solicitud.estado();
+        if (!"PENDIENTE".equals(estado) && !"EN_INVESTIGACION".equals(estado) && !"RESUELTO".equals(estado)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Estado inválido");
+        }
+        evento.setEstado(estado);
+        evento.setAtendidoPorId(administrador.getId());
+        evento.setAtendidoEn(Instant.now());
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(EventoRespuesta.from(repository.saveAndFlush(evento)));
     }
 
     private final com.canchasya.api.service.FrontendReportLimiter frontendReportLimiter;
@@ -64,16 +92,20 @@ public class BitacoraController {
                                   String tipo, String codigo, String descripcion, Long actorId,
                                   String referenciaTipo, Long referenciaId, String ruta,
                                   String claseOrigen, String funcionOrigen, String archivoOrigen, Integer lineaOrigen,
-                                  String causaProbable, String sqlState, Integer codigoSql) {
+                                  String causaProbable, String sqlState, Integer codigoSql,
+                                  String estado, Long atendidoPorId, Instant atendidoEn) {
         static EventoRespuesta from(BitacoraEvento x) {
             return new EventoRespuesta(x.getId(), x.getFecha(), x.getNivel(), x.getOrigen(), x.getAmbiente(),
                     x.getTipo(), x.getCodigo(), x.getDescripcion(), x.getActorId(), x.getReferenciaTipo(),
                     x.getReferenciaId(), x.getRuta(),
                     x.getClaseOrigen(), x.getFuncionOrigen(), x.getArchivoOrigen(), x.getLineaOrigen(),
-                    x.getCausaProbable(), x.getSqlState(), x.getCodigoSql());
+                    x.getCausaProbable(), x.getSqlState(), x.getCodigoSql(),
+                    x.getEstado(), x.getAtendidoPorId(), x.getAtendidoEn());
         }
     }
     public record FrontendErrorRequest(@Size(max=70) String nombre, @Size(max=180) String ruta,
-                                       @Size(max=120) String funcion) { }
+                                       @Size(max=120) String funcion, @Size(max=180) String clase,
+                                       @Size(max=150) String archivo, Integer linea) { }
+    public record CambiarEstadoRequest(@NotBlank String estado) { }
     public record CodigoRespuesta(String codigo) { }
 }
