@@ -27,6 +27,10 @@ public class User implements UserDetails {
     @Column(nullable = false, unique = true)
     private String email;
 
+    // Identificador estable de Google: no confundir con el correo electrónico.
+    @Column(name = "google_sub", unique = true, length = 255)
+    private String googleSub;
+
     @Column(length = 30)
     private String telefono;
 

@@ -49,6 +49,18 @@ export class AuthService {
     );
   }
 
+  loginGoogle(credential: string, datos?: {
+    telefono?: string;
+    ciudad?: string;
+    role?: 'usuario' | 'dueno';
+    aceptaTerminos?: boolean;
+    aceptaPrivacidad?: boolean;
+  }): Observable<any> {
+    return this.http.post(`${this.authApiUrl}/google`, { credential, ...datos }).pipe(
+      tap((res: any) => this.guardarSesion(res))
+    );
+  }
+
   login(email: string, password: string): Observable<any> {
     return this.http.post(`${this.authApiUrl}/login`, { email, password }).pipe(
       tap((res: any) => this.guardarSesion(res))

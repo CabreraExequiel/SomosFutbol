@@ -163,6 +163,10 @@
       {{ cargando ? 'Creando cuenta...' : 'Crear cuenta' }}
     </button>
 
+    <div style="text-align:center;margin-top:16px;">O registrate con Google</div>
+    <p class="link">Para Google, completá teléfono, tipo de cuenta y aceptaciones; no necesitás crear contraseña.</p>
+    <app-google-login-button (credentialReceived)="onGoogleCredential($event)" (loadError)="error=$event" />
+
     <p class="link">
       ¿Ya tenés cuenta?
       <a routerLink="/login">Iniciá sesión</a>

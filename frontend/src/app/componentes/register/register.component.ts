@@ -3,10 +3,11 @@ import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { GoogleLoginButtonComponent } from '../google-login-button/google-login-button.component';
 
 @Component({
   selector: 'app-register',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, GoogleLoginButtonComponent],
   templateUrl: './register.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './register.component.css'
@@ -39,6 +40,34 @@ export class RegisterComponent {
     if (this.route.snapshot.queryParamMap.get('rol') === 'dueno') {
       this.role = 'dueno';
     }
+  }
+
+  onGoogleCredential(credential: string): void {
+    if (this.cargando) return;
+    this.error = '';
+    if (!this.telefono.trim()) {
+      this.error = 'Para registrarte con Google, completá tu teléfono.';
+      return;
+    }
+    if (!this.aceptaTerminos || !this.aceptaPrivacidad) {
+      this.error = 'Aceptá Términos y Privacidad para registrarte con Google.';
+      return;
+    }
+    this.cargando = true;
+    this.authService.loginGoogle(credential, {
+      telefono: this.telefono.trim(), ciudad: this.ciudad.trim(), role: this.role,
+      aceptaTerminos: this.aceptaTerminos, aceptaPrivacidad: this.aceptaPrivacidad
+    }).subscribe({
+      next: () => {
+        this.cargando = false;
+        const role = this.authService.getUsuario()?.role;
+        void this.router.navigateByUrl(role === 'dueno' ? '/mis-canchas' : '/inicio');
+      },
+      error: err => {
+        this.cargando = false;
+        this.error = err?.error?.message || 'No se pudo registrar con Google.';
+      }
+    });
   }
 
   onSubmit(): void {
