@@ -2,6 +2,7 @@ package com.canchasya.api.service;
 
 import com.canchasya.api.dto.auth.AuthResponse;
 import com.canchasya.api.dto.auth.GoogleAuthRequest;
+import com.canchasya.api.dto.auth.GoogleLinkRequest;
 import com.canchasya.api.dto.auth.UserResponse;
 import com.canchasya.api.exception.ApiException;
 import com.canchasya.api.model.Role;
@@ -13,6 +14,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -57,27 +59,7 @@ public class GoogleAuthService {
 
     @Transactional
     public AuthResponse autenticar(GoogleAuthRequest request) {
-        if (!configurado) {
-            throw new ApiException("Google no está configurado en este entorno", HttpStatus.SERVICE_UNAVAILABLE);
-        }
-        if (request.credential() == null || request.credential().length() > 15000) {
-            throw new ApiException("Credencial de Google inválida", HttpStatus.UNAUTHORIZED);
-        }
-
-        GoogleIdToken token;
-        try {
-            token = verifier.verify(request.credential());
-        } catch (GeneralSecurityException ex) {
-            throw new ApiException("Credencial de Google inválida", HttpStatus.UNAUTHORIZED);
-        } catch (IOException ex) {
-            // No se registra la credencial ni se expone la respuesta de Google al navegador.
-            throw new ApiException("No pudimos validar Google. Intentá nuevamente", HttpStatus.SERVICE_UNAVAILABLE);
-        }
-        if (token == null || token.getPayload() == null) {
-            throw new ApiException("Credencial de Google inválida o vencida", HttpStatus.UNAUTHORIZED);
-        }
-
-        GoogleIdToken.Payload payload = token.getPayload();
+        GoogleIdToken.Payload payload = verificarCredencial(request.credential());
         String sub = payload.getSubject();
         String email = payload.getEmail();
         if (!Boolean.TRUE.equals(payload.getEmailVerified()) || sub == null || sub.isBlank()
@@ -126,6 +108,72 @@ public class GoogleAuthService {
         user.setPrivacyVersion(privacyVersion);
         users.saveAndFlush(user);
         return sesion(user);
+    }
+
+    /**
+     * Vincula Google a la cuenta que ya demostró estar autenticada con un JWT.
+     * Requiere también la contraseña actual para impedir cambios de proveedor desde sesiones robadas.
+     * Nunca selecciona una cuenta de Somos Fútbol basándose solo en el email de Google.
+     */
+    @Transactional
+    public UserResponse vincular(GoogleLinkRequest request, User autenticado) {
+        if (autenticado == null) {
+            throw new ApiException("Necesitás iniciar sesión", HttpStatus.UNAUTHORIZED);
+        }
+        User actual = users.findByIdForUpdate(autenticado.getId())
+                .orElseThrow(() -> new ApiException("Cuenta no encontrada", HttpStatus.UNAUTHORIZED));
+        if (!encoder.matches(request.passwordActual(), actual.getPassword())) {
+            throw new ApiException("La contraseña actual es incorrecta", HttpStatus.UNAUTHORIZED);
+        }
+
+        GoogleIdToken.Payload payload = verificarCredencial(request.credential());
+        String sub = payload.getSubject();
+        String emailGoogle = payload.getEmail().trim().toLowerCase(Locale.ROOT);
+        if (!actual.getEmail().trim().equalsIgnoreCase(emailGoogle)) {
+            throw new ApiException("Elegí la cuenta de Google que utiliza el mismo correo que tu perfil", HttpStatus.CONFLICT);
+        }
+        if (actual.getGoogleSub() != null && !actual.getGoogleSub().isBlank()) {
+            if (actual.getGoogleSub().equals(sub)) return UserResponse.fromEntity(actual);
+            throw new ApiException("Esta cuenta ya tiene otra identidad de Google vinculada", HttpStatus.CONFLICT);
+        }
+        if (users.findByGoogleSub(sub).isPresent()) {
+            throw new ApiException("Esta cuenta de Google ya está vinculada a otro usuario", HttpStatus.CONFLICT);
+        }
+        actual.setGoogleSub(sub);
+        try {
+            users.saveAndFlush(actual); // El índice UNIQUE protege contra una vinculación simultánea.
+        } catch (DataIntegrityViolationException ex) {
+            throw new ApiException("Esta identidad de Google ya está vinculada a otra cuenta", HttpStatus.CONFLICT);
+        }
+        return UserResponse.fromEntity(actual);
+    }
+
+    private GoogleIdToken.Payload verificarCredencial(String credential) {
+        if (!configurado) {
+            throw new ApiException("Google no está configurado en este entorno", HttpStatus.SERVICE_UNAVAILABLE);
+        }
+        if (credential == null || credential.isBlank() || credential.length() > 15000) {
+            throw new ApiException("Credencial de Google inválida", HttpStatus.UNAUTHORIZED);
+        }
+        GoogleIdToken token;
+        try {
+            token = verifier.verify(credential);
+        } catch (GeneralSecurityException ex) {
+            throw new ApiException("Credencial de Google inválida", HttpStatus.UNAUTHORIZED);
+        } catch (IOException ex) {
+            throw new ApiException("No pudimos validar Google. Intentá nuevamente", HttpStatus.SERVICE_UNAVAILABLE);
+        }
+        if (token == null || token.getPayload() == null) {
+            throw new ApiException("Credencial de Google inválida o vencida", HttpStatus.UNAUTHORIZED);
+        }
+        GoogleIdToken.Payload payload = token.getPayload();
+        String sub = payload.getSubject();
+        String email = payload.getEmail();
+        if (!Boolean.TRUE.equals(payload.getEmailVerified()) || sub == null || sub.isBlank()
+                || sub.length() > 255 || email == null || email.isBlank() || email.length() > 150) {
+            throw new ApiException("La identidad de Google no tiene un correo verificado válido", HttpStatus.UNAUTHORIZED);
+        }
+        return payload;
     }
 
     private AuthResponse sesion(User user) {

@@ -7,6 +7,7 @@ import { CanchaService } from '../../services/cancha.service';
 import { Amistad, AmistadService } from '../../services/amistad.service';
 
 import { MercadoPagoCuentaService, EstadoMp } from '../../services/mercadopago-cuenta.service';
+import { GoogleLoginButtonComponent } from '../google-login-button/google-login-button.component';
 
 interface PerfilForm {
   name: string;
@@ -22,7 +23,7 @@ interface CuentaCobroForm {
 
 @Component({
     selector: 'app-perfil',
-    imports: [CommonModule, FormsModule, RouterLink],
+    imports: [CommonModule, FormsModule, RouterLink, GoogleLoginButtonComponent],
     templateUrl: './perfil.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './perfil.component.css'
@@ -33,6 +34,35 @@ export class PerfilComponent implements OnInit {
   cargarMp():void{this.mp.estado().subscribe({next:r=>this.estadoMp=r,error:()=>this.errorMp='No se pudo consultar la vinculación.'});}
   vincularMp():void{if(this.vinculando)return;this.vinculando=true;this.errorMp='';this.mp.vincular().subscribe({next:r=>{const url=new URL(r.url);if(url.origin!=='https://auth.mercadopago.com'){this.errorMp='Enlace de autorización inválido.';this.vinculando=false;return;}window.location.assign(r.url);},error:e=>{this.vinculando=false;this.errorMp=e.error?.message||'No se pudo iniciar la vinculación.';}});}
   usuario: Usuario | null = null;
+  claveActualGoogle = '';
+  vinculandoGoogle = false;
+  errorGoogle = '';
+  exitoGoogle = '';
+
+  vincularGoogle(credential: string): void {
+    if (this.vinculandoGoogle || this.usuario?.googleLinked) return;
+    if (!this.claveActualGoogle) {
+      this.errorGoogle = 'Ingresá primero tu contraseña actual.';
+      return;
+    }
+    this.vinculandoGoogle = true;
+    this.errorGoogle = '';
+    this.exitoGoogle = '';
+    this.authService.vincularGoogle(credential, this.claveActualGoogle).subscribe({
+      next: usuario => {
+        this.aplicarUsuario(usuario);
+        this.claveActualGoogle = '';
+        this.vinculandoGoogle = false;
+        this.exitoGoogle = '¡Listo! Ya podés iniciar sesión con Google sin perder tu cuenta actual.';
+      },
+      error: err => {
+        this.claveActualGoogle = '';
+        this.vinculandoGoogle = false;
+        this.errorGoogle = err?.error?.message || 'No pudimos vincular tu cuenta de Google.';
+      }
+    });
+  }
+
   ciudades: any[] = [];
   amigos: Amistad[] = [];
   formulario: PerfilForm = this.formularioVacio();

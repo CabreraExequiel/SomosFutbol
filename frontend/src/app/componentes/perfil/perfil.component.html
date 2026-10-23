@@ -192,6 +192,33 @@
           </button>
         </div>
       </form>
+        <section class="surface-card formulario-perfil google-vinculacion" aria-labelledby="vincular-google-titulo">
+          <div class="form-cabecera">
+            <div>
+              <h2 id="vincular-google-titulo">Acceso con Google</h2>
+              <p>Conectá tu cuenta actual para iniciar sesión con Google sin perder tus amigos, publicaciones, reservas ni permisos.</p>
+            </div>
+          </div>
+          @if (usuario.googleLinked) {
+            <p class="app-alert success" role="status">Tu cuenta de Google ya está vinculada.</p>
+          } @else {
+            <p>Para proteger tu cuenta, primero confirmá tu contraseña actual y después elegí en Google el mismo correo: <strong>{{ usuario.email }}</strong>.</p>
+            <label class="campo google-campo-clave">
+              <span>Contraseña actual de Somos Fútbol</span>
+              <input type="password" name="claveActualGoogle" [(ngModel)]="claveActualGoogle"
+                     autocomplete="current-password" maxlength="72" placeholder="Ingresá tu contraseña" />
+            </label>
+            @if (claveActualGoogle && !vinculandoGoogle) {
+              <app-google-login-button
+                (credentialReceived)="vincularGoogle($event)"
+                (loadError)="errorGoogle = $event" />
+            }
+            @if (!claveActualGoogle) { <small>Ingresá tu contraseña para habilitar el botón de Google.</small> }
+            @if (vinculandoGoogle) { <p role="status">Verificando y vinculando Google…</p> }
+          }
+          @if (errorGoogle) { <p class="app-alert error" role="alert">{{ errorGoogle }}</p> }
+          @if (exitoGoogle) { <p class="app-alert success" role="status">{{ exitoGoogle }}</p> }
+        </section>
       @if (usuario.role === 'dueno') {
       <section class="surface-card formulario-perfil"><span class="page-eyebrow">Cobros online</span><h2>Tu cuenta de Mercado Pago</h2><p>Vinculá tu cuenta para que los pagos de tus canchas se acrediten directamente a vos.</p>
         @if(avisoMp){<p class="app-alert success" role="status">{{avisoMp}}</p>}

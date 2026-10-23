@@ -12,6 +12,7 @@ export interface Usuario {
   role: 'usuario' | 'dueno' | 'administrador';
   avatar?: string;
   nombreComplejo?: string;
+  googleLinked?: boolean;
 }
 
 export interface RegistroRequest {
@@ -70,6 +71,12 @@ export class AuthService {
   obtenerPerfil(): Observable<Usuario> {
     return this.http.get<Usuario>(`${this.usersApiUrl}/me`).pipe(
       tap((usuario) => this.guardarUsuario(usuario))
+    );
+  }
+
+  vincularGoogle(credential: string, passwordActual: string): Observable<Usuario> {
+    return this.http.post<Usuario>(`${this.usersApiUrl}/me/google/link`, { credential, passwordActual }).pipe(
+      tap(usuario => this.guardarUsuario(usuario))
     );
   }
 
