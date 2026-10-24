@@ -6,6 +6,8 @@
  <button class="text-button" type="button" [attr.aria-pressed]="mostrarClave" (click)="mostrarClave=!mostrarClave">{{mostrarClave?'Ocultar contraseña':'Mostrar contraseña'}}</button>
  @if(error){<p class="error" role="alert">{{error}}</p>}
  <button class="ingresar" type="submit" [disabled]="cargando||form.invalid">{{cargando?'Ingresando…':'Ingresar →'}}</button>
+ <div class="separador-google" style="text-align:center;margin:16px 0 0;">O continuá con</div>
+ <app-google-login-button (credentialReceived)="onGoogleCredential($event)" (loadError)="error=$event" />
  <p class="link">¿No tenés cuenta? <a routerLink="/register">Registrate</a></p>
  <footer><a routerLink="/terminos-y-condiciones">Términos</a><a routerLink="/politica-de-privacidad">Privacidad</a></footer>
 </form></main>

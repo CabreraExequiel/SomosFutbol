@@ -11,6 +11,8 @@ export interface Usuario {
   ciudad?: string;
   role: 'usuario' | 'dueno' | 'administrador';
   avatar?: string;
+  nombreComplejo?: string;
+  googleLinked?: boolean;
 }
 
 export interface RegistroRequest {
@@ -48,6 +50,18 @@ export class AuthService {
     );
   }
 
+  loginGoogle(credential: string, datos?: {
+    telefono?: string;
+    ciudad?: string;
+    role?: 'usuario' | 'dueno';
+    aceptaTerminos?: boolean;
+    aceptaPrivacidad?: boolean;
+  }): Observable<any> {
+    return this.http.post(`${this.authApiUrl}/google`, { credential, ...datos }).pipe(
+      tap((res: any) => this.guardarSesion(res))
+    );
+  }
+
   login(email: string, password: string): Observable<any> {
     return this.http.post(`${this.authApiUrl}/login`, { email, password }).pipe(
       tap((res: any) => this.guardarSesion(res))
@@ -60,7 +74,13 @@ export class AuthService {
     );
   }
 
-  actualizarPerfil(data: Pick<Usuario, 'name' | 'telefono' | 'ciudad'>): Observable<Usuario> {
+  vincularGoogle(credential: string, passwordActual: string): Observable<Usuario> {
+    return this.http.post<Usuario>(`${this.usersApiUrl}/me/google/link`, { credential, passwordActual }).pipe(
+      tap(usuario => this.guardarUsuario(usuario))
+    );
+  }
+
+  actualizarPerfil(data: Pick<Usuario, 'name' | 'telefono' | 'ciudad'> & { nombreComplejo?: string }): Observable<Usuario> {
     return this.http.put<Usuario>(`${this.usersApiUrl}/me`, data).pipe(
       tap((usuario) => this.guardarUsuario(usuario))
     );

@@ -3,10 +3,11 @@ import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { GoogleLoginButtonComponent } from '../google-login-button/google-login-button.component';
 
 @Component({
     selector: 'app-login',
-    imports: [FormsModule, RouterLink],
+    imports: [FormsModule, RouterLink, GoogleLoginButtonComponent],
     templateUrl: './login.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './login.component.css'
@@ -20,6 +21,23 @@ export class LoginComponent {
   cargando = false;
 
   constructor(private authService: AuthService, private router: Router,private route:ActivatedRoute) {if(route.snapshot.queryParamMap.get('sesion')==='vencida')this.aviso='Tu sesión venció. Ingresá nuevamente para continuar.';}
+
+  onGoogleCredential(credential: string): void {
+    if (this.cargando) return;
+    this.error = '';
+    this.cargando = true;
+    this.authService.loginGoogle(credential).subscribe({
+      next: () => {
+        this.cargando = false;
+        const volver = this.route.snapshot.queryParamMap.get('volver');
+        void this.router.navigateByUrl(volver?.startsWith('/') && !volver.startsWith('//') ? volver : '/inicio');
+      },
+      error: err => {
+        this.cargando = false;
+        this.error = err?.error?.message || 'No se pudo iniciar sesión con Google. Si es tu primera vez, creá una cuenta.';
+      }
+    });
+  }
 
   onSubmit(): void {
     if(this.cargando)return;

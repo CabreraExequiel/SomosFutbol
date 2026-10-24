@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { duenoGuard } from './guards/dueno.guard';
+import { adminGuard } from './guards/admin.guard';
 
 export const routes: Routes = [
   { path: '', loadComponent: () => import('./componentes/landing/landing.component').then(m => m.LandingComponent), pathMatch: 'full' },
@@ -30,12 +31,14 @@ export const routes: Routes = [
       { path: 'inicio', title:'Comunidad | Somos Fútbol', loadComponent: () => import('./componentes/feed/feed.component').then(m => m.FeedComponent) },
       { path: 'chat', title:'Mensajes | Somos Fútbol', loadComponent: () => import('./componentes/chat/chat.component').then(m => m.ChatComponent) },
       { path: 'canchas', title:'Buscar canchas | Somos Fútbol', loadComponent: () => import('./componentes/canchas/canchas.component').then(m => m.CanchasComponent) },
-      { path: 'duenos/:id', loadComponent: () => import('./componentes/dueno-publico/dueno-publico.component').then(m => m.DuenoPublicoComponent), title:'Canchas del dueño | Somos Fútbol' },
+      { path: 'duenos/:id', loadComponent: () => import('./componentes/dueno-publico/dueno-publico.component').then(m => m.DuenoPublicoComponent), title:'Canchas del complejo | Somos Fútbol' },
       { path: 'canchas/:id', loadComponent: () => import('./componentes/detalle-cancha/detalle-cancha.component').then(m => m.DetalleCanchaComponent) },
       { path: 'reservas', title:'Mis reservas | Somos Fútbol', loadComponent: () => import('./componentes/reservas/reservas.component').then(m => m.ReservasComponent) },
       { path: 'perfil', title:'Mi perfil | Somos Fútbol', loadComponent: () => import('./componentes/perfil/perfil.component').then(m => m.PerfilComponent) },
       { path: 'amigos', title:'Amigos | Somos Fútbol', loadComponent: () => import('./componentes/amigos/amigos.component').then(m => m.AmigosComponent) },
       { path: 'notificaciones', title:'Notificaciones | Somos Fútbol', loadComponent: () => import('./componentes/notificaciones/notificaciones.component').then(m => m.NotificacionesComponent) },
+      { path: 'admin', title: 'Administración | Somos Fútbol', loadComponent: () => import('./componentes/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent), canActivate: [adminGuard] },
+      { path: 'admin/bitacora', title: 'Bitácora | Somos Fútbol', loadComponent: () => import('./componentes/admin-bitacora/admin-bitacora.component').then(m => m.AdminBitacoraComponent), canActivate: [adminGuard] },
       { path: 'mis-canchas', title:'Panel de dueño | Somos Fútbol', loadComponent: () => import('./componentes/dashboard-dueno/dashboard-dueno.component').then(m => m.DashboardDuenoComponent), canActivate: [duenoGuard] },
     ],
   },

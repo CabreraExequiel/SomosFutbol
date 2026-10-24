@@ -579,3 +579,9 @@
     display: none;
   }
 }
+
+/* Vinculación de Google: área independiente del formulario de perfil. */
+.google-vinculacion { margin-top: 18px; }
+.google-vinculacion .google-campo-clave { max-width: 380px; margin-top: 12px; display: grid; gap: 7px; }
+.google-vinculacion .google-campo-clave input { width: 100%; }
+.google-vinculacion p { line-height: 1.55; }
