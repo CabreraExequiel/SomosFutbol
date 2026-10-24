@@ -255,18 +255,21 @@ public class PublicacionService {
                 inicio + size
         );
 
-        return filtradas
-                .subList(desde, hasta)
-                .stream()
-                .map(publicacion ->
-                        PublicacionResponse.fromEntity(
-                                publicacion,
-                                yaLeDioLike(
-                                        publicacion.getId(),
-                                        usuarioId
-                                )
-                        )
-                )
+        List<Publicacion> publicacionesPagina = filtradas.subList(desde, hasta);
+        Set<Long> idsPagina = publicacionesPagina.stream()
+                .map(Publicacion::getId)
+                .collect(Collectors.toSet());
+
+        // Una sola consulta de likes para toda la página, no una por publicación.
+        Set<Long> idsLikeados = likeRepository.idsLikeadosPorUsuario(
+                usuarioId, idsPagina
+        );
+
+        return publicacionesPagina.stream()
+                .map(publicacion -> PublicacionResponse.fromEntity(
+                        publicacion,
+                        idsLikeados.contains(publicacion.getId())
+                ))
                 .toList();
     }
 
