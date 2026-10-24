@@ -81,9 +81,31 @@ public class PublicacionService {
             );
         }
 
-        // Candidatos iniciales de la beta.
-        // Para una versión grande, migrar a
-        // consultas paginadas y ranking en BD.
+        Long usuarioId = user.getId();
+
+        // Modo cronológico: la página se resuelve en MySQL.
+        // No carga los primeros 500 candidatos ni calcula rankings en memoria.
+        // Orden secundario por ID evita resultados inestables con fechas iguales.
+        if (vista.equals("recientes")) {
+            List<Publicacion> paginaRecientes = publicacionRepository
+                    .findAllByOrderByCreatedAtDescIdDesc(PageRequest.of(page, size))
+                    .getContent();
+            return convertirConLikes(paginaRecientes, usuarioId);
+        }
+
+        // 05A4: Amigos muestra solo autores aceptados y publicaciones propias.
+        // Filtrado + orden + paginación ocurren en MySQL, incluso más allá de 500.
+        if (vista.equals("amigos")) {
+            Set<Long> autores = idsAmigos(usuarioId);
+            autores.add(usuarioId);
+            List<Publicacion> paginaAmigos = publicacionRepository
+                    .findFeedAmigos(autores, PageRequest.of(page, size))
+                    .getContent();
+            return convertirConLikes(paginaAmigos, usuarioId);
+        }
+
+        // Otros modos conservan el ranking y filtros originales por ahora.
+        // La migración del modo "para-vos" requiere preservar su orden de afinidad.
 
         List<Publicacion> candidatos =
                 publicacionRepository
@@ -99,32 +121,11 @@ public class PublicacionService {
             return List.of();
         }
 
-        Long usuarioId = user.getId();
-
         // ======================================
         // AMISTADES CONFIRMADAS
         // ======================================
 
-        Set<Long> amigos = new HashSet<>();
-
-        for (Amistad amistad :
-                amistadRepository.findRelaciones(
-                        usuarioId,
-                        EstadoAmistad.ACEPTADA
-                )) {
-
-            Long solicitante =
-                    amistad.getSolicitante().getId();
-
-            Long destinatario =
-                    amistad.getDestinatario().getId();
-
-            amigos.add(
-                    solicitante.equals(usuarioId)
-                            ? destinatario
-                            : solicitante
-            );
-        }
+        Set<Long> amigos = idsAmigos(usuarioId);
 
         // ======================================
         // AUTORES CON INTERACCIONES PREVIAS
@@ -186,6 +187,24 @@ public class PublicacionService {
 
         if (vista.equals("para-vos")) {
 
+            // 05A3: dos agregaciones para todas las candidatas, en lugar de
+            // inicializar las colecciones LAZY de likes y comentarios de cada una.
+            Set<Long> idsCandidatos = filtradas.stream()
+                    .map(Publicacion::getId)
+                    .collect(Collectors.toSet());
+
+            Map<Long, Long> conteoLikes = new HashMap<>();
+            for (Object[] fila : likeRepository.contarPorPublicaciones(idsCandidatos)) {
+                conteoLikes.put(((Number) fila[0]).longValue(),
+                        ((Number) fila[1]).longValue());
+            }
+
+            Map<Long, Long> conteoComentarios = new HashMap<>();
+            for (Object[] fila : comentarioRepository.contarPorPublicaciones(idsCandidatos)) {
+                conteoComentarios.put(((Number) fila[0]).longValue(),
+                        ((Number) fila[1]).longValue());
+            }
+
             Map<Long, Double> puntajes = new HashMap<>();
 
             for (Publicacion publicacion : filtradas) {
@@ -198,7 +217,9 @@ public class PublicacionService {
                                 ciudadUsuario,
                                 amigos,
                                 autoresPreferidos,
-                                ahora
+                                ahora,
+                                conteoLikes.getOrDefault(publicacion.getId(), 0L),
+                                conteoComentarios.getOrDefault(publicacion.getId(), 0L)
                         )
                 );
             }
@@ -255,12 +276,34 @@ public class PublicacionService {
                 inicio + size
         );
 
-        List<Publicacion> publicacionesPagina = filtradas.subList(desde, hasta);
+        return convertirConLikes(filtradas.subList(desde, hasta), usuarioId);
+    }
+
+    // Reutilizar la misma definición de amistad aceptada en Amigos y Para vos.
+    private Set<Long> idsAmigos(Long usuarioId) {
+        Set<Long> amigos = new HashSet<>();
+        for (Amistad amistad : amistadRepository.findRelaciones(
+                usuarioId, EstadoAmistad.ACEPTADA)) {
+            Long solicitante = amistad.getSolicitante().getId();
+            Long destinatario = amistad.getDestinatario().getId();
+            amigos.add(solicitante.equals(usuarioId) ? destinatario : solicitante);
+        }
+        return amigos;
+    }
+
+    private List<PublicacionResponse> convertirConLikes(
+            List<Publicacion> publicacionesPagina,
+            Long usuarioId
+    ) {
+        if (publicacionesPagina.isEmpty()) {
+            return List.of();
+        }
+
         Set<Long> idsPagina = publicacionesPagina.stream()
                 .map(Publicacion::getId)
                 .collect(Collectors.toSet());
 
-        // Una sola consulta de likes para toda la página, no una por publicación.
+        // 05A1: una consulta de likes para toda la página.
         Set<Long> idsLikeados = likeRepository.idsLikeadosPorUsuario(
                 usuarioId, idsPagina
         );
@@ -283,7 +326,9 @@ public class PublicacionService {
             String ciudadUsuario,
             Set<Long> amigos,
             Set<Long> autoresPreferidos,
-            LocalDateTime ahora
+            LocalDateTime ahora,
+            long likes,
+            long comentarios
     ) {
 
         Long autorId = publicacion.getUser().getId();
@@ -311,14 +356,7 @@ public class PublicacionService {
         }
 
         // 4. POPULARIDAD DE LA PUBLICACIÓN
-        int likes = publicacion.getLikes() == null
-                ? 0
-                : publicacion.getLikes().size();
-
-        int comentarios = publicacion.getComentarios() == null
-                ? 0
-                : publicacion.getComentarios().size();
-
+        // Los conteos vienen de consultas agrupadas, no de colecciones LAZY.
         puntos += Math.min(
                 20,
                 Math.log1p(likes) * 7

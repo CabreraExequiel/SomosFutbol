@@ -20,5 +20,12 @@ public interface LikeRepository extends JpaRepository<Like, Long> {
             @Param("publicacionIds") Set<Long> publicacionIds
     );
 
+    // 05A3: contar la popularidad de todas las candidatas en una única consulta.
+    @Query("select l.publicacion.id, count(l.id) from Like l " +
+            "where l.publicacion.id in :publicacionIds group by l.publicacion.id")
+    java.util.List<Object[]> contarPorPublicaciones(
+            @Param("publicacionIds") Set<Long> publicacionIds
+    );
+
     Optional<Like> findByPublicacionIdAndUserId(Long publicacionId, Long userId);
 }
