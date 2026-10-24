@@ -36,7 +36,7 @@ class ReservaServiceTransferenciaTest {
         CanchaRepository canchaRepository = mock(CanchaRepository.class);
         PagoRepository pagoRepository = mock(PagoRepository.class);
         NotificacionService notificacionService = mock(NotificacionService.class);
-        service = new ReservaService(reservaRepository, canchaRepository, pagoRepository, notificacionService, mock(DisponibilidadService.class),java.time.Clock.system(com.canchasya.api.config.TimeConfig.ZONA),mock(MercadoPagoCuentaService.class));
+        service = new ReservaService(reservaRepository, canchaRepository, pagoRepository, notificacionService, mock(DisponibilidadService.class),java.time.Clock.system(com.canchasya.api.config.TimeConfig.ZONA),mock(MercadoPagoCuentaService.class),mock(BitacoraService.class));
         ReflectionTestUtils.setField(service, "paymentsEnabled", false);
 
         jugador = usuario(1L, "Jugador", Role.USUARIO);

@@ -1,10 +1,10 @@
 package com.canchasya.api.repository;
 import com.canchasya.api.model.MercadoPagoCuenta;
 import org.springframework.data.jpa.repository.*;
-import jakarta.persistence.LockModeType;
+import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 public interface MercadoPagoCuentaRepository extends JpaRepository<MercadoPagoCuenta,Long> {
  Optional<MercadoPagoCuenta> findByMpUserId(String id);
- @Lock(LockModeType.PESSIMISTIC_WRITE) @Query("select c from MercadoPagoCuenta c where c.duenoId=:id")
- Optional<MercadoPagoCuenta> bloquear(Long id);
+ @Query(value="SELECT c.* FROM mercadopago_cuentas c WHERE c.dueno_id=:id FOR UPDATE", nativeQuery=true)
+ Optional<MercadoPagoCuenta> bloquear(@Param("id") Long id);
 }

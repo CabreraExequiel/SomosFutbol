@@ -2,6 +2,9 @@ package com.canchasya.api.config;
 
 import com.canchasya.api.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
+import com.canchasya.api.service.BitacoraService;
+import lombok.RequiredArgsConstructor;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,13 +16,17 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.HandlerMapping;
 
 import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
 @Slf4j
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+    private final BitacoraService bitacora;
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<Map<String, String>> handleApiException(ApiException ex) {
@@ -72,7 +79,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message","No tenés permiso para realizar esta operación"));
     }
     @ExceptionHandler({org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
-        org.springframework.web.bind.MissingServletRequestParameterException.class})
+            org.springframework.web.bind.MissingServletRequestParameterException.class})
     public ResponseEntity<Map<String,String>> handleBadParameter(Exception ex) {
         return ResponseEntity.badRequest().body(Map.of("message","Revisá los parámetros de la solicitud"));
     }
@@ -81,12 +88,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message","Recurso no encontrado"));
     }
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleGeneric(Exception ex) {
+    public ResponseEntity<Map<String, String>> handleGeneric(Exception ex, HttpServletRequest solicitud) {
 
-        log.error("Error no controlado", ex);
+        log.error("Error no controlado: {}", ex.getClass().getSimpleName());
 
         Map<String, String> body = new HashMap<>();
         body.put("message", "Ocurrió un error interno");
+        // El método asignado a la URL es una pista: no implica que el error haya ocurrido dentro de él.
+        Object asignado = solicitud.getAttribute(HandlerMapping.BEST_MATCHING_HANDLER_ATTRIBUTE);
+        String claseRuta = null;
+        String metodoRuta = null;
+        if (asignado instanceof HandlerMethod handler) {
+            claseRuta = handler.getBeanType().getName();
+            metodoRuta = handler.getMethod().getName();
+        }
+        body.put("codigo", bitacora.errorServidor(ex, solicitud.getRequestURI(), claseRuta, metodoRuta));
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)

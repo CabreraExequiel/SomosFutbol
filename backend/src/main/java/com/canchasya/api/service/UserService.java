@@ -3,6 +3,9 @@ package com.canchasya.api.service;
 import com.canchasya.api.dto.UserUpdateRequest;
 import com.canchasya.api.dto.auth.UserResponse;
 import com.canchasya.api.model.User;
+import com.canchasya.api.model.Role;
+import com.canchasya.api.exception.ApiException;
+import org.springframework.http.HttpStatus;
 import com.canchasya.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,6 +32,12 @@ public class UserService {
         if (request.getName() != null) user.setName(request.getName().trim());
         user.setTelefono(request.getTelefono().trim());
         if (request.getCiudad() != null) user.setCiudad(request.getCiudad().trim());
+        if (request.getNombreComplejo() != null) {
+            if (user.getRole() != Role.DUENO && user.getRole() != Role.ADMINISTRADOR) {
+                throw new ApiException("Solo los propietarios pueden configurar el nombre de su complejo", HttpStatus.FORBIDDEN);
+            }
+            user.setNombreComplejo(request.getNombreComplejo().trim());
+        }
         userRepository.save(user);
         return UserResponse.fromEntity(user);
     }

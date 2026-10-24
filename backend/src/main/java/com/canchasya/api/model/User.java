@@ -27,6 +27,10 @@ public class User implements UserDetails {
     @Column(nullable = false, unique = true)
     private String email;
 
+    // Identificador estable de Google: no confundir con el correo electrónico.
+    @Column(name = "google_sub", unique = true, length = 255)
+    private String googleSub;
+
     @Column(length = 30)
     private String telefono;
 
@@ -41,6 +45,10 @@ public class User implements UserDetails {
 
     @Column(length = 500)
     private String avatar;
+
+    // Un dueño administra un complejo; es independiente de su nombre personal.
+    @Column(name = "nombre_complejo", length = 150)
+    private String nombreComplejo;
 
     @Column(name = "cbu_cvu", length = 22)
     private String cbuCvu;

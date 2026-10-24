@@ -10,7 +10,13 @@ import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
+    // Bloquea el usuario durante la vinculación para que dos solicitudes simultáneas
+    // no sobrescriban distintas identidades de Google. Compatible con MariaDB local.
+    @Query(value = "SELECT * FROM users WHERE id = :id FOR UPDATE", nativeQuery = true)
+    Optional<User> findByIdForUpdate(@Param("id") Long id);
+
     Optional<User> findByEmail(String email);
+    Optional<User> findByGoogleSub(String googleSub);
     boolean existsByEmail(String email);
 
     @Query("""

@@ -31,6 +31,7 @@ public class CanchaService {
     private final CiudadRepository ciudadRepository;
     private final HorarioDisponibleRepository horarioRepository;
     private final ArchivoService archivoService;
+    private final BitacoraService bitacora;
 
     public List<CanchaResponse> buscar(Long ciudadId, String tipo) {
         List<Cancha> canchas;
@@ -52,17 +53,17 @@ public class CanchaService {
         return grupos.entrySet().stream().map(e -> {
             var lista=e.getValue();var primero=lista.get(0);
             var user=obtenerCancha(primero.getId()).getDueno();
-            return new DuenoPublicoResponse(e.getKey(),user.getName(),user.getAvatar(),
-                lista.stream().map(CanchaResponse::getImagen).filter(java.util.Objects::nonNull).findFirst().orElse(null),
-                lista.size(),lista.stream().map(CanchaResponse::getPrecioHora).min(Comparator.naturalOrder()).orElse(null),
-                lista.stream().map(CanchaResponse::getCiudadNombre).distinct().sorted().toList(),
-                lista.stream().map(CanchaResponse::getTipo).filter(java.util.Objects::nonNull).distinct().sorted().toList());
+            return new DuenoPublicoResponse(e.getKey(),CanchaResponse.nombreComplejoPublico(user),user.getAvatar(),
+                    lista.stream().map(CanchaResponse::getImagen).filter(java.util.Objects::nonNull).findFirst().orElse(null),
+                    lista.size(),lista.stream().map(CanchaResponse::getPrecioHora).min(Comparator.naturalOrder()).orElse(null),
+                    lista.stream().map(CanchaResponse::getCiudadNombre).distinct().sorted().toList(),
+                    lista.stream().map(CanchaResponse::getTipo).filter(java.util.Objects::nonNull).distinct().sorted().toList());
         }).sorted(Comparator.comparing(DuenoPublicoResponse::nombre,String.CASE_INSENSITIVE_ORDER).thenComparing(DuenoPublicoResponse::id)).toList();
     }
 
     public List<CanchaResponse> porDueno(Long id) {
         return canchaRepository.findByDuenoId(id).stream().filter(Cancha::isActiva)
-            .map(CanchaResponse::fromEntity).toList();
+                .map(CanchaResponse::fromEntity).toList();
     }
 
     @Transactional
@@ -97,6 +98,7 @@ public class CanchaService {
         aplicarDatos(cancha, request);
 
         canchaRepository.save(cancha);
+        bitacora.evento("CANCHA_CREADA", "CANCHA", cancha.getId(), dueno.getId());
         return CanchaResponse.fromEntity(cancha);
     }
 
@@ -112,6 +114,7 @@ public class CanchaService {
         aplicarDatos(cancha, request);
 
         canchaRepository.save(cancha);
+        bitacora.evento("CANCHA_EDITADA", "CANCHA", cancha.getId(), dueno.getId());
         return CanchaResponse.fromEntity(cancha);
     }
 
@@ -121,6 +124,7 @@ public class CanchaService {
         validarPropietario(cancha, dueno);
         cancha.setActiva(false);
         canchaRepository.save(cancha);
+        bitacora.evento("CANCHA_DESACTIVADA", "CANCHA", cancha.getId(), dueno.getId());
     }
 
     @Transactional
@@ -149,7 +153,7 @@ public class CanchaService {
         validarPropietario(cancha, dueno);
         DisponibilidadService.validarRango(request.getHoraInicio(),request.getHoraFin());
         boolean overlap=horarioRepository.findByCanchaIdAndDiaSemana(canchaId,request.getDiaSemana()).stream()
-            .anyMatch(h -> request.getHoraInicio().isBefore(h.getHoraFin()) && request.getHoraFin().isAfter(h.getHoraInicio()));
+                .anyMatch(h -> request.getHoraInicio().isBefore(h.getHoraFin()) && request.getHoraFin().isAfter(h.getHoraInicio()));
         if(overlap) throw new ApiException("Ese horario se superpone con otro",HttpStatus.CONFLICT);
 
         HorarioDisponible horario = new HorarioDisponible();

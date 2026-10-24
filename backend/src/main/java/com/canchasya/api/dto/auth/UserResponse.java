@@ -16,6 +16,8 @@ public class UserResponse {
     private String ciudad;
     private Role role;
     private String avatar;
+    private String nombreComplejo;
+    private boolean googleLinked;
 
     public static UserResponse fromEntity(User user) {
         return new UserResponse(
@@ -25,7 +27,9 @@ public class UserResponse {
                 user.getTelefono(),
                 user.getCiudad(),
                 user.getRole(),
-                user.getAvatar()
+                user.getAvatar(),
+                user.getNombreComplejo(),
+                user.getGoogleSub() != null && !user.getGoogleSub().isBlank()
         );
     }
 }

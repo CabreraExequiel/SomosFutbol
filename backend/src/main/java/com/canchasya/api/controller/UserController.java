@@ -4,9 +4,11 @@ import com.canchasya.api.dto.UserUpdateRequest;
 import com.canchasya.api.dto.CuentaCobroRequest;
 import com.canchasya.api.dto.CuentaCobroResponse;
 import com.canchasya.api.dto.auth.UserResponse;
+import com.canchasya.api.dto.auth.GoogleLinkRequest;
 import com.canchasya.api.model.User;
 import com.canchasya.api.service.UserService;
 import com.canchasya.api.service.CuentaCobroService;
+import com.canchasya.api.service.GoogleAuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +28,7 @@ public class UserController {
 
     private final UserService userService;
     private final CuentaCobroService cuentaCobroService;
+    private final GoogleAuthService googleAuthService;
 
     @GetMapping
     @PreAuthorize("hasRole('ADMINISTRADOR')")
@@ -36,6 +39,17 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<UserResponse> perfil(@AuthenticationPrincipal User user) {
         return ResponseEntity.ok(UserResponse.fromEntity(user));
+    }
+
+    // Protegido por JWT: /api/users/** no figura en las rutas públicas.
+    @PostMapping("/me/google/link")
+    public ResponseEntity<UserResponse> vincularGoogle(
+            @Valid @RequestBody GoogleLinkRequest request,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(googleAuthService.vincular(request, user));
     }
 
     @PutMapping("/me")

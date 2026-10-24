@@ -1,6 +1,7 @@
 package com.canchasya.api.dto;
 
 import com.canchasya.api.model.Cancha;
+import com.canchasya.api.model.User;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -13,6 +14,7 @@ public class CanchaResponse {
     private Long id;
     private Long duenoId;
     private String duenoNombre;
+    private String nombreComplejo;
     private Long ciudadId;
     private String ciudadNombre;
     private String nombre;
@@ -26,11 +28,17 @@ public class CanchaResponse {
     private String descripcion;
     private boolean activa;
 
+    public static String nombreComplejoPublico(User dueno) {
+        String nombre = dueno.getNombreComplejo();
+        return nombre == null || nombre.isBlank() ? "Complejo deportivo #" + dueno.getId() : nombre.trim();
+    }
+
     public static CanchaResponse fromEntity(Cancha c) {
         return new CanchaResponse(
                 c.getId(),
                 c.getDueno().getId(),
                 c.getDueno().getName(),
+                nombreComplejoPublico(c.getDueno()),
                 c.getCiudad().getId(),
                 c.getCiudad().getNombre(),
                 c.getNombre(),
