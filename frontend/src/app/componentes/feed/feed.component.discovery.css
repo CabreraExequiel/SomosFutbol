@@ -47,3 +47,28 @@
   .periodo-hashtag select { width: 100%; }
   .hashtags-chips { gap: 8px; }
 }
+
+/* 05B4 - errores de busqueda, paginacion recuperable y estados de carga. */
+.busqueda-hashtag-error { color: #b91c1c !important; font-weight: 650; }
+.feed-error-paginacion { flex-wrap: wrap; min-height: 86px; }
+.feed-error-paginacion p { flex: 1 1 220px; }
+.feed-error-paginacion .secondary-button { min-height: 42px; }
+.feed-esqueleto { padding: 22px; display: grid; gap: 16px; }
+.feed-esqueleto-cabecera { display: flex; align-items: center; gap: 12px; }
+.feed-esqueleto-identidad { display: grid; flex: 1; gap: 8px; }
+.feed-esqueleto-avatar { width: 42px; height: 42px; flex: 0 0 42px; border-radius: 50%; }
+.feed-esqueleto-linea { display: block; width: 100%; height: 13px; border-radius: 8px; }
+.feed-esqueleto-corta { width: 36%; }
+.feed-esqueleto-media { width: 71%; }
+.feed-esqueleto-brillo {
+  background: linear-gradient(100deg, #edf2f7 30%, #f8fafc 45%, #edf2f7 60%);
+  background-size: 200% 100%; animation: feed-carga-brillo 1.5s linear infinite;
+}
+@keyframes feed-carga-brillo { to { background-position-x: -200%; } }
+@media (prefers-reduced-motion: reduce) {
+  .feed-esqueleto-brillo { animation: none; }
+}
+@media (max-width: 600px) {
+  .feed-esqueleto { padding: 17px; }
+  .feed-error-paginacion .secondary-button { width: 100%; margin-left: 0; }
+}

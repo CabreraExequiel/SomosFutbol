@@ -140,13 +140,18 @@
     <label for="hashtag-buscador">Buscar publicaciones por hashtag</label>
     <div class="buscador-hashtag-controles">
       <input id="hashtag-buscador" name="hashtag" type="search"
-        [(ngModel)]="textoHashtag" maxlength="31"
+        [(ngModel)]="textoHashtag" (ngModelChange)="errorBusquedaHashtag = ''" maxlength="31"
+        [attr.aria-invalid]="!!errorBusquedaHashtag"
+        [attr.aria-describedby]="errorBusquedaHashtag ? 'error-busqueda-hashtag' : null"
         placeholder="Ej: #futbol5" autocomplete="off" />
       <button type="submit" class="primary-button" [disabled]="cargando">Buscar</button>
       @if (hashtagActivo) {
         <button type="button" class="secondary-button" (click)="limpiarHashtag()">Limpiar</button>
       }
     </div>
+    @if (errorBusquedaHashtag) {
+      <p id="error-busqueda-hashtag" class="busqueda-hashtag-error" role="alert">{{ errorBusquedaHashtag }}</p>
+    }
     @if (hashtagActivo) {
       <div class="periodo-hashtag">
         <label for="periodo-hashtag">Publicaciones de</label>
@@ -177,10 +182,23 @@
   </form>
 
   @if (cargando) {
-    <div class="surface-card estado-feed" aria-live="polite">
-      <span class="spinner"></span>
+    <div class="surface-card estado-feed" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
       <p>Cargando publicaciones...</p>
     </div>
+    @for (indice of [1, 2]; track indice) {
+      <div class="surface-card feed-esqueleto" aria-hidden="true">
+        <div class="feed-esqueleto-cabecera">
+          <span class="feed-esqueleto-avatar feed-esqueleto-brillo"></span>
+          <div class="feed-esqueleto-identidad">
+            <span class="feed-esqueleto-linea feed-esqueleto-brillo"></span>
+            <span class="feed-esqueleto-linea feed-esqueleto-corta feed-esqueleto-brillo"></span>
+          </div>
+        </div>
+        <span class="feed-esqueleto-linea feed-esqueleto-brillo"></span>
+        <span class="feed-esqueleto-linea feed-esqueleto-media feed-esqueleto-brillo"></span>
+      </div>
+    }
   }
 
   @if (error && !cargando) {
@@ -308,7 +326,21 @@
   </article>
 }
 
-@if(!cargando && hayMas){<button type="button" class="secondary-button" [disabled]="cargandoMas" (click)="cargarMas()">{{cargandoMas?'Cargando…':'Ver más publicaciones'}}</button>}
+@if (!cargando && errorMas) {
+  <div class="surface-card estado-feed estado-error feed-error-paginacion" role="alert">
+    <span class="estado-icono" aria-hidden="true">!</span>
+    <p>{{ errorMas }}</p>
+    <button type="button" class="secondary-button" (click)="cargarMas()" [disabled]="cargandoMas">
+      {{ cargandoMas ? 'Reintentando…' : 'Reintentar cargar más' }}
+    </button>
+  </div>
+}
+@if (!cargando && hayMas && !errorMas) {
+  <button type="button" class="secondary-button" [disabled]="cargandoMas"
+    (click)="cargarMas()" [attr.aria-busy]="cargandoMas">
+    {{ cargandoMas ? 'Cargando más publicaciones…' : 'Ver más publicaciones' }}
+  </button>
+}
 @if (!cargando && !error && publicaciones.length === 0) {
   <div class="empty-state">
     <span class="empty-state-icon">⚽</span>
@@ -316,6 +348,11 @@
     <p>{{ hashtagActivo
       ? 'Todavía no encontramos publicaciones con #' + hashtagActivo + '.'
       : 'No hay publicaciones en esta sección todavía. Probá otra pestaña o compartí algo con la comunidad.' }}</p>
+    @if (hashtagActivo) {
+      <button type="button" class="secondary-button" (click)="limpiarHashtag()">
+        Ver todas las publicaciones
+      </button>
+    }
   </div>
 }
 </div>

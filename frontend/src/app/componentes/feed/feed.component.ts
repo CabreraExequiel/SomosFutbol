@@ -75,6 +75,8 @@ export class FeedComponent implements OnInit, OnDestroy {
   publicando = false;
 
   error = '';
+  errorMas = '';
+  errorBusquedaHashtag = '';
   errorPublicacion = '';
 
   constructor(
@@ -244,6 +246,7 @@ quitarVideo(): void {
     this.hashtagActivo = null;
     this.textoHashtag = '';
     this.diasHashtag = 0;
+    this.errorBusquedaHashtag = '';
     this.cargarFeed();
   }
 
@@ -267,14 +270,16 @@ quitarVideo(): void {
   buscarHashtag(): void {
     const valor = this.textoHashtag.trim().replace(/^#/, '').toLowerCase();
     if (!/^[A-Za-z0-9_]{2,30}$/.test(valor)) {
-      this.error = 'Escribí un hashtag válido (2 a 30 caracteres, sin espacios).';
+      this.errorBusquedaHashtag = 'Escribí un hashtag válido (2 a 30 caracteres, sin espacios).';
       return;
     }
+    this.errorBusquedaHashtag = '';
     this.hashtagActivo = valor;
     this.cargarFeed();
   }
 
   limpiarHashtag(): void {
+    this.errorBusquedaHashtag = '';
     this.hashtagActivo = null;
     this.textoHashtag = '';
     this.diasHashtag = 0;
@@ -337,6 +342,7 @@ quitarVideo(): void {
     this.cargandoMas = false;
 
     this.error = '';
+    this.errorMas = '';
     this.publicaciones = [];
 
     this.pagina = 0;
@@ -409,7 +415,7 @@ quitarVideo(): void {
     const siguientePagina = this.pagina + 1;
 
     this.cargandoMas = true;
-    this.error = '';
+    this.errorMas = '';
 
     const consulta = tag
       ? this.feedService.buscarHashtag(tag, siguientePagina, dias)
@@ -455,8 +461,8 @@ quitarVideo(): void {
             error
           );
 
-          this.error =
-            'No se pudieron cargar más publicaciones.';
+          this.errorMas =
+            'No se pudieron cargar más publicaciones. Reintentá sin perder los resultados anteriores.';
 
           this.cargandoMas = false;
         }
