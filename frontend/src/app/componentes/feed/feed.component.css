@@ -417,3 +417,15 @@
   border: 1px solid var(--borde); border-radius: 9px; font: inherit;
 }
 .buscador-hashtag p { margin: 10px 0 0; color: var(--texto-suave); font-size: .82rem; }
+
+/* 05B2 - etiquetas destacadas y filtro temporal */
+.hashtags-destacados { margin-top: 14px; border-top: 1px solid var(--borde); padding-top: 12px; }
+.hashtags-destacados > strong { display: block; margin-bottom: 8px; font-size: .85rem; }
+.hashtags-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.hashtags-chips button { padding: 6px 10px; border: 1px solid var(--borde); border-radius: 20px; background: #fff; color: var(--texto); cursor: pointer; }
+.hashtags-chips button[aria-pressed="true"] { background: var(--naranja-suave); border-color: var(--naranja); }
+.hashtags-chips span { color: var(--texto-suave); font-size: .77rem; }
+.hashtags-destacados small { display: block; margin-top: 8px; color: var(--texto-suave); }
+.periodo-hashtag { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; }
+.periodo-hashtag label { margin: 0; }
+.periodo-hashtag select { padding: 7px; border: 1px solid var(--borde); border-radius: 8px; background: #fff; }

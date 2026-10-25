@@ -21,6 +21,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +43,11 @@ public class PublicacionService {
     // Limitar cuantos resultados hay que retener para evitar consumos excesivos
     // si alguien pide una pagina extremadamente lejana.
     private static final int MAX_RESULTADOS_RANKING = 5000;
+
+    private static final int MUESTRA_HASHTAGS = 500;
+    private static final int CANTIDAD_HASHTAGS_DESTACADOS = 8;
+    private static final Pattern PATRON_HASHTAG = Pattern.compile(
+            "(?<![A-Za-z0-9_])#([A-Za-z0-9_]{2,30})(?![A-Za-z0-9_])");
 
     private record PublicacionPuntuada(Long id, LocalDateTime fecha, double puntaje) {}
 
@@ -181,17 +188,55 @@ public class PublicacionService {
         return convertirConLikes(filtradas.subList(desde, hasta), usuarioId);
     }
 
+    // 05B2: tendencias aproximadas: hasta 500 publicaciones con hashtags de 7 dias.
+    // Se cuenta una publicacion una sola vez por etiqueta y se normalizan mayusculas.
+    @Transactional(readOnly = true)
+    public List<HashtagDestacadoResponse> listarHashtagsDestacados(User usuario) {
+        if (usuario == null) {
+            throw new ApiException("Debés iniciar sesión", HttpStatus.UNAUTHORIZED);
+        }
+        List<String> contenidos = publicacionRepository.listarContenidosEtiquetadosRecientes(
+                LocalDateTime.now().minusDays(7), PageRequest.of(0, MUESTRA_HASHTAGS));
+        Map<String, Long> apariciones = new HashMap<>();
+        for (String contenido : contenidos) {
+            if (contenido == null || contenido.isBlank()) continue;
+            Matcher coincidencias = PATRON_HASHTAG.matcher(contenido);
+            Set<String> enEstaPublicacion = new HashSet<>();
+            while (coincidencias.find()) {
+                enEstaPublicacion.add(coincidencias.group(1).toLowerCase(Locale.ROOT));
+            }
+            for (String etiqueta : enEstaPublicacion) {
+                apariciones.merge(etiqueta, 1L, Long::sum);
+            }
+        }
+        return apariciones.entrySet().stream()
+                .sorted(Comparator.<Map.Entry<String, Long>>comparingLong(
+                        Map.Entry::getValue).reversed().thenComparing(Map.Entry::getKey))
+                .limit(CANTIDAD_HASHTAGS_DESTACADOS)
+                .map(e -> new HashtagDestacadoResponse(e.getKey(), e.getValue()))
+                .toList();
+    }
+
     // 05B1: busqueda local de etiquetas en publicaciones, sin tablas nuevas.
     // Se valida la etiqueta para evitar expresiones regulares arbitrarias
     // y se respetan las mismas reglas de tamaño del feed.
     @Transactional(readOnly = true)
     public List<PublicacionResponse> buscarPorHashtag(
             User usuario, String etiqueta, int page, int size) {
+        return buscarPorHashtag(usuario, etiqueta, page, size, 0);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PublicacionResponse> buscarPorHashtag(
+            User usuario, String etiqueta, int page, int size, int dias) {
         if (usuario == null) {
             throw new ApiException("Debés iniciar sesión", HttpStatus.UNAUTHORIZED);
         }
         if (page < 0 || page > 500 || size < 1 || size > MAX_PAGINA) {
             throw new ApiException("Parámetros de paginación inválidos", HttpStatus.BAD_REQUEST);
+        }
+        if (dias != 0 && dias != 7 && dias != 30) {
+            throw new ApiException("Período de búsqueda inválido", HttpStatus.BAD_REQUEST);
         }
 
         String nombre = etiqueta == null ? "" : etiqueta.trim();
@@ -207,8 +252,11 @@ public class PublicacionService {
         // REGEXP compatible con MySQL 8 y MariaDB 10.4. El limite de
         // palabra incluye el # inicial y el final de la etiqueta.
         String patron = "(^|[^[:alnum:]_])#" + nombre + "([^[:alnum:]_]|$)";
-        List<Publicacion> pagina = publicacionRepository.buscarPorHashtag(
-                patron, PageRequest.of(page, size)).getContent();
+        PageRequest paginacion = PageRequest.of(page, size);
+        List<Publicacion> pagina = dias == 0
+                ? publicacionRepository.buscarPorHashtag(patron, paginacion).getContent()
+                : publicacionRepository.buscarPorHashtagDesde(
+                        patron, LocalDateTime.now().minusDays(dias), paginacion).getContent();
         return convertirConLikes(pagina, usuario.getId());
     }
 

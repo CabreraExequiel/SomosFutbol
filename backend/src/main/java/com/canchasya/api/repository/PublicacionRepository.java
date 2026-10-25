@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Set;
 import java.time.LocalDateTime;
 
@@ -36,6 +37,14 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
             @Param("id") Long id,
             Pageable pageable);
 
+    // Muestra liviana y acotada para calcular hashtags destacados sin traer entidades.
+    // Solo considera publicaciones recientes que contienen un caracter '#'.
+    @Query("select p.contenido from Publicacion p " +
+            "where p.createdAt >= :desde and p.contenido like '%#%' " +
+            "order by p.createdAt desc, p.id desc")
+    List<String> listarContenidosEtiquetadosRecientes(
+            @Param("desde") LocalDateTime desde, Pageable pageable);
+
     // 05B1: busca la etiqueta como palabra completa, evitando que #futbol
     // coincida por accidente con #futbol5. Funciona en MariaDB y MySQL.
     // El parametro patron es construido en el servicio tras validarlo.
@@ -44,6 +53,15 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
             "order by p.created_at desc, p.id desc", nativeQuery = true)
     Slice<Publicacion> buscarPorHashtag(
             @Param("patron") String patron,
+            Pageable pageable);
+
+    // 05B2: aplica el rango de fechas ANTES de paginar para no saltar resultados.
+    @Query(value = "select p.* from publicaciones p " +
+            "where p.contenido REGEXP :patron and p.created_at >= :desde " +
+            "order by p.created_at desc, p.id desc", nativeQuery = true)
+    Slice<Publicacion> buscarPorHashtagDesde(
+            @Param("patron") String patron,
+            @Param("desde") LocalDateTime desde,
             Pageable pageable);
 
     // 05A4: la base filtra los autores del feed Amigos y pagina sin el límite de 500.

@@ -3,6 +3,11 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
+export interface HashtagDestacado {
+  etiqueta: string;
+  publicaciones: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class FeedService {
   private apiUrl = `${environment.apiUrl}`;
@@ -13,10 +18,15 @@ export class FeedService {
     return this.http.get(`${this.apiUrl}/publicaciones`, {params: {page, size: 10, modo}});
   }
 
-  buscarHashtag(tag: string, page = 0): Observable<any> {
+  buscarHashtag(tag: string, page = 0, dias = 0): Observable<any> {
     return this.http.get(`${this.apiUrl}/publicaciones/hashtags`, {
-      params: { tag, page, size: 10 }
+      params: { tag, page, size: 10, dias }
     });
+  }
+
+  listarHashtagsDestacados(): Observable<HashtagDestacado[]> {
+    return this.http.get<HashtagDestacado[]>(
+      `${this.apiUrl}/publicaciones/hashtags/destacados`);
   }
 
   publicar(data: { contenido: string; imagen?: string; youtubeUrl?: string; mencionadosIds?: number[] }): Observable<any> {

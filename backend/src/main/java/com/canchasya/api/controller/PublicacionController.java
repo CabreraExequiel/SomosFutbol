@@ -86,10 +86,17 @@ public class PublicacionController {
             @AuthenticationPrincipal User user,
             @RequestParam(defaultValue = "") String tag,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "0") int dias
     ) {
         return ResponseEntity.ok(
-                publicacionService.buscarPorHashtag(user, tag, page, size));
+                publicacionService.buscarPorHashtag(user, tag, page, size, dias));
+    }
+
+    @GetMapping("/hashtags/destacados")
+    public ResponseEntity<List<HashtagDestacadoResponse>> hashtagsDestacados(
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(publicacionService.listarHashtagsDestacados(user));
     }
 
     // ==========================================

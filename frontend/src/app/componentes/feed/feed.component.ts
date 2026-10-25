@@ -12,7 +12,7 @@ import { FormsModule } from '@angular/forms';
 
 import { Subscription } from 'rxjs';
 
-import { FeedService } from '../../services/feed.service';
+import { FeedService, HashtagDestacado } from '../../services/feed.service';
 import { AuthService } from '../../services/auth.service';
 import {
   Amistad,
@@ -42,6 +42,8 @@ export class FeedComponent implements OnInit, OnDestroy {
   modoFeed: ModoFeed = 'para-vos';
   textoHashtag = '';
   hashtagActivo: string | null = null;
+  diasHashtag: 0 | 7 | 30 = 0;
+  hashtagsDestacados: HashtagDestacado[] = [];
 
   publicaciones: any[] = [];
 
@@ -82,6 +84,7 @@ export class FeedComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.cargarFeed();
+    this.cargarHashtagsDestacados();
     const youtubeCompartido = sessionStorage.getItem(
       'somosFutbolYoutubeCompartido'
     );
@@ -236,11 +239,29 @@ quitarVideo(): void {
     this.modoFeed = modo;
     this.hashtagActivo = null;
     this.textoHashtag = '';
+    this.diasHashtag = 0;
     this.cargarFeed();
   }
 
+  cargarHashtagsDestacados(): void {
+    const sub = this.feedService.listarHashtagsDestacados().subscribe({
+      next: etiquetas => { this.hashtagsDestacados = etiquetas; },
+      error: () => { this.hashtagsDestacados = []; }
+    });
+    this.suscripciones.add(sub);
+  }
+
+  seleccionarHashtagDestacado(etiqueta: string): void {
+    this.textoHashtag = `#${etiqueta}`;
+    this.buscarHashtag();
+  }
+
+  cambiarPeriodoHashtag(): void {
+    if (this.hashtagActivo) this.cargarFeed();
+  }
+
   buscarHashtag(): void {
-    const valor = this.textoHashtag.trim().replace(/^#/, '');
+    const valor = this.textoHashtag.trim().replace(/^#/, '').toLowerCase();
     if (!/^[A-Za-z0-9_]{2,30}$/.test(valor)) {
       this.error = 'Escribí un hashtag válido (2 a 30 caracteres, sin espacios).';
       return;
@@ -252,6 +273,7 @@ quitarVideo(): void {
   limpiarHashtag(): void {
     this.hashtagActivo = null;
     this.textoHashtag = '';
+    this.diasHashtag = 0;
     this.cargarFeed();
   }
 
@@ -317,7 +339,7 @@ quitarVideo(): void {
     this.hayMas = false;
 
     const consulta = this.hashtagActivo
-      ? this.feedService.buscarHashtag(this.hashtagActivo, 0)
+      ? this.feedService.buscarHashtag(this.hashtagActivo, 0, this.diasHashtag)
       : this.feedService.listar(0, modo);
     const sub = consulta.subscribe({
 
@@ -379,13 +401,14 @@ quitarVideo(): void {
     const solicitud = this.solicitudFeed;
     const modo = this.modoFeed;
     const tag = this.hashtagActivo;
+    const dias = this.diasHashtag;
     const siguientePagina = this.pagina + 1;
 
     this.cargandoMas = true;
     this.error = '';
 
     const consulta = tag
-      ? this.feedService.buscarHashtag(tag, siguientePagina)
+      ? this.feedService.buscarHashtag(tag, siguientePagina, dias)
       : this.feedService.listar(siguientePagina, modo);
     const sub = consulta.subscribe({
 
@@ -394,7 +417,8 @@ quitarVideo(): void {
           if (
             solicitud !== this.solicitudFeed ||
             modo !== this.modoFeed ||
-            tag !== this.hashtagActivo
+            tag !== this.hashtagActivo ||
+            dias !== this.diasHashtag
           ) {
             return;
           }
@@ -489,6 +513,7 @@ publicar(): void {
       this.publicando = false;
 
       this.cargarFeed();
+      this.cargarHashtagsDestacados();
     },
 
     error: (error) => {
@@ -672,6 +697,7 @@ publicar(): void {
             );
 
           this.ocupados.delete(pub.id);
+          this.cargarHashtagsDestacados();
         },
 
         error: error => {

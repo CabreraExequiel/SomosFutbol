@@ -148,7 +148,30 @@
       }
     </div>
     @if (hashtagActivo) {
+      <div class="periodo-hashtag">
+        <label for="periodo-hashtag">Publicaciones de</label>
+        <select id="periodo-hashtag" name="periodo" [(ngModel)]="diasHashtag"
+          (ngModelChange)="cambiarPeriodoHashtag()">
+          <option [ngValue]="0">Cualquier fecha</option>
+          <option [ngValue]="7">Últimos 7 días</option>
+          <option [ngValue]="30">Últimos 30 días</option>
+        </select>
+      </div>
       <p role="status">Resultados de <strong>#{{ hashtagActivo }}</strong></p>
+    }
+    @if (hashtagsDestacados.length) {
+      <div class="hashtags-destacados" aria-label="Hashtags destacados de esta semana">
+        <strong>Temas de esta semana</strong>
+        <div class="hashtags-chips">
+          @for (etiqueta of hashtagsDestacados; track etiqueta.etiqueta) {
+            <button type="button" (click)="seleccionarHashtagDestacado(etiqueta.etiqueta)"
+              [attr.aria-pressed]="hashtagActivo === etiqueta.etiqueta">
+              #{{ etiqueta.etiqueta }} <span [attr.aria-label]="etiqueta.publicaciones + ' publicaciones'">{{ etiqueta.publicaciones }}</span>
+            </button>
+          }
+        </div>
+        <small>Calculados sobre hasta 500 publicaciones etiquetadas de los últimos 7 días.</small>
+      </div>
     }
   </form>
 

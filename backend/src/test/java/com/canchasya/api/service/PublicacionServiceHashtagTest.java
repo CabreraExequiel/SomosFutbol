@@ -67,6 +67,33 @@ class PublicacionServiceHashtagTest {
     }
 
     @Test
+    void filtraPorFechaAntesDePaginar() {
+        User usuario = usuario();
+        when(publicaciones.buscarPorHashtagDesde(any(), any(), any(Pageable.class)))
+                .thenReturn(new SliceImpl<>(List.of()));
+        servicio.buscarPorHashtag(usuario, "#futbol5", 1, 10, 7);
+
+        ArgumentCaptor<java.time.LocalDateTime> desde =
+                ArgumentCaptor.forClass(java.time.LocalDateTime.class);
+        ArgumentCaptor<Pageable> pagina = ArgumentCaptor.forClass(Pageable.class);
+        verify(publicaciones).buscarPorHashtagDesde(eq("(^|[^[:alnum:]_])#futbol5([^[:alnum:]_]|$)"),
+                desde.capture(), pagina.capture());
+        assertThat(pagina.getValue().getPageNumber()).isEqualTo(1);
+        assertThat(desde.getValue()).isAfter(java.time.LocalDateTime.now().minusDays(8));
+        assertThat(desde.getValue()).isBefore(java.time.LocalDateTime.now().minusDays(6));
+        verify(publicaciones, never()).buscarPorHashtag(any(), any());
+    }
+
+    @Test
+    void rechazaPeriodoFueraDeLosPermitidos() {
+        for (int dias : List.of(-1, 1, 31, 365)) {
+            assertThatThrownBy(() -> servicio.buscarPorHashtag(usuario(), "futbol5", 0, 10, dias))
+                    .isInstanceOf(ApiException.class);
+        }
+        verifyNoInteractions(publicaciones);
+    }
+
+    @Test
     void respetaLimitesDePaginacionYNoFiltraDatosSinSesion() {
         assertThatThrownBy(() -> servicio.buscarPorHashtag(null, "futbol", 0, 10))
                 .isInstanceOf(ApiException.class);
