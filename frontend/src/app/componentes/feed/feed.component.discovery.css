@@ -1,0 +1,49 @@
+/* 05B1 — buscador de publicaciones por hashtag */
+.buscador-hashtag { padding: 16px 20px; }
+.buscador-hashtag label { display: block; margin-bottom: 8px; font-weight: 750; font-size: .88rem; }
+.buscador-hashtag-controles { display: flex; flex-wrap: wrap; gap: 8px; }
+.buscador-hashtag-controles input {
+  flex: 1 1 180px; min-width: 0; padding: 10px 12px;
+  border: 1px solid var(--borde); border-radius: 9px; font: inherit;
+}
+.buscador-hashtag p { margin: 10px 0 0; color: var(--texto-suave); font-size: .82rem; }
+
+/* 05B2 - etiquetas destacadas y filtro temporal */
+.hashtags-destacados { margin-top: 14px; border-top: 1px solid var(--borde); padding-top: 12px; }
+.hashtags-destacados h2 { margin: 0 0 10px; color: var(--tinta); font-size: .88rem; font-weight: 750; }
+.hashtags-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.hashtags-chips button {
+  display: inline-flex; align-items: center; gap: 7px;
+  min-height: 39px; max-width: 100%; padding: 7px 11px;
+  border: 1px solid var(--borde); border-radius: 999px;
+  background: #fff; color: var(--texto); cursor: pointer;
+  overflow-wrap: anywhere; transition: background .16s, border-color .16s;
+}
+.hashtags-chips button:hover { background: var(--naranja-suave); border-color: var(--naranja); }
+.hashtags-chips button[aria-pressed="true"] { background: var(--naranja-suave); border-color: var(--naranja); font-weight: 750; }
+.hashtags-chips span {
+  color: var(--texto-suave); background: #f1f5f9; border-radius: 999px;
+  padding: 2px 6px; font-size: .77rem; font-variant-numeric: tabular-nums;
+}
+.hashtags-destacados small { display: block; margin-top: 8px; color: var(--texto-suave); }
+.periodo-hashtag { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; }
+.periodo-hashtag label { margin: 0; }
+.periodo-hashtag select { padding: 7px; border: 1px solid var(--borde); border-radius: 8px; background: #fff; }
+
+/* 05B3 - busqueda comoda con teclado y en pantallas pequenas. */
+.buscador-hashtag-controles .primary-button,
+.buscador-hashtag-controles .secondary-button { min-height: 42px; }
+.buscador-hashtag-controles input:focus-visible,
+.periodo-hashtag select:focus-visible,
+.hashtags-chips button:focus-visible { outline: 2px solid var(--naranja); outline-offset: 2px; }
+.periodo-hashtag select { min-height: 40px; max-width: 100%; font: inherit; }
+@media (max-width: 600px) {
+  .buscador-hashtag { padding: 15px; }
+  .buscador-hashtag-controles input { flex-basis: 100%; }
+  .buscador-hashtag-controles .primary-button,
+  .buscador-hashtag-controles .secondary-button { flex: 1 1 calc(50% - 5px); }
+  .periodo-hashtag { align-items: stretch; }
+  .periodo-hashtag label,
+  .periodo-hashtag select { width: 100%; }
+  .hashtags-chips { gap: 8px; }
+}

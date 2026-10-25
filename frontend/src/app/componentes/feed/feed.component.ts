@@ -29,7 +29,11 @@ type ModoFeed = 'para-vos' | 'recientes' | 'amigos' | 'cerca';
     FormsModule
   ],
   templateUrl: './feed.component.html',
-  styleUrl: './feed.component.css',
+  styleUrls: [
+    './feed.component.css',
+    './feed.component.media.css',
+    './feed.component.discovery.css'
+  ],
   changeDetection: ChangeDetectionStrategy.Default
 })
 export class FeedComponent implements OnInit, OnDestroy {

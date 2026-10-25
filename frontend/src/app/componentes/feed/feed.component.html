@@ -136,7 +136,7 @@
     <button type="button" [class.activo]="modoFeed === 'cerca'" [attr.aria-pressed]="modoFeed === 'cerca'" (click)="cambiarModo('cerca')">📍 Cerca tuyo</button>
   </nav>
 
-  <form class="surface-card buscador-hashtag" (ngSubmit)="buscarHashtag()">
+  <form class="surface-card buscador-hashtag" role="search" (ngSubmit)="buscarHashtag()">
     <label for="hashtag-buscador">Buscar publicaciones por hashtag</label>
     <div class="buscador-hashtag-controles">
       <input id="hashtag-buscador" name="hashtag" type="search"
@@ -160,18 +160,19 @@
       <p role="status">Resultados de <strong>#{{ hashtagActivo }}</strong></p>
     }
     @if (hashtagsDestacados.length) {
-      <div class="hashtags-destacados" aria-label="Hashtags destacados de esta semana">
-        <strong>Temas de esta semana</strong>
+      <section class="hashtags-destacados" aria-labelledby="hashtags-destacados-titulo">
+        <h2 id="hashtags-destacados-titulo">Temas de esta semana</h2>
         <div class="hashtags-chips">
           @for (etiqueta of hashtagsDestacados; track etiqueta.etiqueta) {
             <button type="button" (click)="seleccionarHashtagDestacado(etiqueta.etiqueta)"
-              [attr.aria-pressed]="hashtagActivo === etiqueta.etiqueta">
-              #{{ etiqueta.etiqueta }} <span [attr.aria-label]="etiqueta.publicaciones + ' publicaciones'">{{ etiqueta.publicaciones }}</span>
+              [attr.aria-pressed]="hashtagActivo === etiqueta.etiqueta"
+              [attr.aria-label]="'Buscar publicaciones con #' + etiqueta.etiqueta + ': ' + etiqueta.publicaciones + ' publicaciones'">
+              #{{ etiqueta.etiqueta }} <span aria-hidden="true">{{ etiqueta.publicaciones }}</span>
             </button>
           }
         </div>
         <small>Calculados sobre hasta 500 publicaciones etiquetadas de los últimos 7 días.</small>
-      </div>
+      </section>
     }
   </form>
 
