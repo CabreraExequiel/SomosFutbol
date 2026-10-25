@@ -13,6 +13,12 @@ export class FeedService {
     return this.http.get(`${this.apiUrl}/publicaciones`, {params: {page, size: 10, modo}});
   }
 
+  buscarHashtag(tag: string, page = 0): Observable<any> {
+    return this.http.get(`${this.apiUrl}/publicaciones/hashtags`, {
+      params: { tag, page, size: 10 }
+    });
+  }
+
   publicar(data: { contenido: string; imagen?: string; youtubeUrl?: string; mencionadosIds?: number[] }): Observable<any> {
     return this.http.post(`${this.apiUrl}/publicaciones`, data);
   }

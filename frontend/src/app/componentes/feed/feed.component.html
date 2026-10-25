@@ -136,6 +136,22 @@
     <button type="button" [class.activo]="modoFeed === 'cerca'" [attr.aria-pressed]="modoFeed === 'cerca'" (click)="cambiarModo('cerca')">📍 Cerca tuyo</button>
   </nav>
 
+  <form class="surface-card buscador-hashtag" (ngSubmit)="buscarHashtag()">
+    <label for="hashtag-buscador">Buscar publicaciones por hashtag</label>
+    <div class="buscador-hashtag-controles">
+      <input id="hashtag-buscador" name="hashtag" type="search"
+        [(ngModel)]="textoHashtag" maxlength="31"
+        placeholder="Ej: #futbol5" autocomplete="off" />
+      <button type="submit" class="primary-button" [disabled]="cargando">Buscar</button>
+      @if (hashtagActivo) {
+        <button type="button" class="secondary-button" (click)="limpiarHashtag()">Limpiar</button>
+      }
+    </div>
+    @if (hashtagActivo) {
+      <p role="status">Resultados de <strong>#{{ hashtagActivo }}</strong></p>
+    }
+  </form>
+
   @if (cargando) {
     <div class="surface-card estado-feed" aria-live="polite">
       <span class="spinner"></span>
@@ -273,7 +289,9 @@
   <div class="empty-state">
     <span class="empty-state-icon">⚽</span>
     <h2>La cancha está lista</h2>
-    <p>No hay publicaciones en esta sección todavía. Probá otra pestaña o compartí algo con la comunidad.</p>
+    <p>{{ hashtagActivo
+      ? 'Todavía no encontramos publicaciones con #' + hashtagActivo + '.'
+      : 'No hay publicaciones en esta sección todavía. Probá otra pestaña o compartí algo con la comunidad.' }}</p>
   </div>
 }
 </div>

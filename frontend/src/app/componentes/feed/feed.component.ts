@@ -40,6 +40,8 @@ export class FeedComponent implements OnInit, OnDestroy {
   private readonly TAMANIO_PAGINA = 10;
 
   modoFeed: ModoFeed = 'para-vos';
+  textoHashtag = '';
+  hashtagActivo: string | null = null;
 
   publicaciones: any[] = [];
 
@@ -227,11 +229,29 @@ quitarVideo(): void {
 
   cambiarModo(modo: ModoFeed): void {
 
-    if (this.modoFeed === modo) {
+    if (this.modoFeed === modo && !this.hashtagActivo) {
       return;
     }
 
     this.modoFeed = modo;
+    this.hashtagActivo = null;
+    this.textoHashtag = '';
+    this.cargarFeed();
+  }
+
+  buscarHashtag(): void {
+    const valor = this.textoHashtag.trim().replace(/^#/, '');
+    if (!/^[A-Za-z0-9_]{2,30}$/.test(valor)) {
+      this.error = 'Escribí un hashtag válido (2 a 30 caracteres, sin espacios).';
+      return;
+    }
+    this.hashtagActivo = valor;
+    this.cargarFeed();
+  }
+
+  limpiarHashtag(): void {
+    this.hashtagActivo = null;
+    this.textoHashtag = '';
     this.cargarFeed();
   }
 
@@ -296,7 +316,10 @@ quitarVideo(): void {
     this.pagina = 0;
     this.hayMas = false;
 
-    const sub = this.feedService.listar(0, modo).subscribe({
+    const consulta = this.hashtagActivo
+      ? this.feedService.buscarHashtag(this.hashtagActivo, 0)
+      : this.feedService.listar(0, modo);
+    const sub = consulta.subscribe({
 
       next: respuesta => {
 
@@ -355,20 +378,23 @@ quitarVideo(): void {
 
     const solicitud = this.solicitudFeed;
     const modo = this.modoFeed;
+    const tag = this.hashtagActivo;
     const siguientePagina = this.pagina + 1;
 
     this.cargandoMas = true;
     this.error = '';
 
-    const sub = this.feedService
-      .listar(siguientePagina, modo)
-      .subscribe({
+    const consulta = tag
+      ? this.feedService.buscarHashtag(tag, siguientePagina)
+      : this.feedService.listar(siguientePagina, modo);
+    const sub = consulta.subscribe({
 
         next: respuesta => {
 
           if (
             solicitud !== this.solicitudFeed ||
-            modo !== this.modoFeed
+            modo !== this.modoFeed ||
+            tag !== this.hashtagActivo
           ) {
             return;
           }

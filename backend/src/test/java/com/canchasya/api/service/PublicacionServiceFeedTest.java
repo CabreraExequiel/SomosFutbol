@@ -1,6 +1,7 @@
 package com.canchasya.api.service;
 
 import com.canchasya.api.dto.PublicacionResponse;
+import com.canchasya.api.dto.FeedCandidato;
 import com.canchasya.api.model.Publicacion;
 import com.canchasya.api.model.Amistad;
 import com.canchasya.api.model.User;
@@ -11,13 +12,14 @@ import com.canchasya.api.repository.PublicacionRepository;
 import com.canchasya.api.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.SliceImpl;
-import org.springframework.data.domain.PageImpl;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.stream.IntStream;
 import com.canchasya.api.model.EstadoAmistad;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -131,8 +133,11 @@ class PublicacionServiceFeedTest {
         sinInteracciones.setCreatedAt(LocalDateTime.of(2026, 10, 24, 10, 0));
 
         Set<Long> ids = Set.of(101L, 202L);
-        when(publicaciones.findAllByOrderByCreatedAtDesc(any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(sinInteracciones, popular)));
+        when(publicaciones.listarCandidatosParaVos(any(Pageable.class)))
+                .thenReturn(new SliceImpl<>(List.of(
+                        new FeedCandidato(202L, 7L, "Córdoba", sinInteracciones.getCreatedAt()),
+                        new FeedCandidato(101L, 7L, "Córdoba", popular.getCreatedAt()))));
+        when(publicaciones.findAllById(any())).thenReturn(List.of(popular, sinInteracciones));
         when(amistades.findRelaciones(7L, EstadoAmistad.ACEPTADA))
                 .thenReturn(List.of());
         when(likes.autoresPreferidos(7L)).thenReturn(Set.of());
@@ -166,12 +171,130 @@ class PublicacionServiceFeedTest {
 
         User usuario = new User();
         usuario.setId(7L);
-        when(publicaciones.findAllByOrderByCreatedAtDesc(any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of()));
+        when(publicaciones.listarCandidatosParaVos(any(Pageable.class)))
+                .thenReturn(new SliceImpl<>(List.of()));
 
         assertThat(servicio.feed(usuario, 0, 10, "para-vos")).isEmpty();
         verify(likes, never()).contarPorPublicaciones(any());
         verify(comentarios, never()).contarPorPublicaciones(any());
+    }
+
+    @Test
+    void paraVosEncuentraUnaPublicacionRelevanteDespuesDe500Candidatos() {
+        PublicacionRepository publicaciones = mock(PublicacionRepository.class);
+        LikeRepository likes = mock(LikeRepository.class);
+        ComentarioRepository comentarios = mock(ComentarioRepository.class);
+        AmistadRepository amistades = mock(AmistadRepository.class);
+        PublicacionService servicio = new PublicacionService(
+                publicaciones, comentarios, likes,
+                mock(UserRepository.class), mock(AmistadService.class),
+                amistades, mock(NotificacionService.class),
+                mock(VideoStorageService.class)
+        );
+        User usuario = new User();
+        usuario.setId(7L);
+        User autor = new User();
+        autor.setId(8L);
+
+        LocalDateTime reciente = LocalDateTime.now().minusHours(1);
+        List<FeedCandidato> primeros = IntStream.iterate(600, i -> i >= 401, i -> i - 1)
+                .mapToObj(i -> new FeedCandidato((long) i, 8L, "", reciente))
+                .toList();
+        List<FeedCandidato> segundos = IntStream.iterate(400, i -> i >= 201, i -> i - 1)
+                .mapToObj(i -> new FeedCandidato((long) i, 8L, "", reciente))
+                .toList();
+        List<FeedCandidato> terceros = new ArrayList<>(IntStream.iterate(200, i -> i >= 101, i -> i - 1)
+                .mapToObj(i -> new FeedCandidato((long) i, 8L, "", reciente))
+                .toList());
+        terceros.add(new FeedCandidato(99L, 8L, "", reciente.minusHours(1)));
+
+        when(publicaciones.listarCandidatosParaVos(any(Pageable.class)))
+                .thenReturn(new SliceImpl<>(primeros, org.springframework.data.domain.PageRequest.of(0, 200), true));
+        when(publicaciones.listarCandidatosParaVosAntesDe(eq(reciente), eq(401L), any(Pageable.class)))
+                .thenReturn(new SliceImpl<>(segundos, org.springframework.data.domain.PageRequest.of(0, 200), true));
+        when(publicaciones.listarCandidatosParaVosAntesDe(eq(reciente), eq(201L), any(Pageable.class)))
+                .thenReturn(new SliceImpl<>(terceros, org.springframework.data.domain.PageRequest.of(0, 200), false));
+        when(likes.contarPorPublicaciones(org.mockito.ArgumentMatchers.<Set<Long>>argThat(
+                ids -> ids.contains(99L))))
+                .thenReturn(List.<Object[]>of(new Object[]{99L, 100L}));
+        Publicacion popularAntigua = new Publicacion();
+        popularAntigua.setId(99L);
+        popularAntigua.setUser(autor);
+        popularAntigua.setCreatedAt(reciente.minusHours(1));
+        when(publicaciones.findAllById(any())).thenReturn(List.of(popularAntigua));
+        when(likes.idsLikeadosPorUsuario(7L, Set.of(99L))).thenReturn(Set.of());
+
+        assertThat(servicio.feed(usuario, 0, 1, "para-vos"))
+                .extracting(PublicacionResponse::getId)
+                .containsExactly(99L);
+        verify(publicaciones).listarCandidatosParaVos(any(Pageable.class));
+        verify(publicaciones, times(2)).listarCandidatosParaVosAntesDe(
+                any(LocalDateTime.class), any(Long.class), any(Pageable.class));
+        verify(likes, times(3)).contarPorPublicaciones(any());
+        verify(comentarios, times(3)).contarPorPublicaciones(any());
+        verify(publicaciones, never()).findAllByOrderByCreatedAtDesc(any(Pageable.class));
+    }
+
+    @Test
+    void paraVosRespetaDesempateFechaEIdYPaginaSolicitada() {
+        PublicacionRepository publicaciones = mock(PublicacionRepository.class);
+        LikeRepository likes = mock(LikeRepository.class);
+        PublicacionService servicio = new PublicacionService(
+                publicaciones, mock(ComentarioRepository.class), likes,
+                mock(UserRepository.class), mock(AmistadService.class),
+                mock(AmistadRepository.class), mock(NotificacionService.class),
+                mock(VideoStorageService.class)
+        );
+        User usuario = new User();
+        usuario.setId(7L);
+        LocalDateTime fecha = LocalDateTime.now().minusHours(2);
+        when(publicaciones.listarCandidatosParaVos(any(Pageable.class)))
+                .thenReturn(new SliceImpl<>(List.of(
+                        new FeedCandidato(13L, 8L, "", fecha),
+                        new FeedCandidato(12L, 8L, "", fecha),
+                        new FeedCandidato(11L, 8L, "", fecha))));
+        Publicacion segundo = new Publicacion();
+        segundo.setId(12L);
+        segundo.setUser(usuario);
+        when(publicaciones.findAllById(any())).thenReturn(List.of(segundo));
+        when(likes.idsLikeadosPorUsuario(7L, Set.of(12L))).thenReturn(Set.of());
+
+        assertThat(servicio.feed(usuario, 1, 1, "para-vos"))
+                .extracting(PublicacionResponse::getId)
+                .containsExactly(12L);
+        verify(publicaciones).findAllById(List.of(12L));
+    }
+
+    @Test
+    void paraVosLimitaPaginasExtremasSinEscanearPublicaciones() {
+        PublicacionRepository publicaciones = mock(PublicacionRepository.class);
+        PublicacionService servicio = new PublicacionService(
+                publicaciones, mock(ComentarioRepository.class), mock(LikeRepository.class),
+                mock(UserRepository.class), mock(AmistadService.class),
+                mock(AmistadRepository.class), mock(NotificacionService.class),
+                mock(VideoStorageService.class)
+        );
+        User usuario = new User();
+        usuario.setId(7L);
+        assertThat(servicio.feed(usuario, 500, 10, "para-vos")).isEmpty();
+        verifyNoInteractions(publicaciones);
+    }
+
+    @Test
+    void paraVosNoCargaEntidadesCuandoNoHayCandidatos() {
+        PublicacionRepository publicaciones = mock(PublicacionRepository.class);
+        PublicacionService servicio = new PublicacionService(
+                publicaciones, mock(ComentarioRepository.class), mock(LikeRepository.class),
+                mock(UserRepository.class), mock(AmistadService.class),
+                mock(AmistadRepository.class), mock(NotificacionService.class),
+                mock(VideoStorageService.class)
+        );
+        User usuario = new User();
+        usuario.setId(7L);
+        when(publicaciones.listarCandidatosParaVos(any(Pageable.class)))
+                .thenReturn(new SliceImpl<>(List.of()));
+        assertThat(servicio.feed(usuario, 0, 10, "para-vos")).isEmpty();
+        verify(publicaciones, never()).findAllById(any());
     }
 
     @Test

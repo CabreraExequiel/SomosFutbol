@@ -407,3 +407,13 @@
 .youtube-publicacion { position: relative; aspect-ratio: 16/9; background: #111; border-radius: 10px; overflow: hidden; }
 .youtube-publicacion iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 @media (max-width: 600px) { .youtube-editor-entrada { flex-direction: column; align-items: stretch; } .youtube-previa img { width: 115px; } }
+
+/* 05B1 — buscador de publicaciones por hashtag */
+.buscador-hashtag { padding: 16px 20px; }
+.buscador-hashtag label { display: block; margin-bottom: 8px; font-weight: 750; font-size: .88rem; }
+.buscador-hashtag-controles { display: flex; flex-wrap: wrap; gap: 8px; }
+.buscador-hashtag-controles input {
+  flex: 1 1 180px; min-width: 0; padding: 10px 12px;
+  border: 1px solid var(--borde); border-radius: 9px; font: inherit;
+}
+.buscador-hashtag p { margin: 10px 0 0; color: var(--texto-suave); font-size: .82rem; }

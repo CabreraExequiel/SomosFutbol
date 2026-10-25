@@ -78,6 +78,21 @@ public class PublicacionController {
     }
 
     // ==========================================
+    // 05B1: BUSCAR PUBLICACIONES POR HASHTAG
+    // ==========================================
+
+    @GetMapping("/hashtags")
+    public ResponseEntity<List<PublicacionResponse>> buscarHashtag(
+            @AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "") String tag,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(
+                publicacionService.buscarPorHashtag(user, tag, page, size));
+    }
+
+    // ==========================================
     // CREAR PUBLICACIÓN NORMAL
     // ==========================================
 
