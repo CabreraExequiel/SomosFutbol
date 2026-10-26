@@ -1,5 +1,15 @@
-/target
-/.idea
+target
+.idea
 *.iml
+uploads
+
+# Credenciales y certificados locales
+.env
+.env.*
+*.p12
+*.pfx
+*.key
+*.pem
+
+# Archivos innecesarios
 *.log
-/uploads
