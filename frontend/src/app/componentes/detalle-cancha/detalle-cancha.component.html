@@ -145,6 +145,7 @@
                   name="fecha"
                   [(ngModel)]="fecha"
                   [min]="fechaMinima"
+                  [max]="fechaMaxima"
                   (change)="consultarDisponibilidad()"
                   required
           />
@@ -161,9 +162,22 @@
         </div>
         @if(consultando){<p role="status">Consultando horarios…</p>}
         @if(disponibilidad && !consultando){
-        <div class="libres"><strong>Disponibilidad del día</strong>@for(f of disponibilidad.libres;track $index){<p>{{f.horaInicio|slice:0:5}}–{{f.horaFin|slice:0:5}}</p>}@empty{<p>No quedan horarios disponibles. Elegí otra fecha.</p>}</div>
-        @if(turnos.length){<p class="slot-title">Elegí un turno de 1 hora o ajustá el rango arriba</p><div class="slots">@for(t of turnos;track t.horaInicio){<button type="button" [class.selected]="horaInicio===t.horaInicio&&horaFin===t.horaFin" [attr.aria-pressed]="horaInicio===t.horaInicio&&horaFin===t.horaFin" (click)="elegir(t)">{{t.horaInicio}}</button>}</div>}
-        @if(horaInicio && horaFin && !seleccionValida){<p class="app-alert error">Elegí un rango libre, en intervalos de 30 minutos (máximo 4 horas).</p>}
+        <section class="disponibilidad-06d" aria-label="Disponibilidad de la fecha seleccionada">
+          <div class="disponibilidad-06d-encabezado">
+            <div><strong>Disponibilidad del día</strong><p>{{cantidadTurnosLibres}} inicios posibles de 1 hora</p></div>
+            <button type="button" class="disponibilidad-06d-actualizar" (click)="actualizarHorarios()" [disabled]="reservando">Actualizar horarios</button>
+          </div>
+          <div class="disponibilidad-06d-leyenda"><span class="disponibilidad-06d-dot libre"></span> Libre <span class="disponibilidad-06d-dot ocupado"></span> Ocupado</div>
+          @if(disponibilidad.ocupados.length){
+          <h3>Horarios ocupados</h3>
+          <div class="disponibilidad-06d-franjas">@for(f of disponibilidad.ocupados;track $index){<span class="disponibilidad-06d-franja ocupada" [attr.aria-label]="'Ocupado de '+f.horaInicio.slice(0,5)+' a '+f.horaFin.slice(0,5)">{{f.horaInicio|slice:0:5}}–{{f.horaFin|slice:0:5}}</span>}</div>
+          }
+          <h3>Franjas libres</h3>
+          <div class="disponibilidad-06d-franjas">@for(f of disponibilidad.libres;track $index){<span class="disponibilidad-06d-franja libre">{{f.horaInicio|slice:0:5}}–{{f.horaFin|slice:0:5}}</span>}@empty{<p>No quedan horarios disponibles. Elegí otra fecha.</p>}</div>
+          @if(turnos.length){<p class="slot-title">Elegí un inicio para reservar 1 hora o ajustá el rango arriba</p><div class="slots">@for(t of turnos;track t.horaInicio){<button type="button" [class.selected]="horaInicio===t.horaInicio&&horaFin===t.horaFin" [attr.aria-pressed]="horaInicio===t.horaInicio&&horaFin===t.horaFin" [disabled]="reservando" (click)="elegir(t)" [attr.aria-label]="'Reservar de '+t.horaInicio+' a '+t.horaFin">{{t.horaInicio}}</button>}</div>}
+          @if(horaInicio && horaFin && !seleccionValida){<p class="app-alert error">Elegí un rango libre, en intervalos de 30 minutos (máximo 4 horas).</p>}
+          @if(seleccionValida){<p class="disponibilidad-06d-seleccion" role="status">Horario elegido: <strong>{{horaInicio}} a {{horaFin}}</strong></p>}
+        </section>
         }
         @if (mensaje) {
         <p class="mensaje" role="alert">{{ mensaje }}</p>
