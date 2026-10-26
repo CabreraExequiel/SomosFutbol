@@ -78,6 +78,28 @@ public class PublicacionController {
     }
 
     // ==========================================
+    // 05B1: BUSCAR PUBLICACIONES POR HASHTAG
+    // ==========================================
+
+    @GetMapping("/hashtags")
+    public ResponseEntity<List<PublicacionResponse>> buscarHashtag(
+            @AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "") String tag,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "0") int dias
+    ) {
+        return ResponseEntity.ok(
+                publicacionService.buscarPorHashtag(user, tag, page, size, dias));
+    }
+
+    @GetMapping("/hashtags/destacados")
+    public ResponseEntity<List<HashtagDestacadoResponse>> hashtagsDestacados(
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(publicacionService.listarHashtagsDestacados(user));
+    }
+
+    // ==========================================
     // CREAR PUBLICACIÓN NORMAL
     // ==========================================
 

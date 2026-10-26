@@ -9,9 +9,14 @@ import com.canchasya.api.repository.*;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MultipartFile;
 
 
@@ -20,10 +25,14 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
 public class PublicacionService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PublicacionService.class);
 
     private final PublicacionRepository publicacionRepository;
     private final ComentarioRepository comentarioRepository;
@@ -34,8 +43,25 @@ public class PublicacionService {
     private final NotificacionService notificacionService;
     private final VideoStorageService videoStorageService;
 
-    private static final int MAX_CANDIDATOS = 500;
+    private static final int MAX_CANDIDATOS = 500; // Se mantiene para el filtro Cerca.
     private static final int MAX_PAGINA = 50;
+    private static final int TAMANO_LOTE_RANKING = 200;
+    // Limitar cuantos resultados hay que retener para evitar consumos excesivos
+    // si alguien pide una pagina extremadamente lejana.
+    private static final int MAX_RESULTADOS_RANKING = 5000;
+
+    private static final int MUESTRA_HASHTAGS = 500;
+    private static final int CANTIDAD_HASHTAGS_DESTACADOS = 8;
+    private static final Pattern PATRON_HASHTAG = Pattern.compile(
+            "(?<![A-Za-z0-9_])#([A-Za-z0-9_]{2,30})(?![A-Za-z0-9_])");
+
+    private record PublicacionPuntuada(Long id, LocalDateTime fecha, double puntaje) {}
+
+    private static final Comparator<PublicacionPuntuada> MEJOR_PRIMERO = Comparator
+            .comparingDouble(PublicacionPuntuada::puntaje).reversed()
+            .thenComparing(PublicacionPuntuada::fecha,
+                    Comparator.nullsLast(Comparator.reverseOrder()))
+            .thenComparing(PublicacionPuntuada::id, Comparator.reverseOrder());
 
     private static final Set<String> MODOS = Set.of(
             "para-vos",
@@ -81,9 +107,36 @@ public class PublicacionService {
             );
         }
 
-        // Candidatos iniciales de la beta.
-        // Para una versión grande, migrar a
-        // consultas paginadas y ranking en BD.
+        Long usuarioId = user.getId();
+
+        // Modo cronológico: la página se resuelve en MySQL.
+        // No carga los primeros 500 candidatos ni calcula rankings en memoria.
+        // Orden secundario por ID evita resultados inestables con fechas iguales.
+        if (vista.equals("recientes")) {
+            List<Publicacion> paginaRecientes = publicacionRepository
+                    .findAllByOrderByCreatedAtDescIdDesc(PageRequest.of(page, size))
+                    .getContent();
+            return convertirConLikes(paginaRecientes, usuarioId);
+        }
+
+        // 05A4: Amigos muestra solo autores aceptados y publicaciones propias.
+        // Filtrado + orden + paginación ocurren en MySQL, incluso más allá de 500.
+        if (vista.equals("amigos")) {
+            Set<Long> autores = idsAmigos(usuarioId);
+            autores.add(usuarioId);
+            List<Publicacion> paginaAmigos = publicacionRepository
+                    .findFeedAmigos(autores, PageRequest.of(page, size))
+                    .getContent();
+            return convertirConLikes(paginaAmigos, usuarioId);
+        }
+
+        // 05A5: para-vos evalua TODAS las publicaciones con lotes ligeros
+        // y conserva unicamente los mejores resultados necesarios.
+        if (vista.equals("para-vos")) {
+            return feedParaVos(user, page, size);
+        }
+
+        // El modo Cerca conserva por ahora el limite de candidatos original.
 
         List<Publicacion> candidatos =
                 publicacionRepository
@@ -99,55 +152,7 @@ public class PublicacionService {
             return List.of();
         }
 
-        Long usuarioId = user.getId();
-
-        // ======================================
-        // AMISTADES CONFIRMADAS
-        // ======================================
-
-        Set<Long> amigos = new HashSet<>();
-
-        for (Amistad amistad :
-                amistadRepository.findRelaciones(
-                        usuarioId,
-                        EstadoAmistad.ACEPTADA
-                )) {
-
-            Long solicitante =
-                    amistad.getSolicitante().getId();
-
-            Long destinatario =
-                    amistad.getDestinatario().getId();
-
-            amigos.add(
-                    solicitante.equals(usuarioId)
-                            ? destinatario
-                            : solicitante
-            );
-        }
-
-        // ======================================
-        // AUTORES CON INTERACCIONES PREVIAS
-        // ======================================
-
-        Set<Long> autoresPreferidos = new HashSet<>();
-
-        if (vista.equals("para-vos")) {
-            autoresPreferidos.addAll(
-                    likeRepository.autoresPreferidos(usuarioId)
-            );
-
-            autoresPreferidos.addAll(
-                    comentarioRepository.autoresComentados(
-                            usuarioId
-                    )
-            );
-        }
-
-        String ciudadUsuario =
-                normalizarCiudad(user.getCiudad());
-
-        LocalDateTime ahora = LocalDateTime.now();
+        String ciudadUsuario = normalizarCiudad(user.getCiudad());
 
         // ======================================
         // FILTRAR PUBLICACIONES
@@ -157,87 +162,18 @@ public class PublicacionService {
                 .stream()
                 .filter(publicacion -> {
 
-                    Long autorId =
-                            publicacion.getUser().getId();
-
-                    return switch (vista) {
-
-                        case "amigos" ->
-                                amigos.contains(autorId)
-                                        || autorId.equals(usuarioId);
-
-                        case "cerca" ->
-                                !ciudadUsuario.isEmpty()
-                                        && ciudadUsuario.equals(
-                                        normalizarCiudad(
-                                                publicacion.getUser()
-                                                        .getCiudad()
-                                        )
-                                );
-
-                        default -> true;
-                    };
+                    return !ciudadUsuario.isEmpty()
+                            && ciudadUsuario.equals(normalizarCiudad(
+                                    publicacion.getUser().getCiudad()));
                 })
                 .collect(Collectors.toCollection(ArrayList::new));
 
-        // ======================================
-        // ORDENAR EL FEED
-        // ======================================
-
-        if (vista.equals("para-vos")) {
-
-            Map<Long, Double> puntajes = new HashMap<>();
-
-            for (Publicacion publicacion : filtradas) {
-
-                puntajes.put(
-                        publicacion.getId(),
-                        calcularPuntaje(
-                                publicacion,
-                                usuarioId,
-                                ciudadUsuario,
-                                amigos,
-                                autoresPreferidos,
-                                ahora
-                        )
-                );
-            }
-
-            filtradas.sort(
-                    Comparator
-                            .comparingDouble(
-                                    (Publicacion p) ->
-                                            puntajes.get(p.getId())
-                            )
-                            .reversed()
-                            .thenComparing(
-                                    Publicacion::getCreatedAt,
-                                    Comparator.nullsLast(
-                                            Comparator.reverseOrder()
-                                    )
-                            )
-                            .thenComparing(
-                                    Publicacion::getId,
-                                    Comparator.reverseOrder()
-                            )
-            );
-
-        } else {
-
-            filtradas.sort(
-                    Comparator
-                            .comparing(
-                                    Publicacion::getCreatedAt,
-                                    Comparator.nullsLast(
-                                            Comparator.reverseOrder()
-                                    )
-                            )
-                            .thenComparing(
-                                    Publicacion::getId,
-                                    Comparator.reverseOrder()
-                            )
-            );
-        }
+        // Cerca sigue ordenado cronologicamente, igual que antes.
+        filtradas.sort(
+                Comparator.comparing(Publicacion::getCreatedAt,
+                                Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(Publicacion::getId, Comparator.reverseOrder())
+        );
 
         // ======================================
         // PAGINACIÓN
@@ -255,18 +191,200 @@ public class PublicacionService {
                 inicio + size
         );
 
-        return filtradas
-                .subList(desde, hasta)
-                .stream()
-                .map(publicacion ->
-                        PublicacionResponse.fromEntity(
-                                publicacion,
-                                yaLeDioLike(
-                                        publicacion.getId(),
-                                        usuarioId
-                                )
-                        )
-                )
+        return convertirConLikes(filtradas.subList(desde, hasta), usuarioId);
+    }
+
+    // 05B2: tendencias aproximadas: hasta 500 publicaciones con hashtags de 7 dias.
+    // Se cuenta una publicacion una sola vez por etiqueta y se normalizan mayusculas.
+    @Transactional(readOnly = true)
+    public List<HashtagDestacadoResponse> listarHashtagsDestacados(User usuario) {
+        if (usuario == null) {
+            throw new ApiException("Debés iniciar sesión", HttpStatus.UNAUTHORIZED);
+        }
+        List<String> contenidos = publicacionRepository.listarContenidosEtiquetadosRecientes(
+                LocalDateTime.now().minusDays(7), PageRequest.of(0, MUESTRA_HASHTAGS));
+        Map<String, Long> apariciones = new HashMap<>();
+        for (String contenido : contenidos) {
+            if (contenido == null || contenido.isBlank()) continue;
+            Matcher coincidencias = PATRON_HASHTAG.matcher(contenido);
+            Set<String> enEstaPublicacion = new HashSet<>();
+            while (coincidencias.find()) {
+                enEstaPublicacion.add(coincidencias.group(1).toLowerCase(Locale.ROOT));
+            }
+            for (String etiqueta : enEstaPublicacion) {
+                apariciones.merge(etiqueta, 1L, Long::sum);
+            }
+        }
+        return apariciones.entrySet().stream()
+                .sorted(Comparator.<Map.Entry<String, Long>>comparingLong(
+                        Map.Entry::getValue).reversed().thenComparing(Map.Entry::getKey))
+                .limit(CANTIDAD_HASHTAGS_DESTACADOS)
+                .map(e -> new HashtagDestacadoResponse(e.getKey(), e.getValue()))
+                .toList();
+    }
+
+    // 05B1: busqueda local de etiquetas en publicaciones, sin tablas nuevas.
+    // Se valida la etiqueta para evitar expresiones regulares arbitrarias
+    // y se respetan las mismas reglas de tamaño del feed.
+    @Transactional(readOnly = true)
+    public List<PublicacionResponse> buscarPorHashtag(
+            User usuario, String etiqueta, int page, int size) {
+        return buscarPorHashtag(usuario, etiqueta, page, size, 0);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PublicacionResponse> buscarPorHashtag(
+            User usuario, String etiqueta, int page, int size, int dias) {
+        if (usuario == null) {
+            throw new ApiException("Debés iniciar sesión", HttpStatus.UNAUTHORIZED);
+        }
+        if (page < 0 || page > 500 || size < 1 || size > MAX_PAGINA) {
+            throw new ApiException("Parámetros de paginación inválidos", HttpStatus.BAD_REQUEST);
+        }
+        if (dias != 0 && dias != 7 && dias != 30) {
+            throw new ApiException("Período de búsqueda inválido", HttpStatus.BAD_REQUEST);
+        }
+
+        String nombre = etiqueta == null ? "" : etiqueta.trim();
+        if (nombre.startsWith("#")) {
+            nombre = nombre.substring(1);
+        }
+        if (!nombre.matches("[A-Za-z0-9_]{2,30}")) {
+            throw new ApiException(
+                    "Usá una etiqueta de 2 a 30 caracteres (letras, números o _)",
+                    HttpStatus.BAD_REQUEST);
+        }
+
+        // REGEXP compatible con MySQL 8 y MariaDB 10.4. El limite de
+        // palabra incluye el # inicial y el final de la etiqueta.
+        String patron = "(^|[^[:alnum:]_])#" + nombre + "([^[:alnum:]_]|$)";
+        PageRequest paginacion = PageRequest.of(page, size);
+        List<Publicacion> pagina = dias == 0
+                ? publicacionRepository.buscarPorHashtag(patron, paginacion).getContent()
+                : publicacionRepository.buscarPorHashtagDesde(
+                        patron, LocalDateTime.now().minusDays(dias), paginacion).getContent();
+        return convertirConLikes(pagina, usuario.getId());
+    }
+
+    // 05A5: ranking global con consultas pequenas. El DTO no es una entidad
+    // gestionada por Hibernate: evita acumular miles de Publicacion en el
+    // contexto de persistencia. El heap mantiene solo los mejores K resultados.
+    private List<PublicacionResponse> feedParaVos(User usuario, int page, int size) {
+        long desde = (long) page * size;
+        if (desde >= MAX_RESULTADOS_RANKING) {
+            return List.of();
+        }
+        int hasta = (int) Math.min(desde + size, MAX_RESULTADOS_RANKING);
+        Long usuarioId = usuario.getId();
+        Set<Long> amigos = idsAmigos(usuarioId);
+        Set<Long> autoresPreferidos = new HashSet<>(likeRepository.autoresPreferidos(usuarioId));
+        autoresPreferidos.addAll(comentarioRepository.autoresComentados(usuarioId));
+        String ciudadUsuario = normalizarCiudad(usuario.getCiudad());
+        LocalDateTime ahora = LocalDateTime.now();
+
+        // PriorityQueue deja el PEOR resultado en la cabeza para reemplazarlo
+        // cuando aparece una publicacion mas relevante en un lote posterior.
+        PriorityQueue<PublicacionPuntuada> mejores =
+                new PriorityQueue<>(hasta, MEJOR_PRIMERO.reversed());
+
+        FeedCandidato cursor = null;
+        PageRequest loteDeDoscientas = PageRequest.of(0, TAMANO_LOTE_RANKING);
+        while (true) {
+            Slice<FeedCandidato> lote = cursor == null
+                    ? publicacionRepository.listarCandidatosParaVos(loteDeDoscientas)
+                    : publicacionRepository.listarCandidatosParaVosAntesDe(
+                            cursor.createdAt(), cursor.id(), loteDeDoscientas);
+            List<FeedCandidato> candidatos = lote.getContent();
+            if (candidatos.isEmpty()) {
+                break;
+            }
+
+            Set<Long> ids = candidatos.stream().map(FeedCandidato::id)
+                    .collect(Collectors.toSet());
+            Map<Long, Long> likes = new HashMap<>();
+            for (Object[] fila : likeRepository.contarPorPublicaciones(ids)) {
+                likes.put(((Number) fila[0]).longValue(), ((Number) fila[1]).longValue());
+            }
+            Map<Long, Long> comentarios = new HashMap<>();
+            for (Object[] fila : comentarioRepository.contarPorPublicaciones(ids)) {
+                comentarios.put(((Number) fila[0]).longValue(), ((Number) fila[1]).longValue());
+            }
+
+            for (FeedCandidato candidato : candidatos) {
+                double puntaje = calcularPuntaje(
+                        candidato.autorId(), candidato.ciudadAutor(),
+                        candidato.createdAt(), usuarioId, ciudadUsuario,
+                        amigos, autoresPreferidos, ahora,
+                        likes.getOrDefault(candidato.id(), 0L),
+                        comentarios.getOrDefault(candidato.id(), 0L));
+                PublicacionPuntuada actual = new PublicacionPuntuada(
+                        candidato.id(), candidato.createdAt(), puntaje);
+                if (mejores.size() < hasta) {
+                    mejores.offer(actual);
+                } else if (MEJOR_PRIMERO.compare(actual, mejores.peek()) < 0) {
+                    mejores.poll();
+                    mejores.offer(actual);
+                }
+            }
+
+            if (!lote.hasNext()) {
+                break;
+            }
+            cursor = candidatos.get(candidatos.size() - 1);
+        }
+
+        if (desde >= mejores.size()) {
+            return List.of();
+        }
+        List<PublicacionPuntuada> ordenadas = new ArrayList<>(mejores);
+        ordenadas.sort(MEJOR_PRIMERO);
+        List<Long> idsPagina = ordenadas.subList((int) desde, ordenadas.size())
+                .stream().map(PublicacionPuntuada::id).toList();
+
+        // Recuperar las entidades completas SOLO de la pagina final, respetando
+        // el orden del ranking y no el orden arbitrario del SELECT ... IN.
+        Map<Long, Publicacion> porId = new HashMap<>();
+        publicacionRepository.findAllById(idsPagina)
+                .forEach(publicacion -> porId.put(publicacion.getId(), publicacion));
+        List<Publicacion> pagina = idsPagina.stream()
+                .map(porId::get).filter(Objects::nonNull).toList();
+        return convertirConLikes(pagina, usuarioId);
+    }
+
+    // Reutilizar la misma definición de amistad aceptada en Amigos y Para vos.
+    private Set<Long> idsAmigos(Long usuarioId) {
+        Set<Long> amigos = new HashSet<>();
+        for (Amistad amistad : amistadRepository.findRelaciones(
+                usuarioId, EstadoAmistad.ACEPTADA)) {
+            Long solicitante = amistad.getSolicitante().getId();
+            Long destinatario = amistad.getDestinatario().getId();
+            amigos.add(solicitante.equals(usuarioId) ? destinatario : solicitante);
+        }
+        return amigos;
+    }
+
+    private List<PublicacionResponse> convertirConLikes(
+            List<Publicacion> publicacionesPagina,
+            Long usuarioId
+    ) {
+        if (publicacionesPagina.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Long> idsPagina = publicacionesPagina.stream()
+                .map(Publicacion::getId)
+                .collect(Collectors.toSet());
+
+        // 05A1: una consulta de likes para toda la página.
+        Set<Long> idsLikeados = likeRepository.idsLikeadosPorUsuario(
+                usuarioId, idsPagina
+        );
+
+        return publicacionesPagina.stream()
+                .map(publicacion -> PublicacionResponse.fromEntity(
+                        publicacion,
+                        idsLikeados.contains(publicacion.getId())
+                ))
                 .toList();
     }
 
@@ -275,15 +393,17 @@ public class PublicacionService {
     // ==========================================
 
     private double calcularPuntaje(
-            Publicacion publicacion,
+            Long autorId,
+            String ciudadAutor,
+            LocalDateTime createdAt,
             Long usuarioId,
             String ciudadUsuario,
             Set<Long> amigos,
             Set<Long> autoresPreferidos,
-            LocalDateTime ahora
+            LocalDateTime ahora,
+            long likes,
+            long comentarios
     ) {
-
-        Long autorId = publicacion.getUser().getId();
 
         double puntos = 0;
 
@@ -293,9 +413,7 @@ public class PublicacionService {
         }
 
         // 2. CERCANÍA GEOGRÁFICA
-        String ciudadAutor = normalizarCiudad(
-                publicacion.getUser().getCiudad()
-        );
+        ciudadAutor = normalizarCiudad(ciudadAutor);
 
         if (!ciudadUsuario.isEmpty()
                 && ciudadUsuario.equals(ciudadAutor)) {
@@ -308,14 +426,7 @@ public class PublicacionService {
         }
 
         // 4. POPULARIDAD DE LA PUBLICACIÓN
-        int likes = publicacion.getLikes() == null
-                ? 0
-                : publicacion.getLikes().size();
-
-        int comentarios = publicacion.getComentarios() == null
-                ? 0
-                : publicacion.getComentarios().size();
-
+        // Los conteos vienen de consultas agrupadas, no de colecciones LAZY.
         puntos += Math.min(
                 20,
                 Math.log1p(likes) * 7
@@ -327,12 +438,12 @@ public class PublicacionService {
         );
 
         // 5. ANTIGÜEDAD
-        if (publicacion.getCreatedAt() != null) {
+        if (createdAt != null) {
 
             long horas = Math.max(
                     0,
                     Duration.between(
-                            publicacion.getCreatedAt(),
+                            createdAt,
                             ahora
                     ).toHours()
             );
@@ -533,7 +644,32 @@ public class PublicacionService {
             );
         }
 
+        // El archivo MP4 debe eliminarse solo DESPUÉS de confirmar el commit.
+        // Borrarlo antes podría dejar una publicación válida sin video si hay rollback.
+        String videoPublicId = publicacion.getVideoPublicId();
         publicacionRepository.delete(publicacion);
+
+        if (videoPublicId != null && !videoPublicId.isBlank()) {
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        try {
+                            videoStorageService.eliminar(videoPublicId);
+                        } catch (RuntimeException error) {
+                            // La BD ya confirmó la eliminación. No devolver un falso error HTTP:
+                            // registrar el fallo para poder limpiar el archivo pendiente.
+                            LOGGER.error("No se pudo limpiar el MP4 de la publicación {} (videoId={})",
+                                    id, videoPublicId, error);
+                        }
+                    }
+                });
+            } else {
+                // Salvaguarda: nunca eliminar físicamente el video sin commit confirmado.
+                LOGGER.warn("No se programó la limpieza del video {}: sin sincronización transaccional",
+                        videoPublicId);
+            }
+        }
     }
 
     // ==========================================

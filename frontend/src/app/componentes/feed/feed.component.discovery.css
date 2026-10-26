@@ -1,0 +1,112 @@
+/* 05B1 — buscador de publicaciones por hashtag */
+.buscador-hashtag { padding: 16px 20px; }
+.buscador-hashtag label { display: block; margin-bottom: 8px; font-weight: 750; font-size: .88rem; }
+.buscador-hashtag-controles { display: flex; flex-wrap: wrap; gap: 8px; }
+.buscador-hashtag-controles input {
+  flex: 1 1 180px; min-width: 0; padding: 10px 12px;
+  border: 1px solid var(--borde); border-radius: 9px; font: inherit;
+}
+.buscador-hashtag p { margin: 10px 0 0; color: var(--texto-suave); font-size: .82rem; }
+
+/* 05B2 - etiquetas destacadas y filtro temporal */
+.hashtags-destacados { margin-top: 14px; border-top: 1px solid var(--borde); padding-top: 12px; }
+.hashtags-destacados h2 { margin: 0 0 10px; color: var(--tinta); font-size: .88rem; font-weight: 750; }
+.hashtags-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.hashtags-chips button {
+  display: inline-flex; align-items: center; gap: 7px;
+  min-height: 39px; max-width: 100%; padding: 7px 11px;
+  border: 1px solid var(--borde); border-radius: 999px;
+  background: #fff; color: var(--texto); cursor: pointer;
+  overflow-wrap: anywhere; transition: background .16s, border-color .16s;
+}
+.hashtags-chips button:hover { background: var(--naranja-suave); border-color: var(--naranja); }
+.hashtags-chips button[aria-pressed="true"] { background: var(--naranja-suave); border-color: var(--naranja); font-weight: 750; }
+.hashtags-chips span {
+  color: var(--texto-suave); background: #f1f5f9; border-radius: 999px;
+  padding: 2px 6px; font-size: .77rem; font-variant-numeric: tabular-nums;
+}
+.hashtags-destacados small { display: block; margin-top: 8px; color: var(--texto-suave); }
+.periodo-hashtag { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; }
+.periodo-hashtag label { margin: 0; }
+.periodo-hashtag select { padding: 7px; border: 1px solid var(--borde); border-radius: 8px; background: #fff; }
+
+/* 05B3 - busqueda comoda con teclado y en pantallas pequenas. */
+.buscador-hashtag-controles .primary-button,
+.buscador-hashtag-controles .secondary-button { min-height: 42px; }
+.buscador-hashtag-controles input:focus-visible,
+.periodo-hashtag select:focus-visible,
+.hashtags-chips button:focus-visible { outline: 2px solid var(--naranja); outline-offset: 2px; }
+.periodo-hashtag select { min-height: 40px; max-width: 100%; font: inherit; }
+@media (max-width: 600px) {
+  .buscador-hashtag { padding: 15px; }
+  .buscador-hashtag-controles input { flex-basis: 100%; }
+  .buscador-hashtag-controles .primary-button,
+  .buscador-hashtag-controles .secondary-button { flex: 1 1 calc(50% - 5px); }
+  .periodo-hashtag { align-items: stretch; }
+  .periodo-hashtag label,
+  .periodo-hashtag select { width: 100%; }
+  .hashtags-chips { gap: 8px; }
+}
+
+/* 05B4 - errores de busqueda, paginacion recuperable y estados de carga. */
+.busqueda-hashtag-error { color: #b91c1c !important; font-weight: 650; }
+.feed-error-paginacion { flex-wrap: wrap; min-height: 86px; }
+.feed-error-paginacion p { flex: 1 1 220px; }
+.feed-error-paginacion .secondary-button { min-height: 42px; }
+.feed-esqueleto { padding: 22px; display: grid; gap: 16px; }
+.feed-esqueleto-cabecera { display: flex; align-items: center; gap: 12px; }
+.feed-esqueleto-identidad { display: grid; flex: 1; gap: 8px; }
+.feed-esqueleto-avatar { width: 42px; height: 42px; flex: 0 0 42px; border-radius: 50%; }
+.feed-esqueleto-linea { display: block; width: 100%; height: 13px; border-radius: 8px; }
+.feed-esqueleto-corta { width: 36%; }
+.feed-esqueleto-media { width: 71%; }
+.feed-esqueleto-brillo {
+  background: linear-gradient(100deg, #edf2f7 30%, #f8fafc 45%, #edf2f7 60%);
+  background-size: 200% 100%; animation: feed-carga-brillo 1.5s linear infinite;
+}
+@keyframes feed-carga-brillo { to { background-position-x: -200%; } }
+@media (prefers-reduced-motion: reduce) {
+  .feed-esqueleto-brillo { animation: none; }
+}
+@media (max-width: 600px) {
+  .feed-esqueleto { padding: 17px; }
+  .feed-error-paginacion .secondary-button { width: 100%; margin-left: 0; }
+}
+
+/* 05B5 — confirmaciones y errores de interacción por publicación. */
+.mensaje-interaccion {
+  margin: 12px 0 0; padding: 9px 12px;
+  border-radius: 9px; font-size: .84rem; line-height: 1.45;
+}
+.interaccion-error { color: #991b1b; background: #fff1f2; border: 1px solid #fecdd3; }
+.interaccion-exito { color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; }
+.nuevo-comentario[aria-busy="true"] { opacity: .75; }
+
+/* 05B6 — borradores temporales del editor, sin cambios en backend. */
+.borrador-feed-estado {
+  display: flex; gap: 10px; align-items: center; justify-content: space-between;
+  margin: 10px 0; padding: 10px 12px; background: #f0fdf4;
+  border: 1px solid #bbf7d0; border-radius: 10px;
+}
+.borrador-feed-estado p { margin: 0 0 4px; color: #166534; font-weight: 650; font-size: .85rem; }
+.borrador-feed-estado small { color: #475569; font-size: .76rem; }
+.borrador-feed-estado button {
+  padding: 7px 10px; background: #fff; color: #991b1b;
+  border: 1px solid #fecaca; border-radius: 8px; cursor: pointer;
+}
+.borrador-feed-estado button:focus-visible { outline: 2px solid var(--naranja); outline-offset: 2px; }
+@media (max-width: 600px) {
+  .borrador-feed-estado { align-items: stretch; flex-direction: column; }
+}
+
+/* 05B7 — editor accesible: atajo opcional y contador visible. */
+.editor-publicacion-ayuda {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 6px 12px; margin: 7px 0 4px; color: var(--texto-suave);
+  font-size: .74rem; line-height: 1.4;
+}
+.editor-publicacion-contador { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.editor-publicacion-cerca-limite .editor-publicacion-contador { color: #9a3412; }
+@media (max-width: 600px) {
+  .editor-publicacion-ayuda { align-items: flex-start; }
+}

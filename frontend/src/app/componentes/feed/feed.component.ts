@@ -12,7 +12,10 @@ import { FormsModule } from '@angular/forms';
 
 import { Subscription } from 'rxjs';
 
-import { FeedService } from '../../services/feed.service';
+import { FeedService, HashtagDestacado } from '../../services/feed.service';
+import {
+  claveBorradorFeed, leerBorradorFeed, guardarBorradorFeed, eliminarBorradorFeed
+} from './borrador-feed.store';
 import { AuthService } from '../../services/auth.service';
 import {
   Amistad,
@@ -29,7 +32,11 @@ type ModoFeed = 'para-vos' | 'recientes' | 'amigos' | 'cerca';
     FormsModule
   ],
   templateUrl: './feed.component.html',
-  styleUrl: './feed.component.css',
+  styleUrls: [
+    './feed.component.css',
+    './feed.component.media.css',
+    './feed.component.discovery.css'
+  ],
   changeDetection: ChangeDetectionStrategy.Default
 })
 export class FeedComponent implements OnInit, OnDestroy {
@@ -40,6 +47,10 @@ export class FeedComponent implements OnInit, OnDestroy {
   private readonly TAMANIO_PAGINA = 10;
 
   modoFeed: ModoFeed = 'para-vos';
+  textoHashtag = '';
+  hashtagActivo: string | null = null;
+  diasHashtag: 0 | 7 | 30 = 0;
+  hashtagsDestacados: HashtagDestacado[] = [];
 
   publicaciones: any[] = [];
 
@@ -49,8 +60,17 @@ export class FeedComponent implements OnInit, OnDestroy {
   cargando = false;
 
   ocupados = new Set<number>();
+  comentariosEnviando = new Set<number>();
+  estadoInteraccion: Record<number, { tipo: 'error' | 'exito'; texto: string }> = {};
+
+  limpiarEstadoInteraccion(publicacionId: number): void {
+    delete this.estadoInteraccion[publicacionId];
+  }
 
   nuevoContenido = '';
+  readonly limiteContenido = 2000;
+  borradorGuardado = false;
+  borradorRecuperado = false;
   videoSeleccionado: File | null = null;
   videoPreviewUrl: string | null = null;
   youtubeUrl = '';
@@ -67,6 +87,8 @@ export class FeedComponent implements OnInit, OnDestroy {
   publicando = false;
 
   error = '';
+  errorMas = '';
+  errorBusquedaHashtag = '';
   errorPublicacion = '';
 
   constructor(
@@ -79,7 +101,9 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.restaurarBorrador();
     this.cargarFeed();
+    this.cargarHashtagsDestacados();
     const youtubeCompartido = sessionStorage.getItem(
       'somosFutbolYoutubeCompartido'
     );
@@ -88,6 +112,7 @@ export class FeedComponent implements OnInit, OnDestroy {
       this.quitarVideo();
       this.youtubeUrl = youtubeCompartido;
       this.mostrarCampoYoutube = true;
+      this.guardarBorrador();
 
       sessionStorage.removeItem(
         'somosFutbolYoutubeCompartido'
@@ -110,6 +135,79 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.solicitudFeed++;
     this.suscripciones.unsubscribe();
     this.quitarVideo();
+  }
+
+  private almacenamientoBorrador(): Storage | null {
+    try {
+      return typeof window !== 'undefined' ? window.sessionStorage : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private claveBorrador(): string | null {
+    return claveBorradorFeed(this.usuarioActual?.id);
+  }
+
+  private restaurarBorrador(): void {
+    const almacenamiento = this.almacenamientoBorrador();
+    const clave = this.claveBorrador();
+    if (!almacenamiento || !clave) return;
+
+    const borrador = leerBorradorFeed(almacenamiento, clave);
+    if (!borrador) return;
+    this.nuevoContenido = borrador.contenido;
+    this.youtubeUrl = borrador.youtubeUrl;
+    this.mostrarCampoYoutube = !!borrador.youtubeUrl;
+    this.borradorGuardado = true;
+    this.borradorRecuperado = true;
+  }
+
+  guardarBorrador(): void {
+    this.borradorRecuperado = false;
+    const almacenamiento = this.almacenamientoBorrador();
+    const clave = this.claveBorrador();
+    if (!almacenamiento || !clave) {
+      this.borradorGuardado = false;
+      return;
+    }
+    this.borradorGuardado = guardarBorradorFeed(almacenamiento, clave, {
+      contenido: this.nuevoContenido,
+      youtubeUrl: this.mostrarCampoYoutube ? this.youtubeUrl : ''
+    });
+  }
+
+  private eliminarBorradorGuardado(): void {
+    const almacenamiento = this.almacenamientoBorrador();
+    const clave = this.claveBorrador();
+    if (almacenamiento && clave) eliminarBorradorFeed(almacenamiento, clave);
+    this.borradorGuardado = false;
+    this.borradorRecuperado = false;
+  }
+
+  descartarBorrador(): void {
+    if (this.publicando ||
+        !window.confirm('¿Querés descartar el borrador? No se puede recuperar.')) return;
+    this.nuevoContenido = '';
+    this.mencionadosIds = [];
+    this.mostrarEtiquetas = false;
+    this.quitarVideo();
+    this.youtubeUrl = '';
+    this.mostrarCampoYoutube = false;
+    this.errorPublicacion = '';
+    this.eliminarBorradorGuardado();
+  }
+
+  // 05B7: Ctrl+Enter (o Cmd+Enter) publica usando la validación habitual.
+  // El Enter normal conserva su función de salto de línea.
+  atajoPublicar(event: KeyboardEvent): void {
+    if (event.key !== 'Enter' || (!event.ctrlKey && !event.metaKey) ||
+        event.altKey || event.shiftKey || event.isComposing || event.repeat ||
+        this.publicando || !this.nuevoContenido.trim()) {
+      return;
+    }
+    event.preventDefault();
+    this.publicar();
   }
 
 
@@ -141,6 +239,7 @@ seleccionarVideo(event: Event): void {
 
   this.youtubeUrl = '';
   this.mostrarCampoYoutube = false;
+  this.guardarBorrador();
   this.videoSeleccionado = archivo;
   this.videoPreviewUrl = URL.createObjectURL(archivo);
   input.value = '';
@@ -193,11 +292,13 @@ quitarVideo(): void {
     if (this.mostrarCampoYoutube) this.quitarVideo();
     else this.youtubeUrl = '';
     this.errorPublicacion = '';
+    this.guardarBorrador();
   }
 
   quitarYoutube(): void {
     this.youtubeUrl = '';
     this.mostrarCampoYoutube = false;
+    this.guardarBorrador();
   }
 
   youtubeEmbedUrl(id: string | null | undefined): SafeResourceUrl | null {
@@ -227,11 +328,51 @@ quitarVideo(): void {
 
   cambiarModo(modo: ModoFeed): void {
 
-    if (this.modoFeed === modo) {
+    if (this.modoFeed === modo && !this.hashtagActivo) {
       return;
     }
 
     this.modoFeed = modo;
+    this.hashtagActivo = null;
+    this.textoHashtag = '';
+    this.diasHashtag = 0;
+    this.errorBusquedaHashtag = '';
+    this.cargarFeed();
+  }
+
+  cargarHashtagsDestacados(): void {
+    const sub = this.feedService.listarHashtagsDestacados().subscribe({
+      next: etiquetas => { this.hashtagsDestacados = etiquetas; },
+      error: () => { this.hashtagsDestacados = []; }
+    });
+    this.suscripciones.add(sub);
+  }
+
+  seleccionarHashtagDestacado(etiqueta: string): void {
+    this.textoHashtag = `#${etiqueta}`;
+    this.buscarHashtag();
+  }
+
+  cambiarPeriodoHashtag(): void {
+    if (this.hashtagActivo) this.cargarFeed();
+  }
+
+  buscarHashtag(): void {
+    const valor = this.textoHashtag.trim().replace(/^#/, '').toLowerCase();
+    if (!/^[A-Za-z0-9_]{2,30}$/.test(valor)) {
+      this.errorBusquedaHashtag = 'Escribí un hashtag válido (2 a 30 caracteres, sin espacios).';
+      return;
+    }
+    this.errorBusquedaHashtag = '';
+    this.hashtagActivo = valor;
+    this.cargarFeed();
+  }
+
+  limpiarHashtag(): void {
+    this.errorBusquedaHashtag = '';
+    this.hashtagActivo = null;
+    this.textoHashtag = '';
+    this.diasHashtag = 0;
     this.cargarFeed();
   }
 
@@ -291,12 +432,16 @@ quitarVideo(): void {
     this.cargandoMas = false;
 
     this.error = '';
+    this.errorMas = '';
     this.publicaciones = [];
 
     this.pagina = 0;
     this.hayMas = false;
 
-    const sub = this.feedService.listar(0, modo).subscribe({
+    const consulta = this.hashtagActivo
+      ? this.feedService.buscarHashtag(this.hashtagActivo, 0, this.diasHashtag)
+      : this.feedService.listar(0, modo);
+    const sub = consulta.subscribe({
 
       next: respuesta => {
 
@@ -355,20 +500,25 @@ quitarVideo(): void {
 
     const solicitud = this.solicitudFeed;
     const modo = this.modoFeed;
+    const tag = this.hashtagActivo;
+    const dias = this.diasHashtag;
     const siguientePagina = this.pagina + 1;
 
     this.cargandoMas = true;
-    this.error = '';
+    this.errorMas = '';
 
-    const sub = this.feedService
-      .listar(siguientePagina, modo)
-      .subscribe({
+    const consulta = tag
+      ? this.feedService.buscarHashtag(tag, siguientePagina, dias)
+      : this.feedService.listar(siguientePagina, modo);
+    const sub = consulta.subscribe({
 
         next: respuesta => {
 
           if (
             solicitud !== this.solicitudFeed ||
-            modo !== this.modoFeed
+            modo !== this.modoFeed ||
+            tag !== this.hashtagActivo ||
+            dias !== this.diasHashtag
           ) {
             return;
           }
@@ -401,8 +551,8 @@ quitarVideo(): void {
             error
           );
 
-          this.error =
-            'No se pudieron cargar más publicaciones.';
+          this.errorMas =
+            'No se pudieron cargar más publicaciones. Reintentá sin perder los resultados anteriores.';
 
           this.cargandoMas = false;
         }
@@ -459,10 +609,12 @@ publicar(): void {
 
       this.quitarVideo();
       this.quitarYoutube();
+      this.eliminarBorradorGuardado();
 
       this.publicando = false;
 
       this.cargarFeed();
+      this.cargarHashtagsDestacados();
     },
 
     error: (error) => {
@@ -510,7 +662,7 @@ publicar(): void {
     }
 
     this.ocupados.add(pub.id);
-    this.error = '';
+    this.limpiarEstadoInteraccion(pub.id);
 
     const sub = this.feedService
       .darLike(pub.id)
@@ -551,8 +703,10 @@ publicar(): void {
 
           this.ocupados.delete(pub.id);
 
-          this.error =
-            'No se pudo actualizar el Me gusta.';
+          this.estadoInteraccion[pub.id] = {
+            tipo: 'error',
+            texto: 'No se pudo actualizar el Me gusta. Intentá nuevamente.'
+          };
         }
       });
 
@@ -576,7 +730,8 @@ publicar(): void {
     }
 
     this.ocupados.add(pub.id);
-    this.error = '';
+    this.comentariosEnviando.add(pub.id);
+    this.limpiarEstadoInteraccion(pub.id);
 
     const sub = this.feedService
       .comentar(pub.id, texto)
@@ -592,6 +747,11 @@ publicar(): void {
           this.comentarioTexto[pub.id] = '';
 
           this.ocupados.delete(pub.id);
+          this.comentariosEnviando.delete(pub.id);
+          this.estadoInteraccion[pub.id] = {
+            tipo: 'exito',
+            texto: 'Comentario publicado.'
+          };
         },
 
         error: error => {
@@ -602,10 +762,13 @@ publicar(): void {
           );
 
           this.ocupados.delete(pub.id);
+          this.comentariosEnviando.delete(pub.id);
 
-          this.error =
-            error?.error?.message ||
-            'No se pudo enviar el comentario.';
+          this.estadoInteraccion[pub.id] = {
+            tipo: 'error',
+            texto: error?.error?.message ||
+              'No se pudo enviar el comentario. Tu texto sigue disponible para reintentar.'
+          };
         }
       });
 
@@ -631,7 +794,7 @@ publicar(): void {
     }
 
     this.ocupados.add(pub.id);
-    this.error = '';
+    this.limpiarEstadoInteraccion(pub.id);
 
     const sub = this.feedService
       .eliminar(pub.id)
@@ -646,6 +809,9 @@ publicar(): void {
             );
 
           this.ocupados.delete(pub.id);
+          delete this.comentarioTexto[pub.id];
+          this.limpiarEstadoInteraccion(pub.id);
+          this.cargarHashtagsDestacados();
         },
 
         error: error => {
@@ -657,8 +823,10 @@ publicar(): void {
 
           this.ocupados.delete(pub.id);
 
-          this.error =
-            'No se pudo eliminar la publicación.';
+          this.estadoInteraccion[pub.id] = {
+            tipo: 'error',
+            texto: 'No se pudo eliminar la publicación. Intentá nuevamente.'
+          };
         }
       });
 

@@ -36,6 +36,12 @@ request('GET','/reservas/recibidas',expected=401)
 request('GET','/users',token=u,expected=403)
 request('POST','/auth/register',{'name':'Intruso','email':'admin-'+tag+'@example.test','password':password,'telefono':'12345678','role':'administrador','aceptaTerminos':True,'aceptaPrivacidad':True},expected=403)
 passed('Protección de sesiones y del rol administrador')
+# Configurar cuentas de transferencia para los dos duenos de prueba.
+# Los datos se guardan mediante el endpoint correspondiente,
+# no durante el registro de usuarios.
+request('PUT','/users/me/cuenta-cobro',{'aliasMercadoPago':'prueba.'+tag},d)
+request('PUT','/users/me/cuenta-cobro',{'aliasMercadoPago':'otro.'+tag},o)
+passed('Configuración de cuentas de cobro de los dueños')
 ciudad=request('GET','/ciudades')[0]['id']
 def cancha(nombre,token):return request('POST','/canchas',{'nombre':nombre,'ciudadId':ciudad,'direccion':'Av. del Deporte 123','tipo':'futbol 5','superficie':'sintetico','cantJugadores':10,'precioHora':15000,'techada':True,'descripcion':'Cancha de prueba funcional.'},token)
 c=cancha('Cancha Central',d);c2=cancha('Cancha Norte',d);c3=cancha('Cancha del Otro Dueño',o)
