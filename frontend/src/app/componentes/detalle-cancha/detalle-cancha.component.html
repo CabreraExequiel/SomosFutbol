@@ -20,7 +20,49 @@
   </div>
   }
 
-  @if (cancha && !cargando) {
+  @if (cancha && !cargando && !errorCarga) {
+  <section class="surface-card complejo-06b-panel" aria-labelledby="complejo-06b-titulo">
+    <div class="complejo-06b-encabezado">
+      <div>
+        <span class="page-eyebrow">Complejo deportivo</span>
+        <h1 id="complejo-06b-titulo">{{ cancha.nombreComplejo || cancha.duenoNombre }}</h1>
+        <p>Elegí la cancha que mejor se adapte a tu partido. La reserva se realiza por cancha.</p>
+      </div>
+      <a class="secondary-button" [routerLink]="['/duenos', cancha.duenoId]">Ver perfil del complejo</a>
+    </div>
+    <div class="complejo-06b-subtitulo">
+      <h2>Canchas del complejo</h2>
+      @if (!cargandoOtras && !errorOtras) {
+        <span>{{ otras.length + 1 }} {{ otras.length === 0 ? 'cancha disponible' : 'canchas disponibles' }}</span>
+      }
+    </div>
+    <div class="complejo-06b-lista" aria-label="Seleccionar una cancha">
+      <div class="complejo-06b-opcion complejo-06b-activa" aria-current="page">
+        <span class="complejo-06b-etiqueta">Seleccionada</span>
+        <strong>{{ cancha.nombre }}</strong>
+        <span class="complejo-06b-meta">{{ cancha.tipo || 'Fútbol' }} @if (cancha.techada) { · Techada }</span>
+        <span class="complejo-06b-precio">{{ cancha.precioHora | currency:'ARS':'symbol-narrow':'1.0-0' }} / hora</span>
+        <a href="#reserva-cancha" class="complejo-06b-reservar">Ver horarios y reservar ↓</a>
+      </div>
+      @for (otra of otras; track otra.id) {
+        <a class="complejo-06b-opcion complejo-06b-opcion-link"
+           [routerLink]="['/canchas', otra.id]"
+           [attr.aria-label]="'Seleccionar ' + otra.nombre + ', ' + (otra.tipo || 'Fútbol')">
+          <span class="complejo-06b-etiqueta">Cambiar de cancha ↗</span>
+          <strong>{{ otra.nombre }}</strong>
+          <span class="complejo-06b-meta">{{ otra.tipo || 'Fútbol' }} @if (otra.techada) { · Techada }</span>
+          <span class="complejo-06b-precio">{{ otra.precioHora | currency:'ARS':'symbol-narrow':'1.0-0' }} / hora</span>
+        </a>
+      }
+    </div>
+    @if (cargandoOtras) {
+      <p class="complejo-06b-estado" role="status">Cargando las demás canchas del complejo…</p>
+    } @else if (errorOtras) {
+      <p class="complejo-06b-estado" role="alert">{{ errorOtras }} Podés <a [routerLink]="['/duenos', cancha.duenoId]">consultar el perfil del complejo</a>.</p>
+    } @else if (otras.length === 0) {
+      <p class="complejo-06b-estado">Este complejo tiene una sola cancha publicada.</p>
+    }
+  </section>
   <div class="detalle-grid">
     <div class="columna-informacion">
       <div class="surface-card galeria-cancha">
@@ -43,8 +85,8 @@
       <article class="surface-card info-cancha">
         <div class="encabezado-cancha">
           <div>
-            <span class="page-eyebrow">Cancha disponible</span>
-            <h1>{{ cancha.nombre }}</h1>
+            <span class="page-eyebrow">Cancha seleccionada</span>
+            <h2 class="complejo-06b-nombre-cancha">{{ cancha.nombre }}</h2>
             <p class="ubicacion">
               <span aria-hidden="true">⌖</span>
               {{ cancha.direccion || 'Dirección a confirmar' }} · {{ cancha.ciudadNombre }}
@@ -80,14 +122,14 @@
         <div class="dueno-card">
           <span class="dueno-avatar">{{ cancha.duenoNombre?.charAt(0)?.toUpperCase() || 'D' }}</span>
           <div>
-            <small>Publicada por</small>
+            <small>Propietario</small>
             <strong>{{ cancha.duenoNombre }}</strong>
           </div>
           <a [routerLink]="['/duenos',cancha.duenoId]" class="secondary-button">Ver todas sus canchas →</a>
         </div>
       </article>
     </div>
-    <aside class="surface-card reservar-card">
+    <aside id="reserva-cancha" class="surface-card reservar-card">
       <div class="reservar-cabecera">
         <span class="calendario-icono" aria-hidden="true">📅</span>
         <div>
@@ -142,6 +184,5 @@
       <p class="nota-reserva">La reserva quedará pendiente hasta completar el pago o recibir la confirmación correspondiente.</p>
     </aside>
   </div>
-  <section class="otras-canchas"><header class="page-header"><div><span class="page-eyebrow">Más del mismo complejo</span><h2>Otras canchas de {{cancha.nombreComplejo}}</h2></div><a [routerLink]="['/duenos',cancha.duenoId]" class="secondary-button">Ver otras canchas</a></header><div class="otras-grid">@for(c of otras;track c.id){<a class="surface-card otra-cancha" [routerLink]="['/canchas',c.id]">@if(c.imagen){<img [src]="c.imagen" [alt]="c.nombre" loading="lazy">}<div><h3>{{c.nombre}}</h3><p>{{c.tipo}} · {{c.ciudadNombre}}</p><strong>{{c.precioHora|currency:'ARS':'symbol-narrow':'1.0-0'}} / hora →</strong></div></a>}@empty{<p>Esta es la única cancha publicada de este complejo.</p>}</div></section>
   }
 </section>
