@@ -9,9 +9,9 @@
 
  <section class="surface-card filtros-panel" aria-label="Filtros de canchas">
   <div class="filtros">
-   <label>
+   <label class="filtro-busqueda">
     <span>Buscar complejo o ciudad</span>
-    <input type="search" [(ngModel)]="texto" placeholder="Ej: La Gambeta, Concordia" />
+    <input type="search" [(ngModel)]="texto" placeholder="Ej: La Gambeta, Concordia" autocomplete="off" />
    </label>
    <label>
     <span>Ciudad</span>
@@ -35,10 +35,27 @@
     <span>Ordenar</span>
     <select [(ngModel)]="orden">
      <option value="nombre">Nombre</option>
-     <option value="precio">Menor precio</option>
+     <option value="precio">Menor precio desde</option>
+     <option value="cantidad">Más canchas</option>
     </select>
    </label>
+   <label>
+    <span>Precio desde mínimo (ARS)</span>
+    <input type="number" [(ngModel)]="precioDesdeMinimo" min="0" step="500" placeholder="Sin mínimo" [attr.aria-invalid]="rangoPrecioInvalido" />
+   </label>
+   <label>
+    <span>Precio desde máximo (ARS)</span>
+    <input type="number" [(ngModel)]="precioDesdeMaximo" min="0" step="500" placeholder="Sin máximo" [attr.aria-invalid]="rangoPrecioInvalido" />
+   </label>
+   <label>
+    <span>Mínimo de canchas</span>
+    <input type="number" [(ngModel)]="minimoCanchas" min="1" step="1" placeholder="Cualquier cantidad" [attr.aria-invalid]="minimoCanchasInvalido" />
+   </label>
   </div>
+  <p class="filtros-nota">Los importes corresponden al precio <strong>Desde / hora</strong> del complejo. Abrilo para ver el precio de cada cancha.</p>
+  @if (rangoPrecioInvalido || minimoCanchasInvalido) {
+  <p class="app-alert error filtros-error" role="alert">Revisá los filtros: los precios no pueden ser negativos, el mínimo no puede superar al máximo y la cantidad debe ser un número entero mayor que cero.</p>
+  }
  </section>
 
  @if (errorCiudades) {
@@ -55,11 +72,14 @@
  }
 
  @if (!cargando && !error) {
- <div class="resultados-cabecera">
+ <div class="resultados-cabecera" aria-live="polite">
   <strong>{{ visibles.length }} {{ visibles.length === 1 ? 'complejo encontrado' : 'complejos encontrados' }}</strong>
+  @if (filtrosActivos) {
   <button type="button" class="text-button" (click)="limpiarFiltros()">Limpiar filtros</button>
+  }
  </div>
 
+ @if (!rangoPrecioInvalido && !minimoCanchasInvalido) {
  <div class="grilla-canchas">
   @for (complejo of visibles; track complejo.id) {
   <a class="tarjeta-cancha owner-card" [routerLink]="['/duenos', complejo.id]" [attr.aria-label]="'Ver canchas del complejo ' + complejo.nombre">
@@ -91,11 +111,12 @@
   }
  </div>
 
- @if (visibles.length === 0) {
+ }
+ @if (visibles.length === 0 && !rangoPrecioInvalido && !minimoCanchasInvalido) {
  <div class="empty-state">
   <span class="empty-state-icon">⚽</span>
   <h2>No encontramos complejos</h2>
-  <p>Probá otro nombre de complejo, ciudad o formato.</p>
+  <p>Probá otro nombre, ciudad, formato, precio o cantidad de canchas.</p>
   <button type="button" class="secondary-button" (click)="limpiarFiltros()">Ver todas</button>
  </div>
  }
