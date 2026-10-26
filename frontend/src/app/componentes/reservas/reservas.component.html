@@ -11,6 +11,29 @@
   </header>
 
   <nav class="filter-tabs" aria-label="Filtrar reservas">@for(f of [['proximas','Próximos partidos'],['PENDIENTE','Pendientes'],['CONFIRMADA','Confirmadas'],['todas','Historial']];track f[0]){<button type="button" [class.active]="filtro===f[0]" [attr.aria-pressed]="filtro===f[0]" (click)="filtro=f[0]">{{f[1]}}</button>}</nav>
+  <div class="reservas-filtros-06g" aria-label="Buscar y ordenar reservas">
+    <label>Buscar cancha o reserva
+      <input type="search" name="buscarReserva" [(ngModel)]="busqueda" placeholder="Cancha o número de reserva" autocomplete="off" />
+    </label>
+    <label>Desde
+      <input type="date" name="fechaDesde" [(ngModel)]="desde" [max]="hasta || null" />
+    </label>
+    <label>Hasta
+      <input type="date" name="fechaHasta" [(ngModel)]="hasta" [min]="desde || null" />
+    </label>
+    <label>Ordenar
+      <select name="ordenReservas" [(ngModel)]="orden">
+        <option value="recientes">Por fecha (predeterminado)</option>
+        <option value="antiguas">Fecha más antigua primero</option>
+        <option value="importeMayor">Mayor importe</option>
+        <option value="importeMenor">Menor importe</option>
+      </select>
+    </label>
+    <button type="button" class="secondary-button" (click)="limpiarFiltros()" [disabled]="!filtrosAdicionalesActivos && filtro === 'proximas'">Limpiar filtros</button>
+  </div>
+  @if (!cargando && !error) {
+    <p class="reservas-conteo-06g" role="status">Mostrando {{ visibles.length }} de {{ reservas.length }} reservas.</p>
+  }
   @if (cargando) {
     <div class="estado-carga" aria-live="polite">
       <span class="spinner"></span>
@@ -169,7 +192,8 @@
     <div class="empty-state">
       <span class="empty-state-icon">📅</span>
       <h2>No hay reservas en esta vista</h2>
-      <p>Explorá las canchas disponibles y elegí el horario para tu próximo partido.</p>
+      <p>{{ reservas.length ? 'No encontramos reservas con los filtros seleccionados. Probá otra búsqueda o limpiá los filtros.' : 'Todavía no tenés reservas. Explorá las canchas disponibles y elegí el horario para tu próximo partido.' }}</p>
+      @if (reservas.length) { <button type="button" class="secondary-button" (click)="limpiarFiltros()">Limpiar filtros</button> }
       <a routerLink="/canchas" class="primary-button">Ver canchas</a>
     </div>
   }

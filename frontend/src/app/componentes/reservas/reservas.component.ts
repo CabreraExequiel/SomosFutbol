@@ -15,8 +15,41 @@ import { PagoService } from '../../services/pago.service';
     styleUrl: './reservas.component.css'
 })
 export class ReservasComponent implements OnInit, OnDestroy {
-  filtro='proximas';
-  get visibles():any[]{return this.reservas.filter(r=>this.filtro==='todas'||(this.filtro==='proximas'?r.fecha>=fechaArgentina()&&r.estado!=='CANCELADA':r.estado===this.filtro)).sort((a,b)=>this.filtro==='proximas'?(a.fecha+a.horaInicio).localeCompare(b.fecha+b.horaInicio):(b.fecha+b.horaInicio).localeCompare(a.fecha+a.horaInicio));}
+  filtro = 'proximas';
+  busqueda = '';
+  desde = '';
+  hasta = '';
+  orden: 'recientes' | 'antiguas' | 'importeMayor' | 'importeMenor' = 'recientes';
+
+  get visibles(): any[] {
+    const termino = this.busqueda.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const hoy = fechaArgentina();
+    return this.reservas.filter(r => {
+      const fecha = String(r.fecha || '').slice(0, 10);
+      const estadoValido = this.filtro === 'todas' ||
+        (this.filtro === 'proximas' ? fecha >= hoy && r.estado !== 'CANCELADA' : r.estado === this.filtro);
+      if (!estadoValido || (this.desde && fecha < this.desde) || (this.hasta && fecha > this.hasta)) return false;
+      const texto = `${r.canchaNombre || ''} ${r.id ?? ''}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      return !termino || texto.includes(termino);
+    }).sort((a, b) => {
+      if (this.orden === 'importeMayor') return Number(b.monto || 0) - Number(a.monto || 0);
+      if (this.orden === 'importeMenor') return Number(a.monto || 0) - Number(b.monto || 0);
+      const comparacion = `${a.fecha}${a.horaInicio}`.localeCompare(`${b.fecha}${b.horaInicio}`);
+      return this.orden === 'antiguas' || (this.orden === 'recientes' && this.filtro === 'proximas') ? comparacion : -comparacion;
+    });
+  }
+
+  limpiarFiltros(): void {
+    this.filtro = 'proximas';
+    this.busqueda = '';
+    this.desde = '';
+    this.hasta = '';
+    this.orden = 'recientes';
+  }
+
+  get filtrosAdicionalesActivos(): boolean {
+    return !!(this.busqueda.trim() || this.desde || this.hasta || this.orden !== 'recientes');
+  }
   vencida(r:any):boolean{return !!r.expiresAt&&Date.parse(r.expiresAt)<=Date.now()&&r.estado==='PENDIENTE';}
   copiado='';
   copiar(valor:string):void{navigator.clipboard.writeText(valor).then(()=>this.copiado='Dato copiado.').catch(()=>this.copiado='Seleccioná el dato para copiarlo manualmente.');}

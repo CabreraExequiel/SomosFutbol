@@ -474,3 +474,14 @@
   .datos-transferencia { grid-column: 1 / -1; }
   .datos-transferencia dl { grid-template-columns: 1fr; }
 }
+
+/* Etapa 06G: historial y filtros de Mis reservas */
+.reservas-filtros-06g { display: grid; grid-template-columns: minmax(180px,2fr) repeat(2,minmax(130px,1fr)) minmax(180px,1.5fr) auto; align-items: end; gap: 12px; margin: 18px 0 10px; padding: 16px; background: var(--superficie,#fff); border: 1px solid var(--borde,#e2e8f0); border-radius: 14px; }
+.reservas-filtros-06g label { display: grid; gap: 7px; min-width: 0; font-size: .76rem; font-weight: 750; color: var(--texto,#334155); }
+.reservas-filtros-06g input, .reservas-filtros-06g select { box-sizing: border-box; width: 100%; min-width: 0; height: 39px; padding: 8px 10px; border: 1px solid var(--borde,#cbd5e1); border-radius: 9px; color: var(--texto,#334155); background: #fff; font: inherit; font-weight: 500; }
+.reservas-filtros-06g input:focus-visible, .reservas-filtros-06g select:focus-visible { outline: 2px solid var(--naranja,#f97316); outline-offset: 1px; }
+.reservas-filtros-06g button { min-height: 39px; white-space: nowrap; }
+.reservas-filtros-06g button:disabled { opacity: .55; cursor: not-allowed; }
+.reservas-conteo-06g { margin: 8px 0 16px; color: var(--texto-suave,#64748b); font-size: .78rem; }
+@media(max-width: 1050px) { .reservas-filtros-06g { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media(max-width: 560px) { .reservas-filtros-06g { grid-template-columns: minmax(0,1fr); } }
