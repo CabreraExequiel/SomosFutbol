@@ -1,0 +1,11 @@
+/* Etapa 06E: revisión antes de confirmar una reserva */
+.resumen-06e{margin-top:1rem;padding:1rem;border:1px solid #bdc9d4;border-radius:14px;background:#f7fafc;color:#203040}
+.resumen-06e h3{margin:0 0 .75rem;font-size:1.05rem}
+.resumen-06e dl{margin:0 0 .75rem}
+.resumen-06e dl>div{display:flex;justify-content:space-between;gap:1rem;padding:.45rem 0;border-bottom:1px solid #dde4eb}
+.resumen-06e dt{color:#52677a}.resumen-06e dd{margin:0;font-weight:700;text-align:right}
+.resumen-06e p{font-size:.85rem;line-height:1.5}
+.resumen-06e .btn-reservar{width:100%}
+.cancelar-06e{display:block;width:100%;margin-top:.7rem;padding:.65rem;background:transparent;color:#234867;border:1px solid #afbfcb;border-radius:9px;cursor:pointer}
+.cancelar-06e:disabled{opacity:.6;cursor:not-allowed}
+@media(max-width:480px){.resumen-06e dl>div{flex-direction:column;gap:.15rem}.resumen-06e dd{text-align:left}}
