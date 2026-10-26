@@ -27,7 +27,7 @@
       </div>
 
       <textarea
-        [(ngModel)]="nuevoContenido" maxlength="2000"
+        [(ngModel)]="nuevoContenido" (ngModelChange)="guardarBorrador()" maxlength="2000"
         aria-label="Contenido de la publicación"
         placeholder="¿Buscás jugadores, armás un picadito o querés compartir una jugada?"
       ></textarea>
@@ -60,6 +60,7 @@
           <label for="url-youtube">Enlace de YouTube</label>
           <div class="youtube-editor-entrada">
             <input id="url-youtube" type="url" [(ngModel)]="youtubeUrl"
+                   (ngModelChange)="guardarBorrador()"
                    placeholder="https://www.youtube.com/watch?v=..."
                    maxlength="500" [disabled]="publicando" />
             <button type="button" class="btn-quitar-video" (click)="quitarYoutube()"
@@ -102,6 +103,20 @@
 
       @if (errorPublicacion) {
         <p class="error-publicacion" role="alert">{{ errorPublicacion }}</p>
+      }
+
+      @if (borradorGuardado) {
+        <div class="borrador-feed-estado">
+          <div>
+            <p role="status">{{ borradorRecuperado
+              ? 'Recuperamos tu borrador de esta pestaña.'
+              : 'Borrador guardado en esta pestaña.' }}</p>
+            <small>El video MP4 y las menciones a amigos no se guardan.</small>
+          </div>
+          <button type="button" (click)="descartarBorrador()" [disabled]="publicando">
+            Descartar borrador
+          </button>
+        </div>
       }
 
       <div class="composer-pie">
@@ -290,6 +305,13 @@
         <span class="contador">{{ pub.cantLikes || 0 }}</span>
       </button>
     </div>
+    @if (estadoInteraccion[pub.id]; as estado) {
+      <p class="mensaje-interaccion" [class.interaccion-error]="estado.tipo === 'error'"
+         [class.interaccion-exito]="estado.tipo === 'exito'"
+         [attr.role]="estado.tipo === 'error' ? 'alert' : 'status'">
+        {{ estado.texto }}
+      </p>
+    }
     <section class="comentarios">
       <h2>Comentarios <span>{{ pub.comentarios?.length || 0 }}</span></h2>
       @for (c of pub.comentarios; track c) {
@@ -305,10 +327,13 @@
           <p><strong>{{ c.userNombre }}</strong> {{ c.contenido }}</p>
         </div>
       }
-      <div class="nuevo-comentario">
+      <div class="nuevo-comentario" [attr.aria-busy]="comentariosEnviando.has(pub.id)">
         <input
           type="text"
-          [(ngModel)]="comentarioTexto[pub.id]" maxlength="1000"
+          [(ngModel)]="comentarioTexto[pub.id]"
+          (ngModelChange)="limpiarEstadoInteraccion(pub.id)"
+          [disabled]="comentariosEnviando.has(pub.id)"
+          maxlength="1000"
           placeholder="Escribí un comentario..."
           [attr.aria-label]="'Comentar la publicación de ' + pub.userNombre"
           (keyup.enter)="comentar(pub)"
@@ -319,7 +344,7 @@
           [disabled]="ocupados.has(pub.id)||!(comentarioTexto[pub.id] || '').trim()"
           (click)="comentar(pub)"
           >
-          Enviar
+          {{ comentariosEnviando.has(pub.id) ? 'Enviando…' : 'Enviar' }}
         </button>
       </div>
     </section>

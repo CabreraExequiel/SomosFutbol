@@ -72,3 +72,29 @@
   .feed-esqueleto { padding: 17px; }
   .feed-error-paginacion .secondary-button { width: 100%; margin-left: 0; }
 }
+
+/* 05B5 — confirmaciones y errores de interacción por publicación. */
+.mensaje-interaccion {
+  margin: 12px 0 0; padding: 9px 12px;
+  border-radius: 9px; font-size: .84rem; line-height: 1.45;
+}
+.interaccion-error { color: #991b1b; background: #fff1f2; border: 1px solid #fecdd3; }
+.interaccion-exito { color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; }
+.nuevo-comentario[aria-busy="true"] { opacity: .75; }
+
+/* 05B6 — borradores temporales del editor, sin cambios en backend. */
+.borrador-feed-estado {
+  display: flex; gap: 10px; align-items: center; justify-content: space-between;
+  margin: 10px 0; padding: 10px 12px; background: #f0fdf4;
+  border: 1px solid #bbf7d0; border-radius: 10px;
+}
+.borrador-feed-estado p { margin: 0 0 4px; color: #166534; font-weight: 650; font-size: .85rem; }
+.borrador-feed-estado small { color: #475569; font-size: .76rem; }
+.borrador-feed-estado button {
+  padding: 7px 10px; background: #fff; color: #991b1b;
+  border: 1px solid #fecaca; border-radius: 8px; cursor: pointer;
+}
+.borrador-feed-estado button:focus-visible { outline: 2px solid var(--naranja); outline-offset: 2px; }
+@media (max-width: 600px) {
+  .borrador-feed-estado { align-items: stretch; flex-direction: column; }
+}
