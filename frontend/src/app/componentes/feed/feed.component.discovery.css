@@ -98,3 +98,15 @@
 @media (max-width: 600px) {
   .borrador-feed-estado { align-items: stretch; flex-direction: column; }
 }
+
+/* 05B7 — editor accesible: atajo opcional y contador visible. */
+.editor-publicacion-ayuda {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 6px 12px; margin: 7px 0 4px; color: var(--texto-suave);
+  font-size: .74rem; line-height: 1.4;
+}
+.editor-publicacion-contador { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.editor-publicacion-cerca-limite .editor-publicacion-contador { color: #9a3412; }
+@media (max-width: 600px) {
+  .editor-publicacion-ayuda { align-items: flex-start; }
+}

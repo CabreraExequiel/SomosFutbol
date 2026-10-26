@@ -68,6 +68,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 
   nuevoContenido = '';
+  readonly limiteContenido = 2000;
   borradorGuardado = false;
   borradorRecuperado = false;
   videoSeleccionado: File | null = null;
@@ -195,6 +196,18 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.mostrarCampoYoutube = false;
     this.errorPublicacion = '';
     this.eliminarBorradorGuardado();
+  }
+
+  // 05B7: Ctrl+Enter (o Cmd+Enter) publica usando la validación habitual.
+  // El Enter normal conserva su función de salto de línea.
+  atajoPublicar(event: KeyboardEvent): void {
+    if (event.key !== 'Enter' || (!event.ctrlKey && !event.metaKey) ||
+        event.altKey || event.shiftKey || event.isComposing || event.repeat ||
+        this.publicando || !this.nuevoContenido.trim()) {
+      return;
+    }
+    event.preventDefault();
+    this.publicar();
   }
 
 

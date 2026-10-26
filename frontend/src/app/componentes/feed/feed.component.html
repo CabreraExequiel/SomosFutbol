@@ -27,10 +27,19 @@
       </div>
 
       <textarea
-        [(ngModel)]="nuevoContenido" (ngModelChange)="guardarBorrador()" maxlength="2000"
+        [(ngModel)]="nuevoContenido" (ngModelChange)="guardarBorrador()"
+        [maxlength]="limiteContenido" (keydown)="atajoPublicar($event)"
         aria-label="Contenido de la publicación"
+        aria-describedby="ayuda-editor-publicacion"
         placeholder="¿Buscás jugadores, armás un picadito o querés compartir una jugada?"
       ></textarea>
+      <div id="ayuda-editor-publicacion" class="editor-publicacion-ayuda"
+           [class.editor-publicacion-cerca-limite]="nuevoContenido.length >= 1800">
+        <span>Ctrl+Enter (o ⌘+Enter) para publicar · Enter para nueva línea.</span>
+        <span class="editor-publicacion-contador">
+          {{ nuevoContenido.length }} / {{ limiteContenido }}
+        </span>
+      </div>
 
       <!-- NUEVO: seleccionar video y vista previa antes de publicar -->
       <input
