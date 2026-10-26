@@ -13,6 +13,10 @@ import org.springframework.data.domain.Slice;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MultipartFile;
 
 
@@ -27,6 +31,8 @@ import java.util.regex.Pattern;
 @Service
 @RequiredArgsConstructor
 public class PublicacionService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PublicacionService.class);
 
     private final PublicacionRepository publicacionRepository;
     private final ComentarioRepository comentarioRepository;
@@ -638,7 +644,32 @@ public class PublicacionService {
             );
         }
 
+        // El archivo MP4 debe eliminarse solo DESPUÉS de confirmar el commit.
+        // Borrarlo antes podría dejar una publicación válida sin video si hay rollback.
+        String videoPublicId = publicacion.getVideoPublicId();
         publicacionRepository.delete(publicacion);
+
+        if (videoPublicId != null && !videoPublicId.isBlank()) {
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        try {
+                            videoStorageService.eliminar(videoPublicId);
+                        } catch (RuntimeException error) {
+                            // La BD ya confirmó la eliminación. No devolver un falso error HTTP:
+                            // registrar el fallo para poder limpiar el archivo pendiente.
+                            LOGGER.error("No se pudo limpiar el MP4 de la publicación {} (videoId={})",
+                                    id, videoPublicId, error);
+                        }
+                    }
+                });
+            } else {
+                // Salvaguarda: nunca eliminar físicamente el video sin commit confirmado.
+                LOGGER.warn("No se programó la limpieza del video {}: sin sincronización transaccional",
+                        videoPublicId);
+            }
+        }
     }
 
     // ==========================================
