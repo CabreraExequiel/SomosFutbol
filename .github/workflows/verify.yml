@@ -15,25 +15,31 @@ jobs:
       mysql:
         image: mysql:8.4
         env:
-          MYSQL_DATABASE: canchasya_test
+          MYSQL_DATABASE: canchasya
           MYSQL_USER: sf_test
           MYSQL_PASSWORD: local-ci-only
           MYSQL_ROOT_PASSWORD: local-ci-root-only
-        ports: ['3306:3306']
+        ports:
+          - "3306:3306"
         options: >-
           --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -plocal-ci-root-only"
-          --health-interval=10s --health-timeout=5s --health-retries=20
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=20
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
           cache: maven
 
-      - uses: actions/setup-node@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: npm
@@ -42,7 +48,7 @@ jobs:
       - name: Backend y pruebas unitarias
         run: mvn -B -f backend/pom.xml verify
 
-      - name: Frontend de producción
+      - name: Frontend de produccion
         working-directory: frontend
         run: |
           npm ci
@@ -51,33 +57,60 @@ jobs:
       - name: Probar API con MySQL 8.4 y datos descartables
         env:
           SPRING_PROFILES_ACTIVE: dev
-          DB_URL: jdbc:mariadb://127.0.0.1:3306/canchasya_test?sslMode=disable&allowPublicKeyRetrieval=true
+
+          DB_URL: jdbc:mariadb://127.0.0.1:3306/canchasya?sslMode=disable&allowPublicKeyRetrieval=true
           DB_USERNAME: sf_test
           DB_PASSWORD: local-ci-only
+
+          SPRING_JPA_HIBERNATE_DDL_AUTO: create
+          SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.MySQLDialect
+          SPRING_FLYWAY_ENABLED: 'false'
+
           JWT_SECRET: clave-exclusiva-para-ci-local-sin-acceso-a-produccion-123456789
           PAYMENTS_ENABLED: 'false'
           MAIL_ENABLED: 'false'
+
           SF_TEST_API: http://127.0.0.1:8080/api
+
         run: |
+          echo "=== INICIANDO BACKEND ==="
+
           java -jar backend/target/api-1.0.0.jar > backend-ci.log 2>&1 &
           backend_pid=$!
+
           trap 'kill "$backend_pid" 2>/dev/null || true' EXIT
 
+          echo "=== ESPERANDO SPRING BOOT ==="
+
           for attempt in $(seq 1 60); do
-            curl -fsS http://127.0.0.1:8080/actuator/health >/dev/null && break
-            kill -0 "$backend_pid" || { cat backend-ci.log; exit 1; }
+            if curl -fsS http://127.0.0.1:8080/actuator/health >/dev/null 2>&1; then
+              echo "Backend saludable"
+              break
+            fi
+
+            if ! kill -0 "$backend_pid" 2>/dev/null; then
+              echo "El backend se detuvo inesperadamente"
+              tail -n 150 backend-ci.log
+              exit 1
+            fi
+
             sleep 2
           done
 
+          echo "=== VERIFICANDO HEALTH CHECK ==="
           curl -fsS http://127.0.0.1:8080/actuator/health
+
+          echo ""
+          echo "=== EJECUTANDO PRUEBAS FUNCIONALES ==="
           python3 tools/smoke.py
 
       - name: Diagnosticar fallo del backend
         if: failure()
         run: |
           echo "=== REGISTRO SPRING BOOT ==="
+
           if [ -f backend-ci.log ]; then
-            tail -n 150 backend-ci.log
+            tail -n 200 backend-ci.log
           else
             echo "No se encontro backend-ci.log"
           fi
@@ -90,7 +123,8 @@ jobs:
           docker build -t sf-backend-check backend
           docker build -t sf-frontend-check frontend
 
-      - uses: actions/upload-artifact@v4
+      - name: Guardar diagnostico si falla
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: diagnostico
