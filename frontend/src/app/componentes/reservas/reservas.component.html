@@ -50,6 +50,34 @@
     </div>
   }
 
+  @if (mensajeExito) {
+    <div class="alerta-confirmacion-06h" role="status">
+      <p>{{ mensajeExito }}</p>
+      <button type="button" (click)="mensajeExito = ''" aria-label="Cerrar confirmación">×</button>
+    </div>
+  }
+
+  @if (reservaPorCancelar; as seleccion) {
+    <div class="cancelacion-fondo-06h" (click)="cerrarConfirmacion()">
+      <section class="cancelacion-panel-06h" role="dialog" aria-modal="true" aria-labelledby="titulo-cancelacion-06h" (click)="$event.stopPropagation()">
+        <h2 id="titulo-cancelacion-06h">Confirmar cancelación</h2>
+        <p>Revisá los datos antes de cancelar. Esta acción libera el turno y no puede deshacerse desde esta pantalla.</p>
+        <dl>
+          <div><dt>Reserva</dt><dd>#{{ seleccion.id }}</dd></div>
+          <div><dt>Cancha</dt><dd>{{ seleccion.canchaNombre }}</dd></div>
+          <div><dt>Fecha</dt><dd>{{ seleccion.fecha }}</dd></div>
+          <div><dt>Horario</dt><dd>{{ seleccion.horaInicio }} a {{ seleccion.horaFin }}</dd></div>
+          <div><dt>Monto</dt><dd>$ {{ seleccion.monto | number:'1.0-0' }}</dd></div>
+        </dl>
+        <p class="cancelacion-nota-06h">Las reservas pagadas o confirmadas requieren el procedimiento de cancelación y reintegro correspondiente.</p>
+        <div class="cancelacion-botones-06h">
+          <button type="button" class="secondary-button" [disabled]="cancelandoId !== null" (click)="cerrarConfirmacion()">Volver</button>
+          <button type="button" class="danger-button" [disabled]="cancelandoId !== null" (click)="confirmarCancelacion()">{{ cancelandoId !== null ? 'Cancelando...' : 'Sí, cancelar reserva' }}</button>
+        </div>
+      </section>
+    </div>
+  }
+
   @if (mensajeAccion) {
     <div class="alerta-accion" role="alert">
       <span aria-hidden="true">!</span>
@@ -133,7 +161,7 @@
                 type="button"
                 class="danger-button"
                 [disabled]="cancelandoId === r.id || pagandoId === r.id"
-                (click)="cancelar(r)"
+                (click)="solicitarCancelacion(r)"
                 >
                 {{ cancelandoId === r.id ? 'Cancelando...' : 'Cancelar' }}
               </button>

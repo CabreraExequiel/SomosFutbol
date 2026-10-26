@@ -57,6 +57,9 @@ export class ReservasComponent implements OnInit, OnDestroy {
   cargando = true;
   error = '';
   cancelandoId: number | null = null;
+  reservaPorCancelar: any | null = null;
+  mensajeExito = '';
+
   pagandoId: number | null = null;
   cargandoTransferenciaId: number | null = null;
   datosTransferencia: Record<number, DatosTransferencia> = {};
@@ -95,18 +98,35 @@ export class ReservasComponent implements OnInit, OnDestroy {
     });
   }
 
-  cancelar(reserva: any): void {
-    if(this.cancelandoId||!window.confirm('¿Querés cancelar esta reserva y liberar el horario?'))return;
+  solicitarCancelacion(reserva: any): void {
+    if (this.cancelandoId !== null || !this.puedeCancelar(reserva)) return;
+    this.mensajeAccion = '';
+    this.mensajeExito = '';
+    this.reservaPorCancelar = reserva;
+  }
+
+  cerrarConfirmacion(): void {
+    if (this.cancelandoId !== null) return;
+    this.reservaPorCancelar = null;
+  }
+
+  confirmarCancelacion(): void {
+    const reserva = this.reservaPorCancelar;
+    if (!reserva || this.cancelandoId !== null || !this.puedeCancelar(reserva)) return;
     this.mensajeAccion = '';
     this.cancelandoId = reserva.id;
     this.reservaService.cancelar(reserva.id).subscribe({
       next: () => {
         this.cancelandoId = null;
+        this.reservaPorCancelar = null;
+        this.mensajeExito = `La reserva #${reserva.id} fue cancelada. El horario quedó liberado según las reglas del sistema.`;
         this.cargar();
       },
       error: (err) => {
         this.cancelandoId = null;
-        this.mensajeAccion = err?.error?.message || 'No se pudo cancelar la reserva. Intentá nuevamente.';
+        this.reservaPorCancelar = null;
+        this.mensajeAccion = err?.error?.message || 'No se pudo cancelar la reserva. Actualizá el listado e intentá nuevamente.';
+        this.cargar();
       },
     });
   }
