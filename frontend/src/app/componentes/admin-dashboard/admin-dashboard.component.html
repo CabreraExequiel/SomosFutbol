@@ -122,6 +122,48 @@
       }
     </section>
 
+    <section class="surface-card sf-admin-section" aria-label="Administrar complejos y canchas">
+      <div class="sf-admin-section-title">
+        <div><span class="page-eyebrow">Administración · 09C1</span><h2>Buscar complejos y canchas</h2></div>
+        <small>Solo lectura · Datos reales</small>
+      </div>
+      <form class="sf-admin-user-filters" (submit)="$event.preventDefault(); buscarCanchas()">
+        <label>Cancha, complejo, propietario o ciudad
+          <input type="search" name="buscarCanchas" [value]="busquedaCanchas" (input)="busquedaCanchas = $any($event.target).value" maxlength="100" placeholder="Buscar cancha o complejo..." />
+        </label>
+        <label>Estado
+          <select name="estadoCanchas" [value]="estadoCanchas" (change)="estadoCanchas = $any($event.target).value; buscarCanchas()">
+            <option value="">Todas</option><option value="true">Activas</option><option value="false">Inactivas</option>
+          </select>
+        </label>
+        <button type="submit" class="secondary-button">Buscar</button>
+        <button type="button" class="secondary-button" (click)="busquedaCanchas = ''; estadoCanchas = ''; buscarCanchas()">Limpiar</button>
+      </form>
+      @if (!canchasPagina() && !canchasCargando()) {
+        <p class="sf-admin-note">Usá Buscar para consultar las canchas registradas.</p>
+      }
+      @if (canchasCargando()) { <p role="status">Cargando canchas...</p> }
+      @if (canchasError()) { <p role="alert">{{ canchasError() }}</p><button type="button" class="secondary-button" (click)="buscarCanchas()">Reintentar</button> }
+      @if (canchasPagina(); as listaCanchas) {
+        <p>{{ listaCanchas.total }} canchas encontradas</p>
+        <div class="sf-admin-table-wrapper">
+          <table class="sf-admin-table">
+            <thead><tr><th>ID</th><th>Cancha</th><th>Complejo</th><th>Ciudad</th><th>Propietario</th><th>Tipo</th><th>Estado</th><th>Detalle</th></tr></thead>
+            <tbody>
+              @for (cancha of listaCanchas.canchas; track cancha.id) {
+                <tr><td>{{ cancha.id }}</td><td>{{ cancha.nombre }}</td><td>{{ cancha.complejo }}</td><td>{{ cancha.ciudad }}</td><td>{{ cancha.propietario }}</td><td>{{ cancha.tipo || '—' }}</td><td>{{ cancha.activa ? 'Activa' : 'Inactiva' }}</td><td><a class="secondary-button sf-admin-link" [routerLink]="['/cancha', cancha.id]">Ver cancha</a></td></tr>
+              } @empty { <tr><td colspan="8">No se encontraron canchas con esos filtros.</td></tr> }
+            </tbody>
+          </table>
+        </div>
+        <div class="sf-admin-user-pagination">
+          <button type="button" class="secondary-button" [disabled]="canchasCargando() || listaCanchas.pagina === 0" (click)="cargarCanchas(listaCanchas.pagina - 1)">Anterior</button>
+          <span>Página {{ listaCanchas.pagina + 1 }} de {{ listaCanchas.totalPaginas || 1 }}</span>
+          <button type="button" class="secondary-button" [disabled]="canchasCargando() || listaCanchas.pagina + 1 >= listaCanchas.totalPaginas" (click)="cargarCanchas(listaCanchas.pagina + 1)">Siguiente</button>
+        </div>
+      }
+    </section>
+
     <section class="surface-card sf-admin-section sf-admin-next">
         <span class="page-eyebrow">Herramientas de soporte</span>
         <h2>Bitácora de eventos y errores</h2>

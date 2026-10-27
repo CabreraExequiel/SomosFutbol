@@ -1,6 +1,7 @@
 package com.canchasya.api.controller;
 
 import com.canchasya.api.model.Role;
+import com.canchasya.api.model.Cancha;
 import com.canchasya.api.model.EstadoReserva;
 import com.canchasya.api.model.EstadoPago;
 import com.canchasya.api.repository.PagoRepository;
@@ -104,6 +105,34 @@ public class AdminController {
                 new UsuarioDetalle(actualizado.getId(), actualizado.getName(), actualizado.getEmail(),
                         actualizado.getRole(), actualizado.getCiudad(), actualizado.getNombreComplejo(),
                         actualizado.getGoogleSub() != null, actualizado.isSuspendido(), actualizado.getMotivoSuspension()));
+    }
+
+    /** Consulta paginada de canchas sin exponer entidades o datos privados de dueños. */
+    @GetMapping("/canchas")
+    public ResponseEntity<PaginaCanchas> canchasAdmin(
+            @RequestParam(defaultValue = "") String buscar,
+            @RequestParam(required = false) Boolean activa,
+            @RequestParam(defaultValue = "0") int pagina) {
+        String termino = buscar == null ? "" : buscar.strip();
+        if (termino.length() > 100) termino = termino.substring(0, 100);
+        int numero = Math.max(0, Math.min(pagina, 100000));
+        Page<Cancha> resultado = canchas.buscarAdministracion(termino, activa,
+                PageRequest.of(numero, 15, Sort.by(Sort.Direction.DESC, "id")));
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(new PaginaCanchas(
+                resultado.getContent().stream().map(CanchaAdminResumen::de).toList(),
+                resultado.getNumber(), resultado.getTotalPages(), resultado.getTotalElements()));
+    }
+
+    public record PaginaCanchas(List<CanchaAdminResumen> canchas, int pagina, int totalPaginas, long total) {}
+
+    public record CanchaAdminResumen(Long id, String nombre, String complejo, String ciudad,
+                                    String propietario, String tipo, boolean activa) {
+        static CanchaAdminResumen de(Cancha c) {
+            String comercial = c.getDueno().getNombreComplejo();
+            return new CanchaAdminResumen(c.getId(), c.getNombre(),
+                    comercial == null || comercial.isBlank() ? "Sin nombre comercial" : comercial,
+                    c.getCiudad().getNombre(), c.getDueno().getName(), c.getTipo(), c.isActiva());
+        }
     }
 
     public record PaginaUsuarios(List<UsuarioResumen> usuarios, int pagina, int totalPaginas, long total) {}

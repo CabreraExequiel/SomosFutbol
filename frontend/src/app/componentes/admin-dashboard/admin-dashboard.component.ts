@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { AdminService, AdminResumen, AdminPaginaUsuarios, AdminUsuarioDetalle } from '../../services/admin.service';
+import { AdminService, AdminResumen, AdminPaginaUsuarios, AdminUsuarioDetalle, AdminPaginaCanchas } from '../../services/admin.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -67,6 +67,26 @@ export class AdminDashboardComponent implements OnInit {
   cerrarDetalle(): void {
     this.usuarioSeleccionado.set(null);
     this.detalleError.set('');
+  }
+
+  readonly canchasPagina = signal<AdminPaginaCanchas | null>(null);
+  readonly canchasCargando = signal(false);
+  readonly canchasError = signal('');
+  busquedaCanchas = '';
+  estadoCanchas = '';
+
+  buscarCanchas(): void { this.cargarCanchas(0); }
+
+  cargarCanchas(pagina = 0): void {
+    this.canchasCargando.set(true);
+    this.canchasError.set('');
+    this.admin.canchasAdmin(this.busquedaCanchas.trim(), this.estadoCanchas, pagina).subscribe({
+      next: datos => { this.canchasPagina.set(datos); this.canchasCargando.set(false); },
+      error: err => {
+        this.canchasError.set(err.status === 403 ? 'No tenés permiso para consultar canchas.' : 'No se pudieron cargar las canchas.');
+        this.canchasCargando.set(false);
+      }
+    });
   }
 
   readonly usuariosPagina = signal<AdminPaginaUsuarios | null>(null);

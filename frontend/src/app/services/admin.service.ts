@@ -42,9 +42,33 @@ export interface AdminPaginaUsuarios {
   total: number;
 }
 
+export interface AdminCanchaResumen {
+  id: number;
+  nombre: string;
+  complejo: string;
+  ciudad: string;
+  propietario: string;
+  tipo: string | null;
+  activa: boolean;
+}
+
+export interface AdminPaginaCanchas {
+  canchas: AdminCanchaResumen[];
+  pagina: number;
+  totalPaginas: number;
+  total: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   constructor(private http: HttpClient) {}
+
+  canchasAdmin(buscar = '', activa = '', pagina = 0): Observable<AdminPaginaCanchas> {
+    const params: Record<string, string> = { buscar, pagina: String(pagina) };
+    if (activa !== '') params['activa'] = activa;
+    return this.http.get<AdminPaginaCanchas>(`${environment.apiUrl}/admin/canchas`, { params });
+  }
+
 
   usuarios(buscar = '', rol = '', pagina = 0): Observable<AdminPaginaUsuarios> {
     const params: Record<string, string> = { buscar, pagina: String(pagina) };

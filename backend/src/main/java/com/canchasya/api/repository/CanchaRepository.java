@@ -9,6 +9,27 @@ import java.util.List;
 
 public interface CanchaRepository extends JpaRepository<Cancha, Long> {
 
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"dueno", "ciudad"})
+    @Query(value = """
+            select c from Cancha c join c.dueno d join c.ciudad ci
+            where (:estado is null or c.activa = :estado)
+              and (:termino = '' or lower(c.nombre) like lower(concat('%', :termino, '%'))
+                or lower(coalesce(d.nombreComplejo, '')) like lower(concat('%', :termino, '%'))
+                or lower(d.name) like lower(concat('%', :termino, '%'))
+                or lower(ci.nombre) like lower(concat('%', :termino, '%')))
+            """,
+           countQuery = """
+            select count(c) from Cancha c join c.dueno d join c.ciudad ci
+            where (:estado is null or c.activa = :estado)
+              and (:termino = '' or lower(c.nombre) like lower(concat('%', :termino, '%'))
+                or lower(coalesce(d.nombreComplejo, '')) like lower(concat('%', :termino, '%'))
+                or lower(d.name) like lower(concat('%', :termino, '%'))
+                or lower(ci.nombre) like lower(concat('%', :termino, '%')))
+            """)
+    org.springframework.data.domain.Page<Cancha> buscarAdministracion(
+            @Param("termino") String termino, @Param("estado") Boolean estado,
+            org.springframework.data.domain.Pageable pageable);
+
     long countByActivaTrue();
 
 
