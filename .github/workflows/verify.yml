@@ -58,7 +58,7 @@ jobs:
         env:
           SPRING_PROFILES_ACTIVE: dev
 
-          DB_URL: jdbc:mariadb://127.0.0.1:3306/canchasya?sslMode=disable&allowPublicKeyRetrieval=true
+          DB_URL: jdbc:mysql://127.0.0.1:3306/canchasya?sslMode=DISABLED&allowPublicKeyRetrieval=true
           DB_USERNAME: sf_test
           DB_PASSWORD: local-ci-only
 
