@@ -97,7 +97,21 @@
               <dt>Complejo</dt><dd>{{ u.nombreComplejo || 'No corresponde / no informado' }}</dd>
               <dt>Cuenta Google vinculada</dt><dd>{{ u.googleVinculado ? 'Sí' : 'No' }}</dd>
             </dl>
-            <p class="sf-admin-note">Solo lectura. Los cambios de roles y suspensiones se habilitarán después de agregar verificaciones de seguridad.</p>
+            <p><strong>Estado:</strong> {{ u.suspendido ? 'Suspendido' : 'Activo' }}</p>
+            @if (u.suspendido && u.motivoSuspension) { <p><strong>Motivo:</strong> {{ u.motivoSuspension }}</p> }
+            @if (u.rol !== 'administrador') {
+              <div class="sf-admin-suspend-form">
+                @if (!u.suspendido) {
+                  <label>Motivo de suspensión (obligatorio)
+                    <textarea [value]="motivoSuspension" (input)="motivoSuspension = $any($event.target).value" maxlength="500" rows="3"></textarea>
+                  </label>
+                }
+                <button type="button" class="secondary-button" [disabled]="estadoGuardando()"
+                  (click)="cambiarEstadoUsuario()">{{ estadoGuardando() ? 'Guardando...' : (u.suspendido ? 'Reactivar cuenta' : 'Suspender cuenta') }}</button>
+              </div>
+            } @else { <p class="sf-admin-note">Las cuentas administradoras están protegidas.</p> }
+            @if (estadoError()) { <p role="alert">{{ estadoError() }}</p> }
+            @if (estadoMensaje()) { <p role="status">{{ estadoMensaje() }}</p> }
           </section>
         }
         <div class="sf-admin-user-pagination">

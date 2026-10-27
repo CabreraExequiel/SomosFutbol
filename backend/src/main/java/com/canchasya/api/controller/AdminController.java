@@ -17,6 +17,11 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.security.core.Authentication;
+import com.canchasya.api.service.AdminSuspensionService;
+import jakarta.validation.constraints.Size;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,6 +40,7 @@ public class AdminController {
     private final ReservaRepository reservas;
     private final PublicacionRepository publicaciones;
     private final PagoRepository pagos;
+    private final AdminSuspensionService suspensiones;
 
     @GetMapping("/resumen")
     public ResponseEntity<Resumen> resumen() {
@@ -78,12 +84,27 @@ public class AdminController {
         return users.findById(id)
                 .map(u -> ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(
                         new UsuarioDetalle(u.getId(), u.getName(), u.getEmail(), u.getRole(),
-                                u.getCiudad(), u.getNombreComplejo(), u.getGoogleSub() != null)))
+                                u.getCiudad(), u.getNombreComplejo(), u.getGoogleSub() != null,
+                                u.isSuspendido(), u.getMotivoSuspension())))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     public record UsuarioDetalle(Long id, String nombre, String email, Role rol,
-                                 String ciudad, String nombreComplejo, boolean googleVinculado) {}
+                                 String ciudad, String nombreComplejo, boolean googleVinculado,
+                                 boolean suspendido, String motivoSuspension) {}
+
+    public record EstadoCuentaRequest(boolean suspendido, String motivo) {}
+
+    @PostMapping("/usuarios/{id}/estado")
+    public ResponseEntity<UsuarioDetalle> cambiarEstadoCuenta(@PathVariable Long id,
+            @RequestBody EstadoCuentaRequest solicitud, Authentication authentication) {
+        User actor = (User) authentication.getPrincipal();
+        User actualizado = suspensiones.actualizar(id, actor.getId(), solicitud.suspendido(), solicitud.motivo());
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(
+                new UsuarioDetalle(actualizado.getId(), actualizado.getName(), actualizado.getEmail(),
+                        actualizado.getRole(), actualizado.getCiudad(), actualizado.getNombreComplejo(),
+                        actualizado.getGoogleSub() != null, actualizado.isSuspendido(), actualizado.getMotivoSuspension()));
+    }
 
     public record PaginaUsuarios(List<UsuarioResumen> usuarios, int pagina, int totalPaginas, long total) {}
 

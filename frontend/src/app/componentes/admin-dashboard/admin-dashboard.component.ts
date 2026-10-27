@@ -33,6 +33,37 @@ export class AdminDashboardComponent implements OnInit {
     });
   }
 
+  readonly estadoGuardando = signal(false);
+  readonly estadoMensaje = signal('');
+  readonly estadoError = signal('');
+  motivoSuspension = '';
+
+  cambiarEstadoUsuario(): void {
+    const usuario = this.usuarioSeleccionado();
+    if (!usuario || usuario.rol === 'administrador' || this.estadoGuardando()) return;
+    const suspender = !usuario.suspendido;
+    const motivo = this.motivoSuspension.trim();
+    if (suspender && (motivo.length < 5 || motivo.length > 500)) {
+      this.estadoError.set('Ingresá un motivo de 5 a 500 caracteres.'); return;
+    }
+    if (!window.confirm(suspender ? `¿Suspender a ${usuario.nombre}?` : `¿Reactivar a ${usuario.nombre}?`)) return;
+    this.estadoGuardando.set(true);
+    this.estadoError.set(''); this.estadoMensaje.set('');
+    this.admin.cambiarEstadoUsuario(usuario.id, suspender, motivo).subscribe({
+      next: actualizado => {
+        this.usuarioSeleccionado.set(actualizado);
+        this.motivoSuspension = '';
+        this.estadoMensaje.set(suspender ? 'Cuenta suspendida.' : 'Cuenta reactivada.');
+        this.estadoGuardando.set(false);
+        this.cargarUsuarios(this.usuariosPagina()?.pagina ?? 0);
+      },
+      error: e => {
+        this.estadoError.set(e.status === 403 ? 'Operación no permitida.' : e.status === 404 ? 'Cuenta no encontrada.' : 'No se pudo actualizar la cuenta.');
+        this.estadoGuardando.set(false);
+      }
+    });
+  }
+
   cerrarDetalle(): void {
     this.usuarioSeleccionado.set(null);
     this.detalleError.set('');

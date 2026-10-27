@@ -31,6 +31,8 @@ export interface AdminUsuarioDetalle extends AdminUsuarioResumen {
   ciudad: string | null;
   nombreComplejo: string | null;
   googleVinculado: boolean;
+  suspendido: boolean;
+  motivoSuspension: string | null;
 }
 
 export interface AdminPaginaUsuarios {
@@ -52,6 +54,10 @@ export class AdminService {
 
   detalleUsuario(id: number): Observable<AdminUsuarioDetalle> {
     return this.http.get<AdminUsuarioDetalle>(`${environment.apiUrl}/admin/usuarios/${id}`);
+  }
+
+  cambiarEstadoUsuario(id: number, suspendido: boolean, motivo: string): Observable<AdminUsuarioDetalle> {
+    return this.http.post<AdminUsuarioDetalle>(`${environment.apiUrl}/admin/usuarios/${id}/estado`, { suspendido, motivo });
   }
 
   resumen(): Observable<AdminResumen> {

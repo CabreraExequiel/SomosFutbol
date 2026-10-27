@@ -37,3 +37,9 @@
 .sf-admin-user-detail dt { font-weight: 700; }
 .sf-admin-user-detail dd { margin: 0; }
 @media(max-width:600px) { .sf-admin-user-detail dl { grid-template-columns: 1fr; gap: .2rem; } .sf-admin-user-detail dd { margin-bottom: .7rem; } }
+
+/* 09B3: estado y suspensión de cuentas */
+.sf-admin-suspend-form { display:grid; gap:.75rem; max-width:620px; margin:1rem 0; }
+.sf-admin-suspend-form label { display:grid; gap:.4rem; font-weight:600; }
+.sf-admin-suspend-form textarea { width:100%; min-height:85px; padding:.7rem; border:1px solid #cbd5e1; border-radius:8px; font:inherit; }
+.sf-admin-suspend-form button { justify-self:start; }
