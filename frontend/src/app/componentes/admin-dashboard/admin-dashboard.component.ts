@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { AdminService, AdminResumen } from '../../services/admin.service';
+import { AdminService, AdminResumen, AdminPaginaUsuarios } from '../../services/admin.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -15,7 +15,27 @@ export class AdminDashboardComponent implements OnInit {
   readonly error = signal('');
   readonly resumen = signal<AdminResumen | null>(null);
 
+  readonly usuariosPagina = signal<AdminPaginaUsuarios | null>(null);
+  readonly usuariosCargando = signal(false);
+  readonly usuariosError = signal('');
+  busquedaUsuarios = '';
+  rolUsuarios = '';
+
   constructor(private readonly admin: AdminService) {}
+
+  buscarUsuarios(): void { this.cargarUsuarios(0); }
+
+  cargarUsuarios(pagina = 0): void {
+    this.usuariosCargando.set(true);
+    this.usuariosError.set('');
+    this.admin.usuarios(this.busquedaUsuarios.trim(), this.rolUsuarios, pagina).subscribe({
+      next: datos => { this.usuariosPagina.set(datos); this.usuariosCargando.set(false); },
+      error: err => {
+        this.usuariosError.set(err.status === 403 ? 'No tenés permiso para consultar usuarios.' : 'No se pudieron cargar los usuarios.');
+        this.usuariosCargando.set(false);
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.cargar();

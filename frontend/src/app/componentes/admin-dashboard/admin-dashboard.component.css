@@ -28,3 +28,5 @@
 .sf-admin-summary-group small{color:var(--text-muted,#64748b)}
 .sf-admin-refresh{margin-top:1rem}
 @media(max-width:750px){.sf-admin-summary-grid{grid-template-columns:1fr}}
+
+.sf-admin-user-filters{display:flex;align-items:end;flex-wrap:wrap;gap:12px;margin:16px 0}.sf-admin-user-filters label{display:grid;gap:6px;flex:1;min-width:170px}.sf-admin-user-filters input,.sf-admin-user-filters select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:var(--surface,#fff);color:inherit}.sf-admin-user-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;flex-wrap:wrap}

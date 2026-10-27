@@ -11,11 +11,13 @@ import com.canchasya.api.repository.ReservaRepository;
 import com.canchasya.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -52,6 +54,24 @@ public class AdminController {
                 pagos.countByEstado(EstadoPago.REEMBOLSADO)
         ));
     }
+
+    /** Listado seguro: nunca serializar entidades User ni datos de autenticación. */
+    @GetMapping("/usuarios")
+    public ResponseEntity<PaginaUsuarios> usuarios(
+            @RequestParam(defaultValue = "") String buscar,
+            @RequestParam(required = false) Role rol,
+            @RequestParam(defaultValue = "0") int pagina) {
+        String termino = buscar == null ? "" : buscar.strip();
+        if (termino.length() > 100) termino = termino.substring(0, 100);
+        int numero = Math.max(0, Math.min(pagina, 100000));
+        Page<User> resultado = users.buscarAdministracion(
+                termino, rol, PageRequest.of(numero, 15, Sort.by(Sort.Direction.DESC, "id")));
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(new PaginaUsuarios(
+                resultado.getContent().stream().map(UsuarioResumen::de).toList(),
+                resultado.getNumber(), resultado.getTotalPages(), resultado.getTotalElements()));
+    }
+
+    public record PaginaUsuarios(List<UsuarioResumen> usuarios, int pagina, int totalPaginas, long total) {}
 
     public record UsuarioResumen(Long id, String nombre, String email, Role rol) {
         static UsuarioResumen de(User usuario) {

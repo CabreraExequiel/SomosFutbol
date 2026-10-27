@@ -55,6 +55,43 @@
         </div>
     </section>
 
+
+    <section class="surface-card sf-admin-section" aria-label="Administrar usuarios">
+      <div class="sf-admin-section-title">
+        <div><span class="page-eyebrow">Administración · 09B1</span><h2>Buscar usuarios</h2></div>
+        <small>Consulta segura · Sin modificación de cuentas</small>
+      </div>
+      <form class="sf-admin-user-filters" (submit)="$event.preventDefault(); buscarUsuarios()">
+        <label>Nombre o correo
+          <input type="search" name="buscarUsuarios" [value]="busquedaUsuarios" (input)="busquedaUsuarios = $any($event.target).value" maxlength="100" placeholder="Buscar usuario..." />
+        </label>
+        <label>Rol
+          <select name="rolUsuarios" [value]="rolUsuarios" (change)="rolUsuarios = $any($event.target).value; buscarUsuarios()">
+            <option value="">Todos</option><option value="USUARIO">Jugador</option><option value="DUENO">Dueño</option><option value="ADMINISTRADOR">Administrador</option>
+          </select>
+        </label>
+        <button type="submit" class="secondary-button">Buscar</button>
+      </form>
+      @if (usuariosCargando()) { <p role="status">Cargando usuarios...</p> }
+      @if (usuariosError()) { <p role="alert">{{ usuariosError() }}</p><button type="button" class="secondary-button" (click)="cargarUsuarios()">Reintentar</button> }
+      @if (usuariosPagina(); as lista) {
+        <p>{{ lista.total }} cuentas encontradas</p>
+        <div class="sf-admin-table-wrapper">
+          <table class="sf-admin-table"><thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Rol</th></tr></thead>
+          <tbody>
+            @for (usuario of lista.usuarios; track usuario.id) {
+              <tr><td>{{ usuario.id }}</td><td>{{ usuario.nombre }}</td><td>{{ usuario.email }}</td><td>{{ usuario.rol }}</td></tr>
+            } @empty { <tr><td colspan="4">No se encontraron usuarios.</td></tr> }
+          </tbody></table>
+        </div>
+        <div class="sf-admin-user-pagination">
+          <button type="button" class="secondary-button" [disabled]="usuariosCargando() || lista.pagina === 0" (click)="cargarUsuarios(lista.pagina - 1)">Anterior</button>
+          <span>Página {{ lista.pagina + 1 }} de {{ lista.totalPaginas || 1 }}</span>
+          <button type="button" class="secondary-button" [disabled]="usuariosCargando() || lista.pagina + 1 >= lista.totalPaginas" (click)="cargarUsuarios(lista.pagina + 1)">Siguiente</button>
+        </div>
+      }
+    </section>
+
     <section class="surface-card sf-admin-section sf-admin-next">
         <span class="page-eyebrow">Herramientas de soporte</span>
         <h2>Bitácora de eventos y errores</h2>
