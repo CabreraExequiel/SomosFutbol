@@ -1,0 +1,20 @@
+/* Etapa 06D: estado visual de la disponibilidad (solo frontend). */
+.disponibilidad-06d{margin:16px 0;padding:16px;border:1px solid #e2e8f0;border-radius:14px;background:#f8fafc}
+.disponibilidad-06d-encabezado{display:flex;justify-content:space-between;gap:12px;align-items:start;flex-wrap:wrap}
+.disponibilidad-06d-encabezado strong{font-size:1rem;color:#0f172a}
+.disponibilidad-06d-encabezado p{margin:5px 0 0;color:#64748b;font-size:.8rem}
+.disponibilidad-06d-actualizar{padding:7px 11px;border:1px solid #cbd5e1;border-radius:9px;background:white;color:#334155;font-weight:650;cursor:pointer}
+.disponibilidad-06d-actualizar:hover:not(:disabled){border-color:#ea580c;color:#9a3412}
+.disponibilidad-06d-actualizar:disabled{opacity:.55;cursor:not-allowed}
+.disponibilidad-06d-leyenda{display:flex;align-items:center;gap:8px;color:#475569;font-size:.75rem;margin:15px 0}
+.disponibilidad-06d-dot{display:inline-block;width:10px;height:10px;border-radius:100%}
+.disponibilidad-06d-dot.libre{background:#16a34a}.disponibilidad-06d-dot.ocupado{background:#dc2626;margin-left:12px}
+.disponibilidad-06d h3{font-size:.85rem;margin:15px 0 9px;color:#334155}
+.disponibilidad-06d-franjas{display:flex;gap:7px;flex-wrap:wrap}
+.disponibilidad-06d-franjas p{margin:4px 0;color:#64748b;font-size:.85rem}
+.disponibilidad-06d-franja{font-size:.78rem;border-radius:8px;padding:6px 9px;font-weight:650}
+.disponibilidad-06d-franja.libre{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
+.disponibilidad-06d-franja.ocupada{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;text-decoration:line-through}
+.disponibilidad-06d-seleccion{font-size:.82rem;color:#166534;margin:12px 0 0}
+.disponibilidad-06d button:focus-visible{outline:3px solid #f97316;outline-offset:2px}
+@media(max-width:500px){.disponibilidad-06d{padding:12px}.disponibilidad-06d-actualizar{width:100%}}
