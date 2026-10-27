@@ -47,4 +47,13 @@ public class Cancha {
     private String descripcion;
 
     private boolean activa = true;
+
+    @Column(name = "motivo_desactivacion_admin", length = 500)
+    private String motivoDesactivacionAdmin;
+
+    @Column(name = "moderacion_admin_id")
+    private Long moderacionAdminId;
+
+    @Column(name = "moderacion_admin_fecha")
+    private java.time.Instant moderacionAdminFecha;
 }

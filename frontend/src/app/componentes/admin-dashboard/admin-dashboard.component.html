@@ -179,7 +179,21 @@
               <dt>Techada</dt><dd>{{ detalleCancha.techada ? 'Sí' : 'No' }}</dd>
               <dt>Descripción</dt><dd>{{ detalleCancha.descripcion || 'Sin descripción' }}</dd>
             </dl>
-            <p class="sf-admin-note">Consulta de solo lectura. La moderación de canchas se implementará en la 09C3.</p>
+            @if (!detalleCancha.activa && detalleCancha.motivoDesactivacionAdmin) {
+              <p><strong>Motivo de desactivación:</strong> {{ detalleCancha.motivoDesactivacionAdmin }}</p>
+            }
+            <div class="sf-admin-suspend-form">
+              @if (detalleCancha.activa) {
+                <label>Motivo de desactivación (obligatorio)
+                  <textarea [value]="motivoDesactivacionCancha" (input)="motivoDesactivacionCancha = $any($event.target).value" maxlength="500" rows="3" placeholder="Explicá por qué se desactiva esta cancha..."></textarea>
+                </label>
+              }
+              <button type="button" class="secondary-button" [disabled]="estadoCanchaGuardando()"
+                (click)="cambiarEstadoCancha()">{{ estadoCanchaGuardando() ? 'Guardando...' : (detalleCancha.activa ? 'Desactivar cancha' : 'Reactivar cancha') }}</button>
+              <p class="sf-admin-note">La desactivación impide nuevas reservas, pero no cancela las existentes.</p>
+              @if (estadoCanchaError()) { <p role="alert">{{ estadoCanchaError() }}</p> }
+              @if (estadoCanchaMensaje()) { <p role="status">{{ estadoCanchaMensaje() }}</p> }
+            </div>
           </section>
         }
         <div class="sf-admin-user-pagination">

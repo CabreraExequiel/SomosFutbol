@@ -76,6 +76,7 @@ export class AdminDashboardComponent implements OnInit {
   verDetalleCancha(id: number): void {
     this.canchaSeleccionada.set(null);
     this.detalleCanchaError.set('');
+    this.estadoCanchaError.set(''); this.estadoCanchaMensaje.set('');
     this.detalleCanchaCargando.set(true);
     this.admin.detalleCanchaAdmin(id).subscribe({
       next: detalle => {
@@ -87,6 +88,40 @@ export class AdminDashboardComponent implements OnInit {
           err.status === 403 ? 'No tenés permiso para consultar esta cancha.' :
           'No se pudo cargar el detalle de la cancha.');
         this.detalleCanchaCargando.set(false);
+      }
+    });
+  }
+
+  readonly estadoCanchaGuardando = signal(false);
+  readonly estadoCanchaError = signal('');
+  readonly estadoCanchaMensaje = signal('');
+  motivoDesactivacionCancha = '';
+
+  cambiarEstadoCancha(): void {
+    const cancha = this.canchaSeleccionada();
+    if (!cancha || this.estadoCanchaGuardando()) return;
+    const activar = !cancha.activa;
+    const motivo = this.motivoDesactivacionCancha.trim();
+    if (!activar && (motivo.length < 5 || motivo.length > 500)) {
+      this.estadoCanchaError.set('Ingresá un motivo de 5 a 500 caracteres.'); return;
+    }
+    if (!window.confirm(activar ? `¿Reactivar la cancha ${cancha.nombre}?` : `¿Desactivar la cancha ${cancha.nombre}? Las reservas existentes no se cancelarán.`)) return;
+    this.estadoCanchaGuardando.set(true);
+    this.estadoCanchaError.set(''); this.estadoCanchaMensaje.set('');
+    this.admin.cambiarEstadoCancha(cancha.id, activar, motivo).subscribe({
+      next: actualizada => {
+        this.canchaSeleccionada.set(actualizada);
+        this.motivoDesactivacionCancha = '';
+        this.estadoCanchaMensaje.set(activar ? 'Cancha reactivada.' : 'Cancha desactivada. No se aceptan nuevas reservas.');
+        this.estadoCanchaGuardando.set(false);
+        this.admin.canchasAdmin(this.busquedaCanchas.trim(), this.estadoCanchas, this.canchasPagina()?.pagina ?? 0)
+          .subscribe({ next: pagina => this.canchasPagina.set(pagina), error: () => this.canchasError.set('Actualizá la lista para ver el nuevo estado.') });
+      },
+      error: err => {
+        this.estadoCanchaError.set(err.status === 403 ? 'Operación no autorizada.' :
+          err.status === 404 ? 'Cancha no encontrada.' : err.status === 409 ? 'El estado ya fue modificado.' :
+          'No se pudo cambiar el estado de la cancha.');
+        this.estadoCanchaGuardando.set(false);
       }
     });
   }

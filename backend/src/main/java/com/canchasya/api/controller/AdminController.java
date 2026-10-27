@@ -42,6 +42,7 @@ public class AdminController {
     private final PublicacionRepository publicaciones;
     private final PagoRepository pagos;
     private final AdminSuspensionService suspensiones;
+    private final com.canchasya.api.service.AdminCanchaModeracionService moderacionCanchas;
 
     @GetMapping("/resumen")
     public ResponseEntity<Resumen> resumen() {
@@ -132,18 +133,30 @@ public class AdminController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    public record EstadoCanchaRequest(boolean activa, String motivo) {}
+
+    @PostMapping("/canchas/{id}/estado")
+    public ResponseEntity<CanchaAdminDetalle> cambiarEstadoCancha(@PathVariable Long id,
+            @RequestBody EstadoCanchaRequest solicitud, Authentication authentication) {
+        User actor = (User) authentication.getPrincipal();
+        Cancha cancha = moderacionCanchas.actualizar(id, actor.getId(), solicitud.activa(), solicitud.motivo());
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(CanchaAdminDetalle.de(cancha));
+    }
+
     public record CanchaAdminDetalle(Long id, String nombre, String complejo, String ciudad,
                                     Long propietarioId, String propietario, String tipo,
                                     String superficie, Integer cantJugadores,
                                     java.math.BigDecimal precioHora, boolean techada,
-                                    String direccion, String descripcion, boolean activa) {
+                                    String direccion, String descripcion, boolean activa,
+                                    String motivoDesactivacionAdmin) {
         static CanchaAdminDetalle de(Cancha c) {
             String comercial = c.getDueno().getNombreComplejo();
             return new CanchaAdminDetalle(c.getId(), c.getNombre(),
                     comercial == null || comercial.isBlank() ? "Sin nombre comercial" : comercial,
                     c.getCiudad().getNombre(), c.getDueno().getId(), c.getDueno().getName(),
                     c.getTipo(), c.getSuperficie(), c.getCantJugadores(), c.getPrecioHora(),
-                    c.isTechada(), c.getDireccion(), c.getDescripcion(), c.isActiva());
+                    c.isTechada(), c.getDireccion(), c.getDescripcion(), c.isActiva(),
+                    c.getMotivoDesactivacionAdmin());
         }
     }
 

@@ -60,6 +60,7 @@ export interface AdminCanchaDetalle extends AdminCanchaResumen {
   techada: boolean;
   direccion: string | null;
   descripcion: string | null;
+  motivoDesactivacionAdmin: string | null;
 }
 
 export interface AdminPaginaCanchas {
@@ -72,6 +73,10 @@ export interface AdminPaginaCanchas {
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   constructor(private http: HttpClient) {}
+
+  cambiarEstadoCancha(id: number, activa: boolean, motivo: string): Observable<AdminCanchaDetalle> {
+    return this.http.post<AdminCanchaDetalle>(`${environment.apiUrl}/admin/canchas/${id}/estado`, { activa, motivo });
+  }
 
   detalleCanchaAdmin(id: number): Observable<AdminCanchaDetalle> {
     return this.http.get<AdminCanchaDetalle>(`${environment.apiUrl}/admin/canchas/${id}`);
