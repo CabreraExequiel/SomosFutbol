@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { AdminService, AdminResumen, AdminPaginaUsuarios, AdminUsuarioDetalle, AdminPaginaCanchas } from '../../services/admin.service';
+import { AdminService, AdminResumen, AdminPaginaUsuarios, AdminUsuarioDetalle, AdminPaginaCanchas, AdminCanchaDetalle } from '../../services/admin.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -69,6 +69,33 @@ export class AdminDashboardComponent implements OnInit {
     this.detalleError.set('');
   }
 
+  readonly canchaSeleccionada = signal<AdminCanchaDetalle | null>(null);
+  readonly detalleCanchaCargando = signal(false);
+  readonly detalleCanchaError = signal('');
+
+  verDetalleCancha(id: number): void {
+    this.canchaSeleccionada.set(null);
+    this.detalleCanchaError.set('');
+    this.detalleCanchaCargando.set(true);
+    this.admin.detalleCanchaAdmin(id).subscribe({
+      next: detalle => {
+        this.canchaSeleccionada.set(detalle);
+        this.detalleCanchaCargando.set(false);
+      },
+      error: err => {
+        this.detalleCanchaError.set(err.status === 404 ? 'La cancha ya no existe.' :
+          err.status === 403 ? 'No tenés permiso para consultar esta cancha.' :
+          'No se pudo cargar el detalle de la cancha.');
+        this.detalleCanchaCargando.set(false);
+      }
+    });
+  }
+
+  cerrarDetalleCancha(): void {
+    this.canchaSeleccionada.set(null);
+    this.detalleCanchaError.set('');
+  }
+
   readonly canchasPagina = signal<AdminPaginaCanchas | null>(null);
   readonly canchasCargando = signal(false);
   readonly canchasError = signal('');
@@ -78,6 +105,7 @@ export class AdminDashboardComponent implements OnInit {
   buscarCanchas(): void { this.cargarCanchas(0); }
 
   cargarCanchas(pagina = 0): void {
+    this.cerrarDetalleCancha();
     this.canchasCargando.set(true);
     this.canchasError.set('');
     this.admin.canchasAdmin(this.busquedaCanchas.trim(), this.estadoCanchas, pagina).subscribe({

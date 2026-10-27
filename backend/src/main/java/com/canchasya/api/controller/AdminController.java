@@ -123,6 +123,30 @@ public class AdminController {
                 resultado.getNumber(), resultado.getTotalPages(), resultado.getTotalElements()));
     }
 
+    /** Detalle administrativo sin serializar entidades ni modificar el estado de la cancha. */
+    @GetMapping("/canchas/{id}")
+    public ResponseEntity<CanchaAdminDetalle> detalleCancha(@PathVariable Long id) {
+        return canchas.findById(id)
+                .map(c -> ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                        .body(CanchaAdminDetalle.de(c)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    public record CanchaAdminDetalle(Long id, String nombre, String complejo, String ciudad,
+                                    Long propietarioId, String propietario, String tipo,
+                                    String superficie, Integer cantJugadores,
+                                    java.math.BigDecimal precioHora, boolean techada,
+                                    String direccion, String descripcion, boolean activa) {
+        static CanchaAdminDetalle de(Cancha c) {
+            String comercial = c.getDueno().getNombreComplejo();
+            return new CanchaAdminDetalle(c.getId(), c.getNombre(),
+                    comercial == null || comercial.isBlank() ? "Sin nombre comercial" : comercial,
+                    c.getCiudad().getNombre(), c.getDueno().getId(), c.getDueno().getName(),
+                    c.getTipo(), c.getSuperficie(), c.getCantJugadores(), c.getPrecioHora(),
+                    c.isTechada(), c.getDireccion(), c.getDescripcion(), c.isActiva());
+        }
+    }
+
     public record PaginaCanchas(List<CanchaAdminResumen> canchas, int pagina, int totalPaginas, long total) {}
 
     public record CanchaAdminResumen(Long id, String nombre, String complejo, String ciudad,

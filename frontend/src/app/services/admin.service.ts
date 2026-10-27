@@ -52,6 +52,16 @@ export interface AdminCanchaResumen {
   activa: boolean;
 }
 
+export interface AdminCanchaDetalle extends AdminCanchaResumen {
+  propietarioId: number;
+  superficie: string | null;
+  cantJugadores: number | null;
+  precioHora: number;
+  techada: boolean;
+  direccion: string | null;
+  descripcion: string | null;
+}
+
 export interface AdminPaginaCanchas {
   canchas: AdminCanchaResumen[];
   pagina: number;
@@ -62,6 +72,10 @@ export interface AdminPaginaCanchas {
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   constructor(private http: HttpClient) {}
+
+  detalleCanchaAdmin(id: number): Observable<AdminCanchaDetalle> {
+    return this.http.get<AdminCanchaDetalle>(`${environment.apiUrl}/admin/canchas/${id}`);
+  }
 
   canchasAdmin(buscar = '', activa = '', pagina = 0): Observable<AdminPaginaCanchas> {
     const params: Record<string, string> = { buscar, pagina: String(pagina) };

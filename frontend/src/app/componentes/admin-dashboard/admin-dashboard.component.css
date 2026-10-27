@@ -46,3 +46,7 @@
 
 /* 09C1: tabla de canchas amplia y desplazable en pantallas pequeñas */
 .sf-admin-table td{vertical-align:middle}.sf-admin-table{min-width:690px}
+
+/* 09C2: detalle administrativo de cancha */
+.sf-admin-cancha-detail h3 { margin:.25rem 0; font-size:1.15rem; }
+.sf-admin-cancha-detail dd { overflow-wrap:anywhere; white-space:pre-wrap; }

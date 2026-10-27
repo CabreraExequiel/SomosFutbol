@@ -151,11 +151,37 @@
             <thead><tr><th>ID</th><th>Cancha</th><th>Complejo</th><th>Ciudad</th><th>Propietario</th><th>Tipo</th><th>Estado</th><th>Detalle</th></tr></thead>
             <tbody>
               @for (cancha of listaCanchas.canchas; track cancha.id) {
-                <tr><td>{{ cancha.id }}</td><td>{{ cancha.nombre }}</td><td>{{ cancha.complejo }}</td><td>{{ cancha.ciudad }}</td><td>{{ cancha.propietario }}</td><td>{{ cancha.tipo || '—' }}</td><td>{{ cancha.activa ? 'Activa' : 'Inactiva' }}</td><td><a class="secondary-button sf-admin-link" [routerLink]="['/cancha', cancha.id]">Ver cancha</a></td></tr>
+                <tr><td>{{ cancha.id }}</td><td>{{ cancha.nombre }}</td><td>{{ cancha.complejo }}</td><td>{{ cancha.ciudad }}</td><td>{{ cancha.propietario }}</td><td>{{ cancha.tipo || '—' }}</td><td>{{ cancha.activa ? 'Activa' : 'Inactiva' }}</td><td><button type="button" class="secondary-button" (click)="verDetalleCancha(cancha.id)">Ver detalle</button></td></tr>
               } @empty { <tr><td colspan="8">No se encontraron canchas con esos filtros.</td></tr> }
             </tbody>
           </table>
         </div>
+        @if (detalleCanchaCargando()) { <p role="status">Cargando detalle de cancha...</p> }
+        @if (detalleCanchaError()) {
+          <p role="alert">{{ detalleCanchaError() }}</p>
+        }
+        @if (canchaSeleccionada(); as detalleCancha) {
+          <section class="sf-admin-user-detail sf-admin-cancha-detail" aria-label="Detalle administrativo de cancha">
+            <div class="sf-admin-section-title">
+              <div><span class="page-eyebrow">Administración · 09C2</span><h3>Cancha #{{ detalleCancha.id }} · {{ detalleCancha.nombre }}</h3></div>
+              <button type="button" class="secondary-button" (click)="cerrarDetalleCancha()">Cerrar detalle</button>
+            </div>
+            <p><strong>Estado:</strong> {{ detalleCancha.activa ? 'Activa' : 'Inactiva' }}</p>
+            <dl>
+              <dt>Complejo</dt><dd>{{ detalleCancha.complejo }}</dd>
+              <dt>Propietario</dt><dd>{{ detalleCancha.propietario }} (ID {{ detalleCancha.propietarioId }})</dd>
+              <dt>Ciudad</dt><dd>{{ detalleCancha.ciudad }}</dd>
+              <dt>Dirección</dt><dd>{{ detalleCancha.direccion || 'Sin informar' }}</dd>
+              <dt>Tipo</dt><dd>{{ detalleCancha.tipo || 'Sin informar' }}</dd>
+              <dt>Superficie</dt><dd>{{ detalleCancha.superficie || 'Sin informar' }}</dd>
+              <dt>Jugadores</dt><dd>{{ detalleCancha.cantJugadores ?? 'Sin informar' }}</dd>
+              <dt>Precio por hora</dt><dd>{{ detalleCancha.precioHora | currency:'ARS':'symbol':'1.0-2' }}</dd>
+              <dt>Techada</dt><dd>{{ detalleCancha.techada ? 'Sí' : 'No' }}</dd>
+              <dt>Descripción</dt><dd>{{ detalleCancha.descripcion || 'Sin descripción' }}</dd>
+            </dl>
+            <p class="sf-admin-note">Consulta de solo lectura. La moderación de canchas se implementará en la 09C3.</p>
+          </section>
+        }
         <div class="sf-admin-user-pagination">
           <button type="button" class="secondary-button" [disabled]="canchasCargando() || listaCanchas.pagina === 0" (click)="cargarCanchas(listaCanchas.pagina - 1)">Anterior</button>
           <span>Página {{ listaCanchas.pagina + 1 }} de {{ listaCanchas.totalPaginas || 1 }}</span>
