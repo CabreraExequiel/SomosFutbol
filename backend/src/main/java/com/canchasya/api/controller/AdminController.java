@@ -17,6 +17,7 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -70,6 +71,19 @@ public class AdminController {
                 resultado.getContent().stream().map(UsuarioResumen::de).toList(),
                 resultado.getNumber(), resultado.getTotalPages(), resultado.getTotalElements()));
     }
+
+    /** Detalle administrativo limitado: no exponer contraseña, tokens ni datos bancarios. */
+    @GetMapping("/usuarios/{id}")
+    public ResponseEntity<UsuarioDetalle> detalleUsuario(@PathVariable Long id) {
+        return users.findById(id)
+                .map(u -> ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(
+                        new UsuarioDetalle(u.getId(), u.getName(), u.getEmail(), u.getRole(),
+                                u.getCiudad(), u.getNombreComplejo(), u.getGoogleSub() != null)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    public record UsuarioDetalle(Long id, String nombre, String email, Role rol,
+                                 String ciudad, String nombreComplejo, boolean googleVinculado) {}
 
     public record PaginaUsuarios(List<UsuarioResumen> usuarios, int pagina, int totalPaginas, long total) {}
 

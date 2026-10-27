@@ -27,6 +27,12 @@ export interface AdminResumen {
   pagosReembolsados: number;
 }
 
+export interface AdminUsuarioDetalle extends AdminUsuarioResumen {
+  ciudad: string | null;
+  nombreComplejo: string | null;
+  googleVinculado: boolean;
+}
+
 export interface AdminPaginaUsuarios {
   usuarios: AdminUsuarioResumen[];
   pagina: number;
@@ -42,6 +48,10 @@ export class AdminService {
     const params: Record<string, string> = { buscar, pagina: String(pagina) };
     if (rol) params['rol'] = rol;
     return this.http.get<AdminPaginaUsuarios>(`${environment.apiUrl}/admin/usuarios`, { params });
+  }
+
+  detalleUsuario(id: number): Observable<AdminUsuarioDetalle> {
+    return this.http.get<AdminUsuarioDetalle>(`${environment.apiUrl}/admin/usuarios/${id}`);
   }
 
   resumen(): Observable<AdminResumen> {

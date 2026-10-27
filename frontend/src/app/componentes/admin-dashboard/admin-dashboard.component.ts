@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { AdminService, AdminResumen, AdminPaginaUsuarios } from '../../services/admin.service';
+import { AdminService, AdminResumen, AdminPaginaUsuarios, AdminUsuarioDetalle } from '../../services/admin.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -14,6 +14,29 @@ export class AdminDashboardComponent implements OnInit {
   readonly cargando = signal(true);
   readonly error = signal('');
   readonly resumen = signal<AdminResumen | null>(null);
+
+  readonly usuarioSeleccionado = signal<AdminUsuarioDetalle | null>(null);
+  readonly detalleCargando = signal(false);
+  readonly detalleError = signal('');
+
+  verUsuario(id: number): void {
+    this.usuarioSeleccionado.set(null);
+    this.detalleError.set('');
+    this.detalleCargando.set(true);
+    this.admin.detalleUsuario(id).subscribe({
+      next: u => { this.usuarioSeleccionado.set(u); this.detalleCargando.set(false); },
+      error: e => {
+        this.detalleError.set(e.status === 404 ? 'El usuario ya no existe.' :
+          e.status === 403 ? 'No tenés permiso para consultar esta cuenta.' : 'No se pudo cargar el detalle.');
+        this.detalleCargando.set(false);
+      }
+    });
+  }
+
+  cerrarDetalle(): void {
+    this.usuarioSeleccionado.set(null);
+    this.detalleError.set('');
+  }
 
   readonly usuariosPagina = signal<AdminPaginaUsuarios | null>(null);
   readonly usuariosCargando = signal(false);

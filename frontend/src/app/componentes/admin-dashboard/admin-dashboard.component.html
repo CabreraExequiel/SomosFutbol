@@ -77,13 +77,29 @@
       @if (usuariosPagina(); as lista) {
         <p>{{ lista.total }} cuentas encontradas</p>
         <div class="sf-admin-table-wrapper">
-          <table class="sf-admin-table"><thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Rol</th></tr></thead>
+          <table class="sf-admin-table"><thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Rol</th><th>Acciones</th></tr></thead>
           <tbody>
             @for (usuario of lista.usuarios; track usuario.id) {
-              <tr><td>{{ usuario.id }}</td><td>{{ usuario.nombre }}</td><td>{{ usuario.email }}</td><td>{{ usuario.rol }}</td></tr>
-            } @empty { <tr><td colspan="4">No se encontraron usuarios.</td></tr> }
+              <tr><td>{{ usuario.id }}</td><td>{{ usuario.nombre }}</td><td>{{ usuario.email }}</td><td>{{ usuario.rol }}</td><td><button type="button" class="secondary-button" (click)="verUsuario(usuario.id)">Ver detalle</button></td></tr>
+            } @empty { <tr><td colspan="5">No se encontraron usuarios.</td></tr> }
           </tbody></table>
         </div>
+        @if (detalleCargando()) { <p role="status">Cargando detalle del usuario...</p> }
+        @if (detalleError()) { <p role="alert">{{ detalleError() }}</p> }
+        @if (usuarioSeleccionado(); as u) {
+          <section class="sf-admin-user-detail" aria-label="Detalle del usuario">
+            <div class="sf-admin-section-title"><h3>Cuenta #{{ u.id }}</h3><button type="button" class="secondary-button" (click)="cerrarDetalle()">Cerrar detalle</button></div>
+            <dl>
+              <dt>Nombre</dt><dd>{{ u.nombre }}</dd>
+              <dt>Correo</dt><dd>{{ u.email }}</dd>
+              <dt>Rol</dt><dd>{{ u.rol }}</dd>
+              <dt>Ciudad</dt><dd>{{ u.ciudad || 'Sin especificar' }}</dd>
+              <dt>Complejo</dt><dd>{{ u.nombreComplejo || 'No corresponde / no informado' }}</dd>
+              <dt>Cuenta Google vinculada</dt><dd>{{ u.googleVinculado ? 'Sí' : 'No' }}</dd>
+            </dl>
+            <p class="sf-admin-note">Solo lectura. Los cambios de roles y suspensiones se habilitarán después de agregar verificaciones de seguridad.</p>
+          </section>
+        }
         <div class="sf-admin-user-pagination">
           <button type="button" class="secondary-button" [disabled]="usuariosCargando() || lista.pagina === 0" (click)="cargarUsuarios(lista.pagina - 1)">Anterior</button>
           <span>Página {{ lista.pagina + 1 }} de {{ lista.totalPaginas || 1 }}</span>
