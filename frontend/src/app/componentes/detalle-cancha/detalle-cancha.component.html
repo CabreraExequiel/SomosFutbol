@@ -20,7 +20,49 @@
   </div>
   }
 
-  @if (cancha && !cargando) {
+  @if (cancha && !cargando && !errorCarga) {
+  <section class="surface-card complejo-06b-panel" aria-labelledby="complejo-06b-titulo">
+    <div class="complejo-06b-encabezado">
+      <div>
+        <span class="page-eyebrow">Complejo deportivo</span>
+        <h1 id="complejo-06b-titulo">{{ cancha.nombreComplejo || cancha.duenoNombre }}</h1>
+        <p>Elegí la cancha que mejor se adapte a tu partido. La reserva se realiza por cancha.</p>
+      </div>
+      <a class="secondary-button" [routerLink]="['/duenos', cancha.duenoId]">Ver perfil del complejo</a>
+    </div>
+    <div class="complejo-06b-subtitulo">
+      <h2>Canchas del complejo</h2>
+      @if (!cargandoOtras && !errorOtras) {
+        <span>{{ otras.length + 1 }} {{ otras.length === 0 ? 'cancha disponible' : 'canchas disponibles' }}</span>
+      }
+    </div>
+    <div class="complejo-06b-lista" aria-label="Seleccionar una cancha">
+      <div class="complejo-06b-opcion complejo-06b-activa" aria-current="page">
+        <span class="complejo-06b-etiqueta">Seleccionada</span>
+        <strong>{{ cancha.nombre }}</strong>
+        <span class="complejo-06b-meta">{{ cancha.tipo || 'Fútbol' }} @if (cancha.techada) { · Techada }</span>
+        <span class="complejo-06b-precio">{{ cancha.precioHora | currency:'ARS':'symbol-narrow':'1.0-0' }} / hora</span>
+        <a href="#reserva-cancha" class="complejo-06b-reservar">Ver horarios y reservar ↓</a>
+      </div>
+      @for (otra of otras; track otra.id) {
+        <a class="complejo-06b-opcion complejo-06b-opcion-link"
+           [routerLink]="['/canchas', otra.id]"
+           [attr.aria-label]="'Seleccionar ' + otra.nombre + ', ' + (otra.tipo || 'Fútbol')">
+          <span class="complejo-06b-etiqueta">Cambiar de cancha ↗</span>
+          <strong>{{ otra.nombre }}</strong>
+          <span class="complejo-06b-meta">{{ otra.tipo || 'Fútbol' }} @if (otra.techada) { · Techada }</span>
+          <span class="complejo-06b-precio">{{ otra.precioHora | currency:'ARS':'symbol-narrow':'1.0-0' }} / hora</span>
+        </a>
+      }
+    </div>
+    @if (cargandoOtras) {
+      <p class="complejo-06b-estado" role="status">Cargando las demás canchas del complejo…</p>
+    } @else if (errorOtras) {
+      <p class="complejo-06b-estado" role="alert">{{ errorOtras }} Podés <a [routerLink]="['/duenos', cancha.duenoId]">consultar el perfil del complejo</a>.</p>
+    } @else if (otras.length === 0) {
+      <p class="complejo-06b-estado">Este complejo tiene una sola cancha publicada.</p>
+    }
+  </section>
   <div class="detalle-grid">
     <div class="columna-informacion">
       <div class="surface-card galeria-cancha">
@@ -43,8 +85,8 @@
       <article class="surface-card info-cancha">
         <div class="encabezado-cancha">
           <div>
-            <span class="page-eyebrow">Cancha disponible</span>
-            <h1>{{ cancha.nombre }}</h1>
+            <span class="page-eyebrow">Cancha seleccionada</span>
+            <h2 class="complejo-06b-nombre-cancha">{{ cancha.nombre }}</h2>
             <p class="ubicacion">
               <span aria-hidden="true">⌖</span>
               {{ cancha.direccion || 'Dirección a confirmar' }} · {{ cancha.ciudadNombre }}
@@ -80,14 +122,14 @@
         <div class="dueno-card">
           <span class="dueno-avatar">{{ cancha.duenoNombre?.charAt(0)?.toUpperCase() || 'D' }}</span>
           <div>
-            <small>Publicada por</small>
+            <small>Propietario</small>
             <strong>{{ cancha.duenoNombre }}</strong>
           </div>
           <a [routerLink]="['/duenos',cancha.duenoId]" class="secondary-button">Ver todas sus canchas →</a>
         </div>
       </article>
     </div>
-    <aside class="surface-card reservar-card">
+    <aside id="reserva-cancha" class="surface-card reservar-card">
       <div class="reservar-cabecera">
         <span class="calendario-icono" aria-hidden="true">📅</span>
         <div>
@@ -95,7 +137,7 @@
           <p>Horarios de Argentina · hasta 90 días de anticipación.</p>
         </div>
       </div>
-      <form (ngSubmit)="reservar()">
+      <form (ngSubmit)="abrirConfirmacion()">
         <label class="campo campo-completo">
           <span>Fecha del partido</span>
           <input
@@ -103,25 +145,39 @@
                   name="fecha"
                   [(ngModel)]="fecha"
                   [min]="fechaMinima"
-                  (change)="consultarDisponibilidad()"
+                  [max]="fechaMaxima"
+                  (change)="consultarDisponibilidad()" [disabled]="reservando || confirmando"
                   required
           />
         </label>
         <div class="fila-horarios">
           <label class="campo">
             <span>Desde</span>
-            <input type="time" name="horaInicio" [(ngModel)]="horaInicio" step="1800" [disabled]="consultando||!disponibilidad||reservando" required />
+            <input type="time" name="horaInicio" [(ngModel)]="horaInicio" step="1800" [disabled]="consultando||!disponibilidad||reservando||confirmando" required />
           </label>
           <label class="campo">
             <span>Hasta</span>
-            <input type="time" name="horaFin" [(ngModel)]="horaFin" step="1800" [disabled]="consultando||!disponibilidad||reservando" required />
+            <input type="time" name="horaFin" [(ngModel)]="horaFin" step="1800" [disabled]="consultando||!disponibilidad||reservando||confirmando" required />
           </label>
         </div>
         @if(consultando){<p role="status">Consultando horarios…</p>}
         @if(disponibilidad && !consultando){
-        <div class="libres"><strong>Disponibilidad del día</strong>@for(f of disponibilidad.libres;track $index){<p>{{f.horaInicio|slice:0:5}}–{{f.horaFin|slice:0:5}}</p>}@empty{<p>No quedan horarios disponibles. Elegí otra fecha.</p>}</div>
-        @if(turnos.length){<p class="slot-title">Elegí un turno de 1 hora o ajustá el rango arriba</p><div class="slots">@for(t of turnos;track t.horaInicio){<button type="button" [class.selected]="horaInicio===t.horaInicio&&horaFin===t.horaFin" [attr.aria-pressed]="horaInicio===t.horaInicio&&horaFin===t.horaFin" (click)="elegir(t)">{{t.horaInicio}}</button>}</div>}
-        @if(horaInicio && horaFin && !seleccionValida){<p class="app-alert error">Elegí un rango libre, en intervalos de 30 minutos (máximo 4 horas).</p>}
+        <section class="disponibilidad-06d" aria-label="Disponibilidad de la fecha seleccionada">
+          <div class="disponibilidad-06d-encabezado">
+            <div><strong>Disponibilidad del día</strong><p>{{cantidadTurnosLibres}} inicios posibles de 1 hora</p></div>
+            <button type="button" class="disponibilidad-06d-actualizar" (click)="actualizarHorarios()" [disabled]="reservando||confirmando">Actualizar horarios</button>
+          </div>
+          <div class="disponibilidad-06d-leyenda"><span class="disponibilidad-06d-dot libre"></span> Libre <span class="disponibilidad-06d-dot ocupado"></span> Ocupado</div>
+          @if(disponibilidad.ocupados.length){
+          <h3>Horarios ocupados</h3>
+          <div class="disponibilidad-06d-franjas">@for(f of disponibilidad.ocupados;track $index){<span class="disponibilidad-06d-franja ocupada" [attr.aria-label]="'Ocupado de '+f.horaInicio.slice(0,5)+' a '+f.horaFin.slice(0,5)">{{f.horaInicio|slice:0:5}}–{{f.horaFin|slice:0:5}}</span>}</div>
+          }
+          <h3>Franjas libres</h3>
+          <div class="disponibilidad-06d-franjas">@for(f of disponibilidad.libres;track $index){<span class="disponibilidad-06d-franja libre">{{f.horaInicio|slice:0:5}}–{{f.horaFin|slice:0:5}}</span>}@empty{<p>No quedan horarios disponibles. Elegí otra fecha.</p>}</div>
+          @if(turnos.length){<p class="slot-title">Elegí un inicio para reservar 1 hora o ajustá el rango arriba</p><div class="slots">@for(t of turnos;track t.horaInicio){<button type="button" [class.selected]="horaInicio===t.horaInicio&&horaFin===t.horaFin" [attr.aria-pressed]="horaInicio===t.horaInicio&&horaFin===t.horaFin" [disabled]="reservando||confirmando" (click)="elegir(t)" [attr.aria-label]="'Reservar de '+t.horaInicio+' a '+t.horaFin">{{t.horaInicio}}</button>}</div>}
+          @if(horaInicio && horaFin && !seleccionValida){<p class="app-alert error">Elegí un rango libre, en intervalos de 30 minutos (máximo 4 horas).</p>}
+          @if(seleccionValida){<p class="disponibilidad-06d-seleccion" role="status">Horario elegido: <strong>{{horaInicio}} a {{horaFin}}</strong></p>}
+        </section>
         }
         @if (mensaje) {
         <p class="mensaje" role="alert">{{ mensaje }}</p>
@@ -130,18 +186,28 @@
           <span>{{seleccionValida?'Total de la reserva':'Precio por hora'}}</span>
           <strong>$ {{ (seleccionValida?total:cancha.precioHora) | number: '1.2-2' }}</strong>
         </div>
-        <button
-                type="submit"
-                class="primary-button btn-reservar"
-                [disabled]="!seleccionValida || reservando"
-        >
-          {{reservando ? 'Reservando…' : 'Crear reserva'}}
-          <span aria-hidden="true">→</span>
+        @if (!confirmando) {
+        <button type="submit" class="primary-button btn-reservar" [disabled]="!seleccionValida || reservando || consultando">
+          Revisar reserva <span aria-hidden="true">→</span>
         </button>
+        } @else {
+        <section class="resumen-06e" aria-label="Confirmación de reserva" role="region">
+          <h3>Confirmá los datos de tu reserva</h3>
+          <dl>
+            <div><dt>Complejo</dt><dd>{{ cancha.nombreComplejo || cancha.duenoNombre || 'Complejo deportivo' }}</dd></div>
+            <div><dt>Cancha</dt><dd>{{ cancha.nombre }}</dd></div>
+            <div><dt>Fecha</dt><dd>{{ fecha }}</dd></div>
+            <div><dt>Horario</dt><dd>{{ horaInicio }} a {{ horaFin }}</dd></div>
+            <div><dt>Total estimado</dt><dd>$ {{ total | number:'1.2-2' }}</dd></div>
+          </dl>
+          <p>Antes de crear la reserva volveremos a consultar la disponibilidad. El servidor debe validar nuevamente el turno para evitar superposiciones.</p>
+          <button type="button" class="primary-button btn-reservar" [disabled]="reservando" (click)="reservar()">{{reservando ? 'Verificando y reservando…' : 'Confirmar reserva'}}</button>
+          <button type="button" class="cancelar-06e" [disabled]="reservando" (click)="cancelarConfirmacion()">Modificar selección</button>
+        </section>
+        }
       </form>
       <p class="nota-reserva">La reserva quedará pendiente hasta completar el pago o recibir la confirmación correspondiente.</p>
     </aside>
   </div>
-  <section class="otras-canchas"><header class="page-header"><div><span class="page-eyebrow">Más del mismo complejo</span><h2>Otras canchas de {{cancha.nombreComplejo}}</h2></div><a [routerLink]="['/duenos',cancha.duenoId]" class="secondary-button">Ver otras canchas</a></header><div class="otras-grid">@for(c of otras;track c.id){<a class="surface-card otra-cancha" [routerLink]="['/canchas',c.id]">@if(c.imagen){<img [src]="c.imagen" [alt]="c.nombre" loading="lazy">}<div><h3>{{c.nombre}}</h3><p>{{c.tipo}} · {{c.ciudadNombre}}</p><strong>{{c.precioHora|currency:'ARS':'symbol-narrow':'1.0-0'}} / hora →</strong></div></a>}@empty{<p>Esta es la única cancha publicada de este complejo.</p>}</div></section>
   }
 </section>

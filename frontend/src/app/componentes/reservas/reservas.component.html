@@ -11,6 +11,29 @@
   </header>
 
   <nav class="filter-tabs" aria-label="Filtrar reservas">@for(f of [['proximas','Próximos partidos'],['PENDIENTE','Pendientes'],['CONFIRMADA','Confirmadas'],['todas','Historial']];track f[0]){<button type="button" [class.active]="filtro===f[0]" [attr.aria-pressed]="filtro===f[0]" (click)="filtro=f[0]">{{f[1]}}</button>}</nav>
+  <div class="reservas-filtros-06g" aria-label="Buscar y ordenar reservas">
+    <label>Buscar cancha o reserva
+      <input type="search" name="buscarReserva" [(ngModel)]="busqueda" placeholder="Cancha o número de reserva" autocomplete="off" />
+    </label>
+    <label>Desde
+      <input type="date" name="fechaDesde" [(ngModel)]="desde" [max]="hasta || null" />
+    </label>
+    <label>Hasta
+      <input type="date" name="fechaHasta" [(ngModel)]="hasta" [min]="desde || null" />
+    </label>
+    <label>Ordenar
+      <select name="ordenReservas" [(ngModel)]="orden">
+        <option value="recientes">Por fecha (predeterminado)</option>
+        <option value="antiguas">Fecha más antigua primero</option>
+        <option value="importeMayor">Mayor importe</option>
+        <option value="importeMenor">Menor importe</option>
+      </select>
+    </label>
+    <button type="button" class="secondary-button" (click)="limpiarFiltros()" [disabled]="!filtrosAdicionalesActivos && filtro === 'proximas'">Limpiar filtros</button>
+  </div>
+  @if (!cargando && !error) {
+    <p class="reservas-conteo-06g" role="status">Mostrando {{ visibles.length }} de {{ reservas.length }} reservas.</p>
+  }
   @if (cargando) {
     <div class="estado-carga" aria-live="polite">
       <span class="spinner"></span>
@@ -24,6 +47,34 @@
       <h2>No pudimos cargar tus reservas</h2>
       <p>{{ error }}</p>
       <button type="button" class="secondary-button" (click)="cargar()">Volver a intentar</button>
+    </div>
+  }
+
+  @if (mensajeExito) {
+    <div class="alerta-confirmacion-06h" role="status">
+      <p>{{ mensajeExito }}</p>
+      <button type="button" (click)="mensajeExito = ''" aria-label="Cerrar confirmación">×</button>
+    </div>
+  }
+
+  @if (reservaPorCancelar; as seleccion) {
+    <div class="cancelacion-fondo-06h" (click)="cerrarConfirmacion()">
+      <section class="cancelacion-panel-06h" role="dialog" aria-modal="true" aria-labelledby="titulo-cancelacion-06h" (click)="$event.stopPropagation()">
+        <h2 id="titulo-cancelacion-06h">Confirmar cancelación</h2>
+        <p>Revisá los datos antes de cancelar. Esta acción libera el turno y no puede deshacerse desde esta pantalla.</p>
+        <dl>
+          <div><dt>Reserva</dt><dd>#{{ seleccion.id }}</dd></div>
+          <div><dt>Cancha</dt><dd>{{ seleccion.canchaNombre }}</dd></div>
+          <div><dt>Fecha</dt><dd>{{ seleccion.fecha }}</dd></div>
+          <div><dt>Horario</dt><dd>{{ seleccion.horaInicio }} a {{ seleccion.horaFin }}</dd></div>
+          <div><dt>Monto</dt><dd>$ {{ seleccion.monto | number:'1.0-0' }}</dd></div>
+        </dl>
+        <p class="cancelacion-nota-06h">Las reservas pagadas o confirmadas requieren el procedimiento de cancelación y reintegro correspondiente.</p>
+        <div class="cancelacion-botones-06h">
+          <button type="button" class="secondary-button" [disabled]="cancelandoId !== null" (click)="cerrarConfirmacion()">Volver</button>
+          <button type="button" class="danger-button" [disabled]="cancelandoId !== null" (click)="confirmarCancelacion()">{{ cancelandoId !== null ? 'Cancelando...' : 'Sí, cancelar reserva' }}</button>
+        </div>
+      </section>
     </div>
   }
 
@@ -110,7 +161,7 @@
                 type="button"
                 class="danger-button"
                 [disabled]="cancelandoId === r.id || pagandoId === r.id"
-                (click)="cancelar(r)"
+                (click)="solicitarCancelacion(r)"
                 >
                 {{ cancelandoId === r.id ? 'Cancelando...' : 'Cancelar' }}
               </button>
@@ -169,7 +220,8 @@
     <div class="empty-state">
       <span class="empty-state-icon">📅</span>
       <h2>No hay reservas en esta vista</h2>
-      <p>Explorá las canchas disponibles y elegí el horario para tu próximo partido.</p>
+      <p>{{ reservas.length ? 'No encontramos reservas con los filtros seleccionados. Probá otra búsqueda o limpiá los filtros.' : 'Todavía no tenés reservas. Explorá las canchas disponibles y elegí el horario para tu próximo partido.' }}</p>
+      @if (reservas.length) { <button type="button" class="secondary-button" (click)="limpiarFiltros()">Limpiar filtros</button> }
       <a routerLink="/canchas" class="primary-button">Ver canchas</a>
     </div>
   }

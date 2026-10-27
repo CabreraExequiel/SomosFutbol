@@ -15,8 +15,41 @@ import { PagoService } from '../../services/pago.service';
     styleUrl: './reservas.component.css'
 })
 export class ReservasComponent implements OnInit, OnDestroy {
-  filtro='proximas';
-  get visibles():any[]{return this.reservas.filter(r=>this.filtro==='todas'||(this.filtro==='proximas'?r.fecha>=fechaArgentina()&&r.estado!=='CANCELADA':r.estado===this.filtro)).sort((a,b)=>this.filtro==='proximas'?(a.fecha+a.horaInicio).localeCompare(b.fecha+b.horaInicio):(b.fecha+b.horaInicio).localeCompare(a.fecha+a.horaInicio));}
+  filtro = 'proximas';
+  busqueda = '';
+  desde = '';
+  hasta = '';
+  orden: 'recientes' | 'antiguas' | 'importeMayor' | 'importeMenor' = 'recientes';
+
+  get visibles(): any[] {
+    const termino = this.busqueda.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const hoy = fechaArgentina();
+    return this.reservas.filter(r => {
+      const fecha = String(r.fecha || '').slice(0, 10);
+      const estadoValido = this.filtro === 'todas' ||
+        (this.filtro === 'proximas' ? fecha >= hoy && r.estado !== 'CANCELADA' : r.estado === this.filtro);
+      if (!estadoValido || (this.desde && fecha < this.desde) || (this.hasta && fecha > this.hasta)) return false;
+      const texto = `${r.canchaNombre || ''} ${r.id ?? ''}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      return !termino || texto.includes(termino);
+    }).sort((a, b) => {
+      if (this.orden === 'importeMayor') return Number(b.monto || 0) - Number(a.monto || 0);
+      if (this.orden === 'importeMenor') return Number(a.monto || 0) - Number(b.monto || 0);
+      const comparacion = `${a.fecha}${a.horaInicio}`.localeCompare(`${b.fecha}${b.horaInicio}`);
+      return this.orden === 'antiguas' || (this.orden === 'recientes' && this.filtro === 'proximas') ? comparacion : -comparacion;
+    });
+  }
+
+  limpiarFiltros(): void {
+    this.filtro = 'proximas';
+    this.busqueda = '';
+    this.desde = '';
+    this.hasta = '';
+    this.orden = 'recientes';
+  }
+
+  get filtrosAdicionalesActivos(): boolean {
+    return !!(this.busqueda.trim() || this.desde || this.hasta || this.orden !== 'recientes');
+  }
   vencida(r:any):boolean{return !!r.expiresAt&&Date.parse(r.expiresAt)<=Date.now()&&r.estado==='PENDIENTE';}
   copiado='';
   copiar(valor:string):void{navigator.clipboard.writeText(valor).then(()=>this.copiado='Dato copiado.').catch(()=>this.copiado='Seleccioná el dato para copiarlo manualmente.');}
@@ -24,6 +57,9 @@ export class ReservasComponent implements OnInit, OnDestroy {
   cargando = true;
   error = '';
   cancelandoId: number | null = null;
+  reservaPorCancelar: any | null = null;
+  mensajeExito = '';
+
   pagandoId: number | null = null;
   cargandoTransferenciaId: number | null = null;
   datosTransferencia: Record<number, DatosTransferencia> = {};
@@ -62,18 +98,35 @@ export class ReservasComponent implements OnInit, OnDestroy {
     });
   }
 
-  cancelar(reserva: any): void {
-    if(this.cancelandoId||!window.confirm('¿Querés cancelar esta reserva y liberar el horario?'))return;
+  solicitarCancelacion(reserva: any): void {
+    if (this.cancelandoId !== null || !this.puedeCancelar(reserva)) return;
+    this.mensajeAccion = '';
+    this.mensajeExito = '';
+    this.reservaPorCancelar = reserva;
+  }
+
+  cerrarConfirmacion(): void {
+    if (this.cancelandoId !== null) return;
+    this.reservaPorCancelar = null;
+  }
+
+  confirmarCancelacion(): void {
+    const reserva = this.reservaPorCancelar;
+    if (!reserva || this.cancelandoId !== null || !this.puedeCancelar(reserva)) return;
     this.mensajeAccion = '';
     this.cancelandoId = reserva.id;
     this.reservaService.cancelar(reserva.id).subscribe({
       next: () => {
         this.cancelandoId = null;
+        this.reservaPorCancelar = null;
+        this.mensajeExito = `La reserva #${reserva.id} fue cancelada. El horario quedó liberado según las reglas del sistema.`;
         this.cargar();
       },
       error: (err) => {
         this.cancelandoId = null;
-        this.mensajeAccion = err?.error?.message || 'No se pudo cancelar la reserva. Intentá nuevamente.';
+        this.reservaPorCancelar = null;
+        this.mensajeAccion = err?.error?.message || 'No se pudo cancelar la reserva. Actualizá el listado e intentá nuevamente.';
+        this.cargar();
       },
     });
   }

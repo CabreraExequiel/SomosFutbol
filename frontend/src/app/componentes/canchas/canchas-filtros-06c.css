@@ -1,0 +1,66 @@
+/* Etapa 06C: filtros de complejos. Se añade a la hoja existente, sin reemplazarla. */
+.canchas-page .filtros-panel {
+  display: block;
+}
+
+.canchas-page .filtros {
+  width: 100%;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.canchas-page .filtros .filtro-busqueda {
+  grid-column: span 2;
+}
+
+.canchas-page .filtros label {
+  min-width: 0;
+}
+
+.canchas-page .filtros input[type="number"],
+.canchas-page .filtros input[type="search"],
+.canchas-page .filtros select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 43px;
+  padding: 9px 12px;
+  border: 1px solid var(--borde, #d1d5db);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--texto, #172033);
+  font: inherit;
+}
+
+.canchas-page .filtros select {
+  padding-right: 35px;
+}
+
+.canchas-page .filtros input:focus-visible,
+.canchas-page .filtros select:focus-visible {
+  outline: 2px solid var(--naranja, #f97316);
+  outline-offset: 1px;
+}
+
+.canchas-page .filtros input[aria-invalid="true"] {
+  border-color: #dc2626;
+}
+
+.canchas-page .filtros-nota {
+  margin: 12px 0 0;
+  color: var(--texto-suave, #64748b);
+  font-size: .78rem;
+  line-height: 1.45;
+}
+
+.canchas-page .filtros-error {
+  margin-top: 12px;
+}
+
+@media (max-width: 900px) {
+  .canchas-page .filtros { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 540px) {
+  .canchas-page .filtros { grid-template-columns: minmax(0, 1fr); }
+  .canchas-page .filtros .filtro-busqueda { grid-column: auto; }
+}
