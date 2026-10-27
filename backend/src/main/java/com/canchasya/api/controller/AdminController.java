@@ -1,6 +1,9 @@
 package com.canchasya.api.controller;
 
 import com.canchasya.api.model.Role;
+import com.canchasya.api.model.EstadoReserva;
+import com.canchasya.api.model.EstadoPago;
+import com.canchasya.api.repository.PagoRepository;
 import com.canchasya.api.model.User;
 import com.canchasya.api.repository.CanchaRepository;
 import com.canchasya.api.repository.PublicacionRepository;
@@ -28,6 +31,7 @@ public class AdminController {
     private final CanchaRepository canchas;
     private final ReservaRepository reservas;
     private final PublicacionRepository publicaciones;
+    private final PagoRepository pagos;
 
     @GetMapping("/resumen")
     public ResponseEntity<Resumen> resumen() {
@@ -36,7 +40,16 @@ public class AdminController {
                 PageRequest.of(0, 8, Sort.by(Sort.Direction.DESC, "id"))
         ).getContent().stream().map(UsuarioResumen::de).toList();
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(new Resumen(
-                users.count(), canchas.count(), reservas.count(), publicaciones.count(), ultimos
+                users.count(), canchas.count(), reservas.count(), publicaciones.count(), ultimos,
+                canchas.countByActivaTrue(),
+                reservas.countByEstado(EstadoReserva.PENDIENTE),
+                reservas.countByEstado(EstadoReserva.CONFIRMADA),
+                reservas.countByEstado(EstadoReserva.CANCELADA),
+                pagos.count(),
+                pagos.countByEstado(EstadoPago.PENDIENTE),
+                pagos.countByEstado(EstadoPago.APROBADO),
+                pagos.countByEstado(EstadoPago.RECHAZADO),
+                pagos.countByEstado(EstadoPago.REEMBOLSADO)
         ));
     }
 
@@ -47,5 +60,8 @@ public class AdminController {
     }
 
     public record Resumen(long usuarios, long canchas, long reservas, long publicaciones,
-                          List<UsuarioResumen> ultimosUsuarios) {}
+                          List<UsuarioResumen> ultimosUsuarios, long canchasActivas,
+                          long reservasPendientes, long reservasConfirmadas, long reservasCanceladas,
+                          long pagosTotales, long pagosPendientes, long pagosAprobados,
+                          long pagosRechazados, long pagosReembolsados) {}
 }

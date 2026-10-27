@@ -1,6 +1,7 @@
 package com.canchasya.api.repository;
 
 import com.canchasya.api.model.Pago;
+import com.canchasya.api.model.EstadoPago;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,6 +12,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface PagoRepository extends JpaRepository<Pago, Long> {
+
+    long countByEstado(EstadoPago estado);
+
 
     Optional<Pago> findByReservaId(Long reservaId);
 

@@ -26,6 +26,16 @@
         <article class="surface-card sf-admin-stat"><span>Publicaciones</span><strong>{{ datos.publicaciones }}</strong></article>
     </div>
 
+    <section class="surface-card sf-admin-section" aria-label="Indicadores de canchas, reservas y pagos">
+        <div class="sf-admin-section-title"><div><span class="page-eyebrow">Operación</span><h2>Estado de la plataforma</h2></div><small>Datos reales · Actualizables</small></div>
+        <div class="sf-admin-summary-grid">
+            <div class="sf-admin-summary-group"><h3>Canchas</h3><p><strong>{{ datos.canchasActivas }}</strong> activas de {{ datos.canchas }} registradas</p></div>
+            <div class="sf-admin-summary-group"><h3>Reservas</h3><p><strong>{{ datos.reservasPendientes }}</strong> pendientes</p><p><strong>{{ datos.reservasConfirmadas }}</strong> confirmadas</p><p><strong>{{ datos.reservasCanceladas }}</strong> canceladas</p></div>
+            <div class="sf-admin-summary-group"><h3>Pagos</h3><p><strong>{{ datos.pagosAprobados }}</strong> aprobados</p><p><strong>{{ datos.pagosPendientes }}</strong> pendientes</p><p><strong>{{ datos.pagosRechazados }}</strong> rechazados</p><p><strong>{{ datos.pagosReembolsados }}</strong> reembolsados</p><small>{{ datos.pagosTotales }} registros de pago en total</small></div>
+        </div>
+        <button type="button" class="secondary-button sf-admin-refresh" (click)="cargar()">Actualizar estadísticas</button>
+    </section>
+
     <section class="surface-card sf-admin-section">
         <div class="sf-admin-section-title">
             <div><span class="page-eyebrow">Cuentas</span><h2>Últimos usuarios registrados</h2></div>

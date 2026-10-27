@@ -16,6 +16,15 @@ export interface AdminResumen {
   reservas: number;
   publicaciones: number;
   ultimosUsuarios: AdminUsuarioResumen[];
+  canchasActivas: number;
+  reservasPendientes: number;
+  reservasConfirmadas: number;
+  reservasCanceladas: number;
+  pagosTotales: number;
+  pagosPendientes: number;
+  pagosAprobados: number;
+  pagosRechazados: number;
+  pagosReembolsados: number;
 }
 
 @Injectable({ providedIn: 'root' })

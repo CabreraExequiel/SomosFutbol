@@ -12,6 +12,9 @@ import java.util.Optional;
 
 public interface ReservaRepository extends JpaRepository<Reserva, Long> {
 
+    long countByEstado(EstadoReserva estado);
+
+
     // Bloqueo de fila dentro de la transaccion, compatible con MariaDB y MySQL.
     @Query(value = "SELECT r.* FROM reservas r WHERE r.id = :id FOR UPDATE", nativeQuery = true)
     Optional<Reserva> findByIdForUpdate(@Param("id") Long id);

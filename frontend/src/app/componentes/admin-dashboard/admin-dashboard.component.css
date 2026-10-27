@@ -18,3 +18,13 @@
 .sf-admin-alert { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.6rem; }
 @media (max-width:850px){.sf-admin-stats{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media (max-width:460px){.sf-admin-stats{grid-template-columns:1fr;}}
+
+/* 09A: indicadores operativos */
+.sf-admin-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;margin-top:1rem}
+.sf-admin-summary-group{border:1px solid #dbe5df;border-radius:12px;padding:1rem;min-width:0}
+.sf-admin-summary-group h3{margin:0 0 .8rem;font-size:1.05rem}
+.sf-admin-summary-group p{margin:.4rem 0;color:var(--text-muted,#64748b)}
+.sf-admin-summary-group p strong{color:var(--text-main,#1f2937);font-size:1.25rem}
+.sf-admin-summary-group small{color:var(--text-muted,#64748b)}
+.sf-admin-refresh{margin-top:1rem}
+@media(max-width:750px){.sf-admin-summary-grid{grid-template-columns:1fr}}

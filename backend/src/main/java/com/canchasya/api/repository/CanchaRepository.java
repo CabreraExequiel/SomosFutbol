@@ -9,6 +9,9 @@ import java.util.List;
 
 public interface CanchaRepository extends JpaRepository<Cancha, Long> {
 
+    long countByActivaTrue();
+
+
     // SQL nativa: MariaDB 10.4 admite FOR UPDATE pero no FOR UPDATE OF <alias>.
     // El servicio llamante debe mantener una transaccion @Transactional activa.
     @Query(value = "SELECT c.* FROM canchas c WHERE c.id = :id FOR UPDATE", nativeQuery = true)
