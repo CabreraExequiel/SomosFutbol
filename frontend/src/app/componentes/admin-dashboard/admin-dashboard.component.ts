@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { AdminService, AdminResumen, AdminPaginaUsuarios, AdminUsuarioDetalle, AdminPaginaCanchas, AdminCanchaDetalle, AdminComplejoDetalle, AdminHistorialPagina, AdminPaginaReservas, AdminReservaDetalle, AdminPaginaPagos } from '../../services/admin.service';
+import { AdminService, AdminResumen, AdminPaginaUsuarios, AdminUsuarioDetalle, AdminPaginaCanchas, AdminCanchaDetalle, AdminComplejoDetalle, AdminHistorialPagina, AdminPaginaReservas, AdminReservaDetalle, AdminPaginaPagos, AdminResumenConciliacion, AdminPaginaCasosConciliacion, AdminTipoCasoConciliacion } from '../../services/admin.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -278,6 +278,54 @@ export class AdminDashboardComponent implements OnInit {
     });
   }
 
+  // 09D4: alertas de conciliación de solo lectura; cada caso requiere verificación humana.
+  readonly conciliacionResumen = signal<AdminResumenConciliacion | null>(null);
+  readonly conciliacionResumenCargando = signal(false);
+  readonly conciliacionResumenError = signal('');
+  readonly conciliacionPagina = signal<AdminPaginaCasosConciliacion | null>(null);
+  readonly conciliacionCargando = signal(false);
+  readonly conciliacionError = signal('');
+  tipoConciliacion: AdminTipoCasoConciliacion = 'CONFIRMADA_SIN_PAGO_APROBADO';
+
+  cargarConciliacionResumen(): void {
+    this.conciliacionResumenCargando.set(true);
+    this.conciliacionResumenError.set('');
+    this.admin.resumenConciliacion().subscribe({
+      next: resumen => { this.conciliacionResumen.set(resumen); this.conciliacionResumenCargando.set(false); },
+      error: err => {
+        this.conciliacionResumenError.set(err.status === 403 ? 'No tenés permiso para consultar alertas.' :
+          'No se pudieron cargar los indicadores de conciliación.');
+        this.conciliacionResumenCargando.set(false);
+      }
+    });
+  }
+
+  cargarConciliacion(pagina = 0): void {
+    const tipo = this.tipoConciliacion;
+    this.conciliacionCargando.set(true);
+    this.conciliacionError.set('');
+    this.conciliacionPagina.set(null);
+    this.admin.casosConciliacion(tipo, pagina).subscribe({
+      next: resultado => {
+        if (this.tipoConciliacion !== tipo) return;
+        this.conciliacionPagina.set(resultado);
+        this.conciliacionCargando.set(false);
+      },
+      error: err => {
+        if (this.tipoConciliacion !== tipo) return;
+        this.conciliacionError.set(err.status === 403 ? 'No tenés permiso para consultar estos casos.' :
+          err.status === 401 ? 'La sesión venció o falta autorización.' :
+          `No se pudieron consultar los casos (HTTP ${err.status || 'sin respuesta'}).`);
+        this.conciliacionCargando.set(false);
+      }
+    });
+  }
+
+  actualizarConciliacion(): void {
+    this.cargarConciliacionResumen();
+    this.cargarConciliacion(0);
+  }
+
   // 09D3: búsqueda paginada de pagos locales, sin operaciones de escritura.
   readonly pagosPagina = signal<AdminPaginaPagos | null>(null);
   readonly pagosCargando = signal(false);
@@ -383,6 +431,7 @@ export class AdminDashboardComponent implements OnInit {
     this.cargar();
     this.cargarReservas();
     this.cargarPagos();
+    this.actualizarConciliacion();
   }
 
   cargar(): void {

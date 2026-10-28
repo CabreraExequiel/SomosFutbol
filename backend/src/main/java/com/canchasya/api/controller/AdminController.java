@@ -45,6 +45,7 @@ public class AdminController {
     private final AdminSuspensionService suspensiones;
     private final com.canchasya.api.service.AdminReservaConsultaService consultaReservas;
     private final com.canchasya.api.service.AdminPagoConsultaService consultaPagos;
+    private final com.canchasya.api.service.AdminConciliacionService conciliacion;
     private final com.canchasya.api.service.AdminCanchaModeracionService moderacionCanchas;
     private final com.canchasya.api.service.AdminComplejoModeracionService moderacionComplejos;
     private final com.canchasya.api.service.AdminModeracionHistorialService historialModeracion;
@@ -165,6 +166,22 @@ public class AdminController {
             @RequestParam(defaultValue = "0") int pagina) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
                 .body(consultaPagos.listar(buscar, estado, pagina));
+    }
+
+    /** 09D4: revisión de diferencias entre estados persistidos en MySQL. */
+    @GetMapping("/conciliacion/resumen")
+    public ResponseEntity<com.canchasya.api.service.AdminConciliacionService.Resumen> resumenConciliacion() {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(conciliacion.resumen());
+    }
+
+    /** Los casos no son veredictos de pago; requieren verificación manual. */
+    @GetMapping("/conciliacion/casos")
+    public ResponseEntity<com.canchasya.api.service.AdminConciliacionService.PaginaCasos> casosConciliacion(
+            @RequestParam com.canchasya.api.service.AdminConciliacionService.TipoCaso tipo,
+            @RequestParam(defaultValue = "0") int pagina) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(conciliacion.casos(tipo, pagina));
     }
 
     /** Consulta paginada de canchas sin exponer entidades o datos privados de dueños. */

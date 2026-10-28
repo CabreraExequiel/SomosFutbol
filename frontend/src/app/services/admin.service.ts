@@ -174,9 +174,57 @@ export interface AdminPaginaPagos {
   total: number;
 }
 
+/** 09D4: señales para revisión manual de pagos y reservas, no confirmación externa. */
+export type AdminTipoCasoConciliacion =
+  'CONFIRMADA_SIN_PAGO_APROBADO' |
+  'PAGO_APROBADO_RESERVA_NO_CONFIRMADA' |
+  'PENDIENTE_VENCIDA_SIN_PAGO_APROBADO';
+
+export interface AdminResumenConciliacion {
+  confirmadasSinPagoAprobado: number;
+  pagosAprobadosSinReservaConfirmada: number;
+  pendientesVencidasSinPagoAprobado: number;
+  consultadoEn: string;
+}
+
+export interface AdminCasoConciliacion {
+  reservaId: number;
+  pagoId: number | null;
+  jugadorId: number;
+  jugador: string;
+  correo: string;
+  canchaId: number;
+  cancha: string;
+  complejo: string;
+  estadoReserva: AdminReservaEstado;
+  pagoRequerido: boolean;
+  estadoPago: AdminPagoEstado | null;
+  montoReserva: number;
+  montoPago: number | null;
+  vence: string | null;
+}
+
+export interface AdminPaginaCasosConciliacion {
+  tipo: AdminTipoCasoConciliacion;
+  casos: AdminCasoConciliacion[];
+  pagina: number;
+  totalPaginas: number;
+  total: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   constructor(private http: HttpClient) {}
+
+  resumenConciliacion(): Observable<AdminResumenConciliacion> {
+    return this.http.get<AdminResumenConciliacion>(`${environment.apiUrl}/admin/conciliacion/resumen`);
+  }
+
+  casosConciliacion(tipo: AdminTipoCasoConciliacion, pagina = 0): Observable<AdminPaginaCasosConciliacion> {
+    return this.http.get<AdminPaginaCasosConciliacion>(`${environment.apiUrl}/admin/conciliacion/casos`, {
+      params: { tipo, pagina: String(pagina) }
+    });
+  }
 
   pagosAdmin(buscar = '', estado = '', pagina = 0): Observable<AdminPaginaPagos> {
     const params: Record<string, string> = { buscar, pagina: String(pagina) };

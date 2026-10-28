@@ -462,6 +462,82 @@
       }
     </section>
 
+    <!-- 09D4: señales de conciliación para revisión manual; no ejecuta cambios ni consulta Mercado Pago. -->
+    <section class="surface-card sf-admin-section" aria-label="Conciliación de reservas y pagos">
+      <div class="sf-admin-section-title">
+        <div><span class="page-eyebrow">Administración · 09D4</span><h2>Revisión de reservas y pagos</h2></div>
+        <small>Solo lectura · Datos de MySQL</small>
+      </div>
+      <p class="sf-admin-note">Estas son señales para investigar, no comprobantes de impago ni errores definitivos. Un pago externo podría no estar sincronizado. Nunca se modifica una reserva desde esta sección.</p>
+      @if (conciliacionResumenCargando()) { <p role="status">Actualizando indicadores...</p> }
+      @if (conciliacionResumenError()) { <p role="alert">{{ conciliacionResumenError() }}</p> }
+      @if (conciliacionResumen(); as datosConciliacion) {
+        <div class="sf-admin-summary-grid" aria-label="Indicadores de conciliación">
+          <div class="sf-admin-summary-group">
+            <h3>Confirmadas sin pago aprobado local</h3>
+            <p><strong>{{ datosConciliacion.confirmadasSinPagoAprobado }}</strong> para revisar</p>
+            <small>Solo reservas que requieren pago.</small>
+          </div>
+          <div class="sf-admin-summary-group">
+            <h3>Pago aprobado, reserva no confirmada</h3>
+            <p><strong>{{ datosConciliacion.pagosAprobadosSinReservaConfirmada }}</strong> para revisar</p>
+            <small>Puede incluir reservas pendientes o canceladas.</small>
+          </div>
+          <div class="sf-admin-summary-group">
+            <h3>Pendientes vencidas sin pago aprobado</h3>
+            <p><strong>{{ datosConciliacion.pendientesVencidasSinPagoAprobado }}</strong> para revisar</p>
+            <small>Solo vencimientos registrados en MySQL.</small>
+          </div>
+        </div>
+        <p class="sf-admin-note">Actualizado: {{ datosConciliacion.consultadoEn | date:'dd/MM/yyyy HH:mm' }}</p>
+      }
+      <div class="sf-admin-conciliacion-toolbar">
+        <label>Tipo de caso
+          <select [value]="tipoConciliacion" (change)="tipoConciliacion = $any($event.target).value; cargarConciliacion(0)">
+            <option value="CONFIRMADA_SIN_PAGO_APROBADO">Confirmadas sin pago aprobado</option>
+            <option value="PAGO_APROBADO_RESERVA_NO_CONFIRMADA">Pago aprobado, reserva no confirmada</option>
+            <option value="PENDIENTE_VENCIDA_SIN_PAGO_APROBADO">Pendientes vencidas sin pago aprobado</option>
+          </select>
+        </label>
+        <button class="secondary-button" type="button" (click)="actualizarConciliacion()">Actualizar alertas</button>
+      </div>
+      @if (conciliacionCargando()) { <p role="status">Cargando casos para revisar...</p> }
+      @if (conciliacionError()) { <p role="alert">{{ conciliacionError() }}</p> }
+      @if (conciliacionPagina(); as paginaConciliacion) {
+        <p>{{ paginaConciliacion.total }} casos para revisar en esta categoría</p>
+        <div class="sf-admin-table-wrapper">
+          <table class="sf-admin-table">
+            <thead><tr>
+              <th scope="col">Reserva</th><th scope="col">Jugador</th><th scope="col">Cancha / complejo</th>
+              <th scope="col">Estado</th><th scope="col">Importe</th><th scope="col">Vencimiento</th><th scope="col">Detalle</th>
+            </tr></thead>
+            <tbody>
+              @for (caso of paginaConciliacion.casos; track caso.reservaId) {
+                <tr>
+                  <td>#{{ caso.reservaId }}</td>
+                  <td>{{ caso.jugador }}<br><small>{{ caso.correo }}</small></td>
+                  <td>{{ caso.cancha }}<br><small>{{ caso.complejo }}</small></td>
+                  <td>Reserva: {{ caso.estadoReserva }}<br><small>Pago: {{ caso.estadoPago || 'Sin pago local' }}</small></td>
+                  <td>{{ caso.montoReserva | currency:'ARS':'symbol':'1.0-2' }}</td>
+                  <td>{{ caso.vence ? (caso.vence | date:'dd/MM/yyyy HH:mm') : 'Sin vencimiento registrado' }}</td>
+                  <td><a href="#admin-reservas" (click)="verDetalleReserva(caso.reservaId)">Ver reserva</a></td>
+                </tr>
+              } @empty {
+                <tr><td colspan="7">No hay casos en esta categoría con los datos registrados actualmente.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="sf-admin-user-pagination">
+          <button type="button" class="secondary-button" [disabled]="conciliacionCargando() || paginaConciliacion.pagina === 0"
+            (click)="cargarConciliacion(paginaConciliacion.pagina - 1)">Anterior</button>
+          <span>Página {{ paginaConciliacion.pagina + 1 }} de {{ paginaConciliacion.totalPaginas || 1 }}</span>
+          <button type="button" class="secondary-button" [disabled]="conciliacionCargando() || paginaConciliacion.pagina + 1 >= paginaConciliacion.totalPaginas"
+            (click)="cargarConciliacion(paginaConciliacion.pagina + 1)">Siguiente</button>
+        </div>
+      }
+    </section>
+
     <section class="surface-card sf-admin-section sf-admin-next">
         <span class="page-eyebrow">Herramientas de soporte</span>
         <h2>Bitácora de eventos y errores</h2>
