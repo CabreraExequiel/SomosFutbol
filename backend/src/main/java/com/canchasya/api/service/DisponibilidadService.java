@@ -19,11 +19,13 @@ public class DisponibilidadService {
     private final CanchaRepository canchas;
     private final ReservaRepository reservas;
     private final Clock clock;
+    private final ComplejoOperacionGuard complejoGuard;
 
     @Transactional(readOnly=true)
     public DisponibilidadResponse consultar(Long canchaId, LocalDate fecha) {
         Cancha cancha=canchas.findById(canchaId).orElseThrow(() -> error("Cancha no encontrada",404));
-        if (!cancha.isActiva()) throw error("La cancha está pausada",404);
+        if (!cancha.isActiva() || cancha.getDueno().isComplejoSuspendido())
+            throw error("La cancha no está disponible",404);
         validarFecha(fecha);
         var publicados=horarios.findByCanchaIdAndDiaSemana(canchaId,fecha.getDayOfWeek().getValue()%7)
             .stream().map(h -> new FranjaResponse(h.getHoraInicio(),h.getHoraFin()))
@@ -106,7 +108,7 @@ public class DisponibilidadService {
         bloqueos.delete(b);
     }
     private Cancha propietario(Long id, User user) {
-        var cancha=canchas.findByIdForUpdate(id).orElseThrow(()->error("Cancha no encontrada",404));validarDueno(cancha,user);return cancha;
+        return complejoGuard.bloquearCanchaDeDueno(id, user);
     }
     private void validarDueno(Cancha cancha, User user) {
         if(!cancha.getDueno().getId().equals(user.getId())) throw error("No tenés permiso sobre esta cancha",403);

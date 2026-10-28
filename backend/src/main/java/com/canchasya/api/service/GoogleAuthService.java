@@ -177,6 +177,9 @@ public class GoogleAuthService {
     }
 
     private AuthResponse sesion(User user) {
+        if (!user.isEnabled()) {
+            throw new ApiException("La cuenta está suspendida. Contactá al soporte.", HttpStatus.FORBIDDEN);
+        }
         return new AuthResponse(jwt.generarToken(user), UserResponse.fromEntity(user));
     }
 }

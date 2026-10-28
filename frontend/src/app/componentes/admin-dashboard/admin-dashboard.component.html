@@ -26,6 +26,16 @@
         <article class="surface-card sf-admin-stat"><span>Publicaciones</span><strong>{{ datos.publicaciones }}</strong></article>
     </div>
 
+    <section class="surface-card sf-admin-section" aria-label="Indicadores de canchas, reservas y pagos">
+        <div class="sf-admin-section-title"><div><span class="page-eyebrow">Operación</span><h2>Estado de la plataforma</h2></div><small>Datos reales · Actualizables</small></div>
+        <div class="sf-admin-summary-grid">
+            <div class="sf-admin-summary-group"><h3>Canchas</h3><p><strong>{{ datos.canchasActivas }}</strong> activas de {{ datos.canchas }} registradas</p></div>
+            <div class="sf-admin-summary-group"><h3>Reservas</h3><p><strong>{{ datos.reservasPendientes }}</strong> pendientes</p><p><strong>{{ datos.reservasConfirmadas }}</strong> confirmadas</p><p><strong>{{ datos.reservasCanceladas }}</strong> canceladas</p></div>
+            <div class="sf-admin-summary-group"><h3>Pagos</h3><p><strong>{{ datos.pagosAprobados }}</strong> aprobados</p><p><strong>{{ datos.pagosPendientes }}</strong> pendientes</p><p><strong>{{ datos.pagosRechazados }}</strong> rechazados</p><p><strong>{{ datos.pagosReembolsados }}</strong> reembolsados</p><small>{{ datos.pagosTotales }} registros de pago en total</small></div>
+        </div>
+        <button type="button" class="secondary-button sf-admin-refresh" (click)="cargar()">Actualizar estadísticas</button>
+    </section>
+
     <section class="surface-card sf-admin-section">
         <div class="sf-admin-section-title">
             <div><span class="page-eyebrow">Cuentas</span><h2>Últimos usuarios registrados</h2></div>
@@ -43,6 +53,489 @@
                 </tbody>
             </table>
         </div>
+    </section>
+
+
+    <section class="surface-card sf-admin-section" aria-label="Administrar usuarios">
+      <div class="sf-admin-section-title">
+        <div><span class="page-eyebrow">Administración · 09B1</span><h2>Buscar usuarios</h2></div>
+        <small>Consulta segura · Sin modificación de cuentas</small>
+      </div>
+      <form class="sf-admin-user-filters" (submit)="$event.preventDefault(); buscarUsuarios()">
+        <label>Nombre o correo
+          <input type="search" name="buscarUsuarios" [value]="busquedaUsuarios" (input)="busquedaUsuarios = $any($event.target).value" maxlength="100" placeholder="Buscar usuario..." />
+        </label>
+        <label>Rol
+          <select name="rolUsuarios" [value]="rolUsuarios" (change)="rolUsuarios = $any($event.target).value; buscarUsuarios()">
+            <option value="">Todos</option><option value="USUARIO">Jugador</option><option value="DUENO">Dueño</option><option value="ADMINISTRADOR">Administrador</option>
+          </select>
+        </label>
+        <button type="submit" class="secondary-button">Buscar</button>
+      </form>
+      @if (usuariosCargando()) { <p role="status">Cargando usuarios...</p> }
+      @if (usuariosError()) { <p role="alert">{{ usuariosError() }}</p><button type="button" class="secondary-button" (click)="cargarUsuarios()">Reintentar</button> }
+      @if (usuariosPagina(); as lista) {
+        <p>{{ lista.total }} cuentas encontradas</p>
+        <div class="sf-admin-table-wrapper">
+          <table class="sf-admin-table"><thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Rol</th><th>Acciones</th></tr></thead>
+          <tbody>
+            @for (usuario of lista.usuarios; track usuario.id) {
+              <tr><td>{{ usuario.id }}</td><td>{{ usuario.nombre }}</td><td>{{ usuario.email }}</td><td>{{ usuario.rol }}</td><td><button type="button" class="secondary-button" (click)="verUsuario(usuario.id)">Ver detalle</button></td></tr>
+            } @empty { <tr><td colspan="5">No se encontraron usuarios.</td></tr> }
+          </tbody></table>
+        </div>
+        @if (detalleCargando()) { <p role="status">Cargando detalle del usuario...</p> }
+        @if (detalleError()) { <p role="alert">{{ detalleError() }}</p> }
+        @if (usuarioSeleccionado(); as u) {
+          <section class="sf-admin-user-detail" aria-label="Detalle del usuario">
+            <div class="sf-admin-section-title"><h3>Cuenta #{{ u.id }}</h3><button type="button" class="secondary-button" (click)="cerrarDetalle()">Cerrar detalle</button></div>
+            <dl>
+              <dt>Nombre</dt><dd>{{ u.nombre }}</dd>
+              <dt>Correo</dt><dd>{{ u.email }}</dd>
+              <dt>Rol</dt><dd>{{ u.rol }}</dd>
+              <dt>Ciudad</dt><dd>{{ u.ciudad || 'Sin especificar' }}</dd>
+              <dt>Complejo</dt><dd>{{ u.nombreComplejo || 'No corresponde / no informado' }}</dd>
+              <dt>Cuenta Google vinculada</dt><dd>{{ u.googleVinculado ? 'Sí' : 'No' }}</dd>
+            </dl>
+            <p><strong>Estado:</strong> {{ u.suspendido ? 'Suspendido' : 'Activo' }}</p>
+            @if (u.suspendido && u.motivoSuspension) { <p><strong>Motivo:</strong> {{ u.motivoSuspension }}</p> }
+            @if (u.rol !== 'administrador') {
+              <div class="sf-admin-suspend-form">
+                @if (!u.suspendido) {
+                  <label>Motivo de suspensión (obligatorio)
+                    <textarea [value]="motivoSuspension" (input)="motivoSuspension = $any($event.target).value" maxlength="500" rows="3"></textarea>
+                  </label>
+                }
+                <button type="button" class="secondary-button" [disabled]="estadoGuardando()"
+                  (click)="cambiarEstadoUsuario()">{{ estadoGuardando() ? 'Guardando...' : (u.suspendido ? 'Reactivar cuenta' : 'Suspender cuenta') }}</button>
+              </div>
+            } @else { <p class="sf-admin-note">Las cuentas administradoras están protegidas.</p> }
+            @if (estadoError()) { <p role="alert">{{ estadoError() }}</p> }
+            @if (estadoMensaje()) { <p role="status">{{ estadoMensaje() }}</p> }
+          </section>
+        }
+        <div class="sf-admin-user-pagination">
+          <button type="button" class="secondary-button" [disabled]="usuariosCargando() || lista.pagina === 0" (click)="cargarUsuarios(lista.pagina - 1)">Anterior</button>
+          <span>Página {{ lista.pagina + 1 }} de {{ lista.totalPaginas || 1 }}</span>
+          <button type="button" class="secondary-button" [disabled]="usuariosCargando() || lista.pagina + 1 >= lista.totalPaginas" (click)="cargarUsuarios(lista.pagina + 1)">Siguiente</button>
+        </div>
+      }
+    </section>
+
+    <section class="surface-card sf-admin-section" aria-label="Administrar complejos y canchas">
+      <div class="sf-admin-section-title">
+        <div><span class="page-eyebrow">Administración · 09C4</span><h2>Buscar complejos y canchas</h2></div>
+        <small>Solo lectura · Datos reales</small>
+      </div>
+      <form class="sf-admin-user-filters" (submit)="$event.preventDefault(); buscarCanchas()">
+        <label>Cancha, complejo, propietario o ciudad
+          <input type="search" name="buscarCanchas" [value]="busquedaCanchas" (input)="busquedaCanchas = $any($event.target).value" maxlength="100" placeholder="Buscar cancha o complejo..." />
+        </label>
+        <label>Estado
+          <select name="estadoCanchas" [value]="estadoCanchas" (change)="estadoCanchas = $any($event.target).value; buscarCanchas()">
+            <option value="">Todas</option><option value="true">Activas</option><option value="false">Inactivas</option>
+          </select>
+        </label>
+        <button type="submit" class="secondary-button">Buscar</button>
+        <button type="button" class="secondary-button" (click)="busquedaCanchas = ''; estadoCanchas = ''; buscarCanchas()">Limpiar</button>
+      </form>
+      @if (!canchasPagina() && !canchasCargando()) {
+        <p class="sf-admin-note">Usá Buscar para consultar las canchas registradas.</p>
+      }
+      @if (canchasCargando()) { <p role="status">Cargando canchas...</p> }
+      @if (canchasError()) { <p role="alert">{{ canchasError() }}</p><button type="button" class="secondary-button" (click)="buscarCanchas()">Reintentar</button> }
+      @if (canchasPagina(); as listaCanchas) {
+        <p>{{ listaCanchas.total }} canchas encontradas</p>
+        <div class="sf-admin-table-wrapper">
+          <table class="sf-admin-table">
+            <thead><tr><th>ID</th><th>Cancha</th><th>Complejo</th><th>Ciudad</th><th>Propietario</th><th>Tipo</th><th>Estado</th><th>Detalle</th></tr></thead>
+            <tbody>
+              @for (cancha of listaCanchas.canchas; track cancha.id) {
+                <tr><td>{{ cancha.id }}</td><td>{{ cancha.nombre }}</td><td>{{ cancha.complejo }}</td><td>{{ cancha.ciudad }}</td><td>{{ cancha.propietario }}</td><td>{{ cancha.tipo || '—' }}</td><td>{{ cancha.activa ? 'Activa' : 'Inactiva' }}@if (cancha.complejoSuspendido) { · Complejo suspendido }</td><td><button type="button" class="secondary-button" (click)="verDetalleCancha(cancha.id)">Ver detalle</button></td></tr>
+              } @empty { <tr><td colspan="8">No se encontraron canchas con esos filtros.</td></tr> }
+            </tbody>
+          </table>
+        </div>
+        @if (detalleCanchaCargando()) { <p role="status">Cargando detalle de cancha...</p> }
+        @if (detalleCanchaError()) {
+          <p role="alert">{{ detalleCanchaError() }}</p>
+        }
+        @if (canchaSeleccionada(); as detalleCancha) {
+          <section class="sf-admin-user-detail sf-admin-cancha-detail" aria-label="Detalle administrativo de cancha">
+            <div class="sf-admin-section-title">
+              <div><span class="page-eyebrow">Administración · 09C2</span><h3>Cancha #{{ detalleCancha.id }} · {{ detalleCancha.nombre }}</h3></div>
+              <button type="button" class="secondary-button" (click)="cerrarDetalleCancha()">Cerrar detalle</button>
+            </div>
+            <p><strong>Estado individual:</strong> {{ detalleCancha.activa ? 'Activa' : 'Inactiva' }}</p>
+            @if (detalleCancha.complejoSuspendido) { <p role="status"><strong>Complejo suspendido:</strong> esta cancha no recibe nuevas reservas aunque esté activa individualmente.</p> }
+            <dl>
+              <dt>Complejo</dt><dd>{{ detalleCancha.complejo }}</dd>
+              <dt>Propietario</dt><dd>{{ detalleCancha.propietario }} (ID {{ detalleCancha.propietarioId }})
+                <button type="button" class="secondary-button sf-admin-inline-action" (click)="verDetalleComplejo(detalleCancha.propietarioId)">Administrar complejo</button>
+              </dd>
+              <dt>Ciudad</dt><dd>{{ detalleCancha.ciudad }}</dd>
+              <dt>Dirección</dt><dd>{{ detalleCancha.direccion || 'Sin informar' }}</dd>
+              <dt>Tipo</dt><dd>{{ detalleCancha.tipo || 'Sin informar' }}</dd>
+              <dt>Superficie</dt><dd>{{ detalleCancha.superficie || 'Sin informar' }}</dd>
+              <dt>Jugadores</dt><dd>{{ detalleCancha.cantJugadores ?? 'Sin informar' }}</dd>
+              <dt>Precio por hora</dt><dd>{{ detalleCancha.precioHora | currency:'ARS':'symbol':'1.0-2' }}</dd>
+              <dt>Techada</dt><dd>{{ detalleCancha.techada ? 'Sí' : 'No' }}</dd>
+              <dt>Descripción</dt><dd>{{ detalleCancha.descripcion || 'Sin descripción' }}</dd>
+            </dl>
+            @if (!detalleCancha.activa && detalleCancha.motivoDesactivacionAdmin) {
+              <p><strong>Motivo de desactivación:</strong> {{ detalleCancha.motivoDesactivacionAdmin }}</p>
+            }
+            <div class="sf-admin-suspend-form">
+              @if (detalleCancha.activa) {
+                <label>Motivo de desactivación (obligatorio)
+                  <textarea [value]="motivoDesactivacionCancha" (input)="motivoDesactivacionCancha = $any($event.target).value" maxlength="500" rows="3" placeholder="Explicá por qué se desactiva esta cancha..."></textarea>
+                </label>
+              }
+              <button type="button" class="secondary-button" [disabled]="estadoCanchaGuardando()"
+                (click)="cambiarEstadoCancha()">{{ estadoCanchaGuardando() ? 'Guardando...' : (detalleCancha.activa ? 'Desactivar cancha' : 'Reactivar cancha') }}</button>
+              <p class="sf-admin-note">La desactivación impide nuevas reservas, pero no cancela las existentes.</p>
+              @if (estadoCanchaError()) { <p role="alert">{{ estadoCanchaError() }}</p> }
+              @if (estadoCanchaMensaje()) { <p role="status">{{ estadoCanchaMensaje() }}</p> }
+            </div>
+            <section class="sf-admin-moderacion-historial" aria-label="Historial de moderación de cancha">
+              <h4>Historial de moderación · Cancha</h4>
+              <p class="sf-admin-note">Acciones registradas desde la 09C5. No modifica reservas anteriores.</p>
+              @if (historialCanchaCargando()) { <p role="status">Cargando historial...</p> }
+              @if (historialCanchaError()) { <p role="alert">{{ historialCanchaError() }}</p><button type="button" class="secondary-button" (click)="cargarHistorialCancha()">Reintentar</button> }
+              @if (historialCancha(); as historial) {
+                <p>{{ historial.totalElements }} acciones registradas</p>
+                <ol class="sf-admin-history-list">
+                  @for (evento of historial.content; track evento.id) {
+                    <li><strong>{{ evento.accion === 'DESACTIVACION' ? 'Desactivación' : 'Reactivación' }}</strong>
+                      · {{ evento.fecha | date:'dd/MM/yyyy HH:mm' }}
+                      <span>{{ evento.estadoAnterior }} → {{ evento.estadoNuevo }}</span>
+                      <span>Administrador: {{ evento.administradorNombre }} (ID {{ evento.administradorId }})</span>
+                      @if (evento.motivo) { <span>Motivo: {{ evento.motivo }}</span> }
+                    </li>
+                  } @empty { <li>No hay movimientos históricos registrados para esta cancha.</li> }
+                </ol>
+                <div class="sf-admin-user-pagination">
+                  <button type="button" class="secondary-button" [disabled]="historialCanchaCargando() || historial.number === 0" (click)="cargarHistorialCancha(historial.number - 1)">Anterior</button>
+                  <span>Página {{ historial.number + 1 }} de {{ historial.totalPages || 1 }}</span>
+                  <button type="button" class="secondary-button" [disabled]="historialCanchaCargando() || historial.number + 1 >= historial.totalPages" (click)="cargarHistorialCancha(historial.number + 1)">Siguiente</button>
+                </div>
+              }
+            </section>
+          </section>
+        }
+        @if (complejoCargando()) { <p role="status">Cargando datos del complejo...</p> }
+        @if (complejoError()) { <p role="alert">{{ complejoError() }}</p> }
+        @if (complejoSeleccionado(); as complejo) {
+          <section class="sf-admin-user-detail sf-admin-complejo-detail" aria-label="Moderación de complejo">
+            <div class="sf-admin-section-title">
+              <div><span class="page-eyebrow">Administración · 09C4</span><h3>Complejo: {{ complejo.nombreComplejo }}</h3></div>
+              <button type="button" class="secondary-button" (click)="cerrarDetalleComplejo()">Cerrar complejo</button>
+            </div>
+            <dl>
+              <dt>Propietario</dt><dd>{{ complejo.propietario }} (ID {{ complejo.propietarioId }})</dd>
+              <dt>Canchas registradas</dt><dd>{{ complejo.canchasTotal }}</dd>
+              <dt>Canchas activas individualmente</dt><dd>{{ complejo.canchasActivas }}</dd>
+              <dt>Estado del complejo</dt><dd><strong>{{ complejo.suspendido ? 'Suspendido' : 'Habilitado' }}</strong></dd>
+            </dl>
+            @if (complejo.suspendido && complejo.motivoSuspension) {
+              <p><strong>Motivo administrativo:</strong> {{ complejo.motivoSuspension }}</p>
+            }
+            <div class="sf-admin-suspend-form">
+              @if (!complejo.suspendido) {
+                <label>Motivo de suspensión del complejo (obligatorio)
+                  <textarea [value]="motivoSuspensionComplejo" (input)="motivoSuspensionComplejo = $any($event.target).value"
+                    rows="3" maxlength="500" placeholder="Indicá el motivo de la suspensión completa..."></textarea>
+                </label>
+              }
+              <button type="button" class="secondary-button" [disabled]="estadoComplejoGuardando()"
+                (click)="cambiarEstadoComplejo()">
+                {{ estadoComplejoGuardando() ? 'Guardando...' : (complejo.suspendido ? 'Reactivar complejo' : 'Suspender complejo') }}
+              </button>
+              <p class="sf-admin-note">Suspender un complejo bloquea nuevas reservas de todas sus canchas. No cambia sus estados individuales ni cancela reservas existentes. Al reactivar solo vuelve a estar disponible cada cancha que ya estuviera activa.</p>
+              @if (estadoComplejoError()) { <p role="alert">{{ estadoComplejoError() }}</p> }
+              @if (estadoComplejoMensaje()) { <p role="status">{{ estadoComplejoMensaje() }}</p> }
+            </div>
+            <section class="sf-admin-moderacion-historial" aria-label="Historial de moderación de complejo">
+              <h4>Historial de moderación · Complejo</h4>
+              <p class="sf-admin-note">Incluye suspensiones y reactivaciones del complejo. Las canchas mantienen su propio historial.</p>
+              @if (historialComplejoCargando()) { <p role="status">Cargando historial...</p> }
+              @if (historialComplejoError()) { <p role="alert">{{ historialComplejoError() }}</p><button type="button" class="secondary-button" (click)="cargarHistorialComplejo()">Reintentar</button> }
+              @if (historialComplejo(); as historial) {
+                <p>{{ historial.totalElements }} acciones registradas</p>
+                <ol class="sf-admin-history-list">
+                  @for (evento of historial.content; track evento.id) {
+                    <li><strong>{{ evento.accion === 'SUSPENSION' ? 'Suspensión' : 'Reactivación' }}</strong>
+                      · {{ evento.fecha | date:'dd/MM/yyyy HH:mm' }}
+                      <span>{{ evento.estadoAnterior }} → {{ evento.estadoNuevo }}</span>
+                      <span>Administrador: {{ evento.administradorNombre }} (ID {{ evento.administradorId }})</span>
+                      @if (evento.motivo) { <span>Motivo: {{ evento.motivo }}</span> }
+                    </li>
+                  } @empty { <li>No hay movimientos históricos registrados para este complejo.</li> }
+                </ol>
+                <div class="sf-admin-user-pagination">
+                  <button type="button" class="secondary-button" [disabled]="historialComplejoCargando() || historial.number === 0" (click)="cargarHistorialComplejo(historial.number - 1)">Anterior</button>
+                  <span>Página {{ historial.number + 1 }} de {{ historial.totalPages || 1 }}</span>
+                  <button type="button" class="secondary-button" [disabled]="historialComplejoCargando() || historial.number + 1 >= historial.totalPages" (click)="cargarHistorialComplejo(historial.number + 1)">Siguiente</button>
+                </div>
+              }
+            </section>
+          </section>
+        }
+        <div class="sf-admin-user-pagination">
+          <button type="button" class="secondary-button" [disabled]="canchasCargando() || listaCanchas.pagina === 0" (click)="cargarCanchas(listaCanchas.pagina - 1)">Anterior</button>
+          <span>Página {{ listaCanchas.pagina + 1 }} de {{ listaCanchas.totalPaginas || 1 }}</span>
+          <button type="button" class="secondary-button" [disabled]="canchasCargando() || listaCanchas.pagina + 1 >= listaCanchas.totalPaginas" (click)="cargarCanchas(listaCanchas.pagina + 1)">Siguiente</button>
+        </div>
+      }
+    </section>
+
+    <!-- 09D1–09D2: consulta y detalle administrativo de reservas, sin modificación -->
+    <section id="admin-reservas" class="surface-card sf-admin-section" aria-label="Consulta administrativa de reservas">
+      <div class="sf-admin-section-title">
+        <div><span class="page-eyebrow">Administración · 09D2</span><h2>Buscar reservas</h2></div>
+        <small>Solo lectura · No confirma, cancela ni modifica pagos</small>
+      </div>
+      <form class="sf-admin-user-filters" (submit)="$event.preventDefault(); buscarReservas()">
+        <label>Jugador, correo, cancha o complejo
+          <input type="search" name="buscarReservas" [value]="busquedaReservas"
+            (input)="busquedaReservas = $any($event.target).value"
+            maxlength="100" placeholder="Buscar una reserva..." />
+        </label>
+        <label>Estado
+          <select name="estadoReservas" [value]="estadoReservas" (change)="estadoReservas = $any($event.target).value; buscarReservas()">
+            <option value="">Todos</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="CONFIRMADA">Confirmada</option>
+            <option value="CANCELADA">Cancelada</option>
+          </select>
+        </label>
+        <button type="submit" class="secondary-button">Buscar</button>
+        <button type="button" class="secondary-button" (click)="busquedaReservas = ''; estadoReservas = ''; buscarReservas()">Limpiar</button>
+      </form>
+      @if (reservasCargando()) { <p role="status">Cargando reservas...</p> }
+      @if (reservasError()) {
+        <p role="alert">{{ reservasError() }}</p>
+        <button type="button" class="secondary-button" (click)="cargarReservas()">Reintentar</button>
+      }
+      @if (reservasPagina(); as listaReservas) {
+        <p>{{ listaReservas.total }} reservas encontradas</p>
+        <div class="sf-admin-table-wrapper">
+          <table class="sf-admin-table">
+            <thead><tr>
+              <th scope="col">ID</th><th scope="col">Fecha y hora</th><th scope="col">Jugador</th>
+              <th scope="col">Cancha / complejo</th><th scope="col">Monto</th><th scope="col">Estado</th><th scope="col">Acciones</th>
+            </tr></thead>
+            <tbody>
+              @for (reserva of listaReservas.reservas; track reserva.id) {
+                <tr>
+                  <td>{{ reserva.id }}</td>
+                  <td>{{ reserva.fecha }}<br>{{ reserva.horaInicio.slice(0, 5) }}–{{ reserva.horaFin.slice(0, 5) }}</td>
+                  <td>{{ reserva.usuario }}<br><small>{{ reserva.correo }}</small></td>
+                  <td>{{ reserva.cancha }}<br><small>{{ reserva.complejo }}</small></td>
+                  <td>{{ reserva.monto | currency:'ARS':'symbol':'1.0-2' }}</td>
+                  <td>{{ reserva.estado }}<br><small>{{ reserva.pagoRequerido ? 'Pago requerido' : 'Sin pago obligatorio' }}</small></td>
+                  <td><button type="button" class="secondary-button" (click)="verDetalleReserva(reserva.id)">Ver detalle</button></td>
+                </tr>
+              } @empty { <tr><td colspan="7">No se encontraron reservas.</td></tr> }
+            </tbody>
+          </table>
+        </div>
+        @if (detalleReservaCargando()) { <p role="status">Cargando detalle de reserva...</p> }
+        @if (detalleReservaError()) { <p role="alert">{{ detalleReservaError() }}</p> }
+        @if (reservaSeleccionada(); as detalleReserva) {
+          <section class="sf-admin-user-detail sf-admin-reserva-detail" aria-label="Detalle administrativo de reserva">
+            <div class="sf-admin-section-title">
+              <div><span class="page-eyebrow">Administración · 09D2</span><h3>Reserva #{{ detalleReserva.id }}</h3></div>
+              <button type="button" class="secondary-button" (click)="cerrarDetalleReserva()">Cerrar detalle</button>
+            </div>
+            <p class="sf-admin-note">Consulta administrativa. La confirmación de una reserva no equivale a un pago acreditado.</p>
+            <h4>Información de la reserva</h4>
+            <dl>
+              <dt>Estado de reserva</dt><dd>{{ detalleReserva.estado }}</dd>
+              <dt>Fecha y horario</dt><dd>{{ detalleReserva.fecha }} · {{ detalleReserva.horaInicio.slice(0,5) }}–{{ detalleReserva.horaFin.slice(0,5) }}</dd>
+              <dt>Importe de reserva</dt><dd>{{ detalleReserva.monto | currency:'ARS':'symbol':'1.0-2' }}</dd>
+              <dt>Pago requerido</dt><dd>{{ detalleReserva.pagoRequerido ? 'Sí' : 'No' }}</dd>
+              <dt>Creación</dt><dd>{{ detalleReserva.creada ? (detalleReserva.creada | date:'dd/MM/yyyy HH:mm') : 'No registrada' }}</dd>
+              <dt>Vencimiento</dt><dd>{{ detalleReserva.vence ? (detalleReserva.vence | date:'dd/MM/yyyy HH:mm') : 'No registrado' }}</dd>
+            </dl>
+            <h4>Jugador y cancha</h4>
+            <dl>
+              <dt>Jugador</dt><dd>{{ detalleReserva.usuario }} · ID {{ detalleReserva.usuarioId }}</dd>
+              <dt>Correo</dt><dd>{{ detalleReserva.correo }}</dd>
+              <dt>Cancha</dt><dd>{{ detalleReserva.cancha }} · ID {{ detalleReserva.canchaId }}</dd>
+              <dt>Complejo</dt><dd>{{ detalleReserva.complejo }}</dd>
+              <dt>Propietario</dt><dd>{{ detalleReserva.propietario }} · ID {{ detalleReserva.propietarioId }}</dd>
+              <dt>Ciudad</dt><dd>{{ detalleReserva.ciudad }}</dd>
+              <dt>Dirección</dt><dd>{{ detalleReserva.direccion || 'Sin informar' }}</dd>
+            </dl>
+            <h4>Información de pago registrada</h4>
+            @if (detalleReserva.pago; as pago) {
+              <dl>
+                <dt>ID de pago local</dt><dd>{{ pago.id }}</dd>
+                <dt>Estado del pago</dt><dd><strong>{{ pago.estado }}</strong></dd>
+                <dt>Importe del pago</dt><dd>{{ pago.monto | currency:'ARS':'symbol':'1.0-2' }}</dd>
+                <dt>Método</dt><dd>{{ pago.metodo || 'No registrado' }}</dd>
+                <dt>Fecha de pago</dt><dd>{{ pago.fechaPago ? (pago.fechaPago | date:'dd/MM/yyyy HH:mm') : 'No registrada' }}</dd>
+                <dt>ID de operación MP</dt><dd>{{ pago.mpPaymentId || 'No registrado' }}</dd>
+                <dt>ID de preferencia MP</dt><dd>{{ pago.mpPreferenceId || 'No registrado' }}</dd>
+              </dl>
+              <p class="sf-admin-note">Este estado refleja lo registrado en MySQL; no consulta a Mercado Pago en tiempo real.</p>
+            } @else {
+              <p role="status">No hay un pago registrado para esta reserva. Esto no confirma ni descarta un pago externo.</p>
+            }
+          </section>
+        }
+        <div class="sf-admin-user-pagination">
+          <button type="button" class="secondary-button" [disabled]="reservasCargando() || listaReservas.pagina === 0"
+            (click)="cargarReservas(listaReservas.pagina - 1)">Anterior</button>
+          <span>Página {{ listaReservas.pagina + 1 }} de {{ listaReservas.totalPaginas || 1 }}</span>
+          <button type="button" class="secondary-button" [disabled]="reservasCargando() || listaReservas.pagina + 1 >= listaReservas.totalPaginas"
+            (click)="cargarReservas(listaReservas.pagina + 1)">Siguiente</button>
+        </div>
+      }
+    </section>
+
+    <!-- 09D3: consulta paginada de pagos persistidos en MySQL; sin acciones de escritura -->
+    <section class="surface-card sf-admin-section" aria-label="Consulta administrativa de pagos">
+      <div class="sf-admin-section-title">
+        <div><span class="page-eyebrow">Administración · 09D3</span><h2>Buscar pagos</h2></div>
+        <small>Solo lectura · Estados registrados en MySQL</small>
+      </div>
+      <p class="sf-admin-note">Este listado no consulta a Mercado Pago en tiempo real. Una reserva confirmada no implica un pago aprobado.</p>
+      <form class="sf-admin-user-filters" (submit)="$event.preventDefault(); buscarPagos()">
+        <label>Jugador, correo, cancha, complejo o referencia MP
+          <input type="search" name="buscarPagos" [value]="busquedaPagos"
+            (input)="busquedaPagos = $any($event.target).value"
+            maxlength="100" placeholder="Buscar pago..." />
+        </label>
+        <label>Estado del pago
+          <select name="estadoPagos" [value]="estadoPagos"
+            (change)="estadoPagos = $any($event.target).value; buscarPagos()">
+            <option value="">Todos</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="APROBADO">Aprobado</option>
+            <option value="RECHAZADO">Rechazado</option>
+            <option value="REEMBOLSADO">Reembolsado</option>
+          </select>
+        </label>
+        <button type="submit" class="secondary-button">Buscar</button>
+        <button type="button" class="secondary-button" (click)="busquedaPagos = ''; estadoPagos = ''; buscarPagos()">Limpiar</button>
+      </form>
+      @if (pagosCargando()) { <p role="status">Cargando pagos...</p> }
+      @if (pagosError()) {
+        <p role="alert">{{ pagosError() }}</p>
+        <button type="button" class="secondary-button" (click)="cargarPagos()">Reintentar</button>
+      }
+      @if (pagosPagina(); as listaPagos) {
+        <p>{{ listaPagos.total }} pagos registrados encontrados</p>
+        <div class="sf-admin-table-wrapper">
+          <table class="sf-admin-table">
+            <thead><tr>
+              <th scope="col">Pago</th><th scope="col">Jugador</th><th scope="col">Cancha / complejo</th>
+              <th scope="col">Importe</th><th scope="col">Estado del pago</th>
+              <th scope="col">Método / fecha</th><th scope="col">Reserva</th>
+            </tr></thead>
+            <tbody>
+              @for (pago of listaPagos.pagos; track pago.id) {
+                <tr>
+                  <td>#{{ pago.id }}</td>
+                  <td>{{ pago.usuario }}<br><small>{{ pago.correo }}</small></td>
+                  <td>{{ pago.cancha }}<br><small>{{ pago.complejo }}</small></td>
+                  <td>{{ pago.monto | currency:'ARS':'symbol':'1.0-2' }}</td>
+                  <td><strong>{{ pago.estado }}</strong><br><small>Reserva: {{ pago.estadoReserva }}</small></td>
+                  <td>{{ pago.metodo || 'No registrado' }}<br><small>{{ pago.fechaPago ? (pago.fechaPago | date:'dd/MM/yyyy HH:mm') : 'Fecha no registrada' }}</small></td>
+                  <td><a href="#admin-reservas" (click)="verDetalleReserva(pago.reservaId)">Ver reserva #{{ pago.reservaId }}</a></td>
+                </tr>
+              } @empty {
+                <tr><td colspan="7">No se encontraron pagos registrados con estos filtros.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="sf-admin-user-pagination">
+          <button type="button" class="secondary-button" [disabled]="pagosCargando() || listaPagos.pagina === 0"
+            (click)="cargarPagos(listaPagos.pagina - 1)">Anterior</button>
+          <span>Página {{ listaPagos.pagina + 1 }} de {{ listaPagos.totalPaginas || 1 }}</span>
+          <button type="button" class="secondary-button" [disabled]="pagosCargando() || listaPagos.pagina + 1 >= listaPagos.totalPaginas"
+            (click)="cargarPagos(listaPagos.pagina + 1)">Siguiente</button>
+        </div>
+      }
+    </section>
+
+    <!-- 09D4: señales de conciliación para revisión manual; no ejecuta cambios ni consulta Mercado Pago. -->
+    <section class="surface-card sf-admin-section" aria-label="Conciliación de reservas y pagos">
+      <div class="sf-admin-section-title">
+        <div><span class="page-eyebrow">Administración · 09D4</span><h2>Revisión de reservas y pagos</h2></div>
+        <small>Solo lectura · Datos de MySQL</small>
+      </div>
+      <p class="sf-admin-note">Estas son señales para investigar, no comprobantes de impago ni errores definitivos. Un pago externo podría no estar sincronizado. Nunca se modifica una reserva desde esta sección.</p>
+      @if (conciliacionResumenCargando()) { <p role="status">Actualizando indicadores...</p> }
+      @if (conciliacionResumenError()) { <p role="alert">{{ conciliacionResumenError() }}</p> }
+      @if (conciliacionResumen(); as datosConciliacion) {
+        <div class="sf-admin-summary-grid" aria-label="Indicadores de conciliación">
+          <div class="sf-admin-summary-group">
+            <h3>Confirmadas sin pago aprobado local</h3>
+            <p><strong>{{ datosConciliacion.confirmadasSinPagoAprobado }}</strong> para revisar</p>
+            <small>Solo reservas que requieren pago.</small>
+          </div>
+          <div class="sf-admin-summary-group">
+            <h3>Pago aprobado, reserva no confirmada</h3>
+            <p><strong>{{ datosConciliacion.pagosAprobadosSinReservaConfirmada }}</strong> para revisar</p>
+            <small>Puede incluir reservas pendientes o canceladas.</small>
+          </div>
+          <div class="sf-admin-summary-group">
+            <h3>Pendientes vencidas sin pago aprobado</h3>
+            <p><strong>{{ datosConciliacion.pendientesVencidasSinPagoAprobado }}</strong> para revisar</p>
+            <small>Solo vencimientos registrados en MySQL.</small>
+          </div>
+        </div>
+        <p class="sf-admin-note">Actualizado: {{ datosConciliacion.consultadoEn | date:'dd/MM/yyyy HH:mm' }}</p>
+      }
+      <div class="sf-admin-conciliacion-toolbar">
+        <label>Tipo de caso
+          <select [value]="tipoConciliacion" (change)="tipoConciliacion = $any($event.target).value; cargarConciliacion(0)">
+            <option value="CONFIRMADA_SIN_PAGO_APROBADO">Confirmadas sin pago aprobado</option>
+            <option value="PAGO_APROBADO_RESERVA_NO_CONFIRMADA">Pago aprobado, reserva no confirmada</option>
+            <option value="PENDIENTE_VENCIDA_SIN_PAGO_APROBADO">Pendientes vencidas sin pago aprobado</option>
+          </select>
+        </label>
+        <button class="secondary-button" type="button" (click)="actualizarConciliacion()">Actualizar alertas</button>
+      </div>
+      @if (conciliacionCargando()) { <p role="status">Cargando casos para revisar...</p> }
+      @if (conciliacionError()) { <p role="alert">{{ conciliacionError() }}</p> }
+      @if (conciliacionPagina(); as paginaConciliacion) {
+        <p>{{ paginaConciliacion.total }} casos para revisar en esta categoría</p>
+        <div class="sf-admin-table-wrapper">
+          <table class="sf-admin-table">
+            <thead><tr>
+              <th scope="col">Reserva</th><th scope="col">Jugador</th><th scope="col">Cancha / complejo</th>
+              <th scope="col">Estado</th><th scope="col">Importe</th><th scope="col">Vencimiento</th><th scope="col">Detalle</th>
+            </tr></thead>
+            <tbody>
+              @for (caso of paginaConciliacion.casos; track caso.reservaId) {
+                <tr>
+                  <td>#{{ caso.reservaId }}</td>
+                  <td>{{ caso.jugador }}<br><small>{{ caso.correo }}</small></td>
+                  <td>{{ caso.cancha }}<br><small>{{ caso.complejo }}</small></td>
+                  <td>Reserva: {{ caso.estadoReserva }}<br><small>Pago: {{ caso.estadoPago || 'Sin pago local' }}</small></td>
+                  <td>{{ caso.montoReserva | currency:'ARS':'symbol':'1.0-2' }}</td>
+                  <td>{{ caso.vence ? (caso.vence | date:'dd/MM/yyyy HH:mm') : 'Sin vencimiento registrado' }}</td>
+                  <td><a href="#admin-reservas" (click)="verDetalleReserva(caso.reservaId)">Ver reserva</a></td>
+                </tr>
+              } @empty {
+                <tr><td colspan="7">No hay casos en esta categoría con los datos registrados actualmente.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="sf-admin-user-pagination">
+          <button type="button" class="secondary-button" [disabled]="conciliacionCargando() || paginaConciliacion.pagina === 0"
+            (click)="cargarConciliacion(paginaConciliacion.pagina - 1)">Anterior</button>
+          <span>Página {{ paginaConciliacion.pagina + 1 }} de {{ paginaConciliacion.totalPaginas || 1 }}</span>
+          <button type="button" class="secondary-button" [disabled]="conciliacionCargando() || paginaConciliacion.pagina + 1 >= paginaConciliacion.totalPaginas"
+            (click)="cargarConciliacion(paginaConciliacion.pagina + 1)">Siguiente</button>
+        </div>
+      }
     </section>
 
     <section class="surface-card sf-admin-section sf-admin-next">

@@ -16,11 +16,279 @@ export interface AdminResumen {
   reservas: number;
   publicaciones: number;
   ultimosUsuarios: AdminUsuarioResumen[];
+  canchasActivas: number;
+  reservasPendientes: number;
+  reservasConfirmadas: number;
+  reservasCanceladas: number;
+  pagosTotales: number;
+  pagosPendientes: number;
+  pagosAprobados: number;
+  pagosRechazados: number;
+  pagosReembolsados: number;
+}
+
+export interface AdminUsuarioDetalle extends AdminUsuarioResumen {
+  ciudad: string | null;
+  nombreComplejo: string | null;
+  googleVinculado: boolean;
+  suspendido: boolean;
+  motivoSuspension: string | null;
+}
+
+export interface AdminPaginaUsuarios {
+  usuarios: AdminUsuarioResumen[];
+  pagina: number;
+  totalPaginas: number;
+  total: number;
+}
+
+export interface AdminCanchaResumen {
+  id: number;
+  nombre: string;
+  complejo: string;
+  ciudad: string;
+  propietario: string;
+  tipo: string | null;
+  activa: boolean;
+  complejoSuspendido: boolean;
+}
+
+export interface AdminCanchaDetalle extends AdminCanchaResumen {
+  propietarioId: number;
+  superficie: string | null;
+  cantJugadores: number | null;
+  precioHora: number;
+  techada: boolean;
+  direccion: string | null;
+  descripcion: string | null;
+  motivoDesactivacionAdmin: string | null;
+}
+
+export interface AdminComplejoDetalle {
+  propietarioId: number;
+  nombreComplejo: string;
+  propietario: string;
+  suspendido: boolean;
+  motivoSuspension: string | null;
+  canchasTotal: number;
+  canchasActivas: number;
+}
+
+export interface AdminModeracionRegistro {
+  id: number;
+  fecha: string;
+  referenciaTipo: 'CANCHA' | 'COMPLEJO';
+  referenciaId: number;
+  accion: 'SUSPENSION' | 'DESACTIVACION' | 'REACTIVACION';
+  estadoAnterior: string;
+  estadoNuevo: string;
+  motivo: string | null;
+  administradorId: number;
+  administradorNombre: string;
+}
+
+export interface AdminHistorialPagina {
+  content: AdminModeracionRegistro[];
+  number: number;
+  totalPages: number;
+  totalElements: number;
+}
+
+export interface AdminPaginaCanchas {
+  canchas: AdminCanchaResumen[];
+  pagina: number;
+  totalPaginas: number;
+  total: number;
+}
+
+export type AdminReservaEstado = 'PENDIENTE' | 'CONFIRMADA' | 'CANCELADA';
+
+export interface AdminReservaResumen {
+  id: number;
+  usuarioId: number;
+  usuario: string;
+  correo: string;
+  canchaId: number;
+  cancha: string;
+  complejo: string;
+  fecha: string;
+  horaInicio: string;
+  horaFin: string;
+  monto: number;
+  estado: AdminReservaEstado;
+  pagoRequerido: boolean;
+}
+
+export type AdminPagoEstado = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO' | 'REEMBOLSADO';
+
+export interface AdminReservaPagoDetalle {
+  id: number;
+  monto: number;
+  estado: AdminPagoEstado;
+  metodo: string | null;
+  fechaPago: string | null;
+  mpPaymentId: string | null;
+  mpPreferenceId: string | null;
+}
+
+export interface AdminReservaDetalle extends AdminReservaResumen {
+  propietarioId: number;
+  propietario: string;
+  ciudad: string;
+  direccion: string | null;
+  creada: string | null;
+  vence: string | null;
+  pago: AdminReservaPagoDetalle | null;
+}
+
+export interface AdminPaginaReservas {
+  reservas: AdminReservaResumen[];
+  pagina: number;
+  totalPaginas: number;
+  total: number;
+}
+
+/** 09D3: pagos persistidos en MySQL; no consulta el proveedor en vivo. */
+export interface AdminPagoResumen {
+  id: number;
+  reservaId: number;
+  usuarioId: number;
+  usuario: string;
+  correo: string;
+  canchaId: number;
+  cancha: string;
+  complejo: string;
+  monto: number;
+  estado: AdminPagoEstado;
+  estadoReserva: AdminReservaEstado;
+  metodo: string | null;
+  fechaPago: string | null;
+  mpPaymentId: string | null;
+  mpPreferenceId: string | null;
+}
+
+export interface AdminPaginaPagos {
+  pagos: AdminPagoResumen[];
+  pagina: number;
+  totalPaginas: number;
+  total: number;
+}
+
+/** 09D4: señales para revisión manual de pagos y reservas, no confirmación externa. */
+export type AdminTipoCasoConciliacion =
+  'CONFIRMADA_SIN_PAGO_APROBADO' |
+  'PAGO_APROBADO_RESERVA_NO_CONFIRMADA' |
+  'PENDIENTE_VENCIDA_SIN_PAGO_APROBADO';
+
+export interface AdminResumenConciliacion {
+  confirmadasSinPagoAprobado: number;
+  pagosAprobadosSinReservaConfirmada: number;
+  pendientesVencidasSinPagoAprobado: number;
+  consultadoEn: string;
+}
+
+export interface AdminCasoConciliacion {
+  reservaId: number;
+  pagoId: number | null;
+  jugadorId: number;
+  jugador: string;
+  correo: string;
+  canchaId: number;
+  cancha: string;
+  complejo: string;
+  estadoReserva: AdminReservaEstado;
+  pagoRequerido: boolean;
+  estadoPago: AdminPagoEstado | null;
+  montoReserva: number;
+  montoPago: number | null;
+  vence: string | null;
+}
+
+export interface AdminPaginaCasosConciliacion {
+  tipo: AdminTipoCasoConciliacion;
+  casos: AdminCasoConciliacion[];
+  pagina: number;
+  totalPaginas: number;
+  total: number;
 }
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   constructor(private http: HttpClient) {}
+
+  resumenConciliacion(): Observable<AdminResumenConciliacion> {
+    return this.http.get<AdminResumenConciliacion>(`${environment.apiUrl}/admin/conciliacion/resumen`);
+  }
+
+  casosConciliacion(tipo: AdminTipoCasoConciliacion, pagina = 0): Observable<AdminPaginaCasosConciliacion> {
+    return this.http.get<AdminPaginaCasosConciliacion>(`${environment.apiUrl}/admin/conciliacion/casos`, {
+      params: { tipo, pagina: String(pagina) }
+    });
+  }
+
+  pagosAdmin(buscar = '', estado = '', pagina = 0): Observable<AdminPaginaPagos> {
+    const params: Record<string, string> = { buscar, pagina: String(pagina) };
+    if (estado) params['estado'] = estado;
+    return this.http.get<AdminPaginaPagos>(`${environment.apiUrl}/admin/pagos`, { params });
+  }
+
+  detalleReservaAdmin(id: number): Observable<AdminReservaDetalle> {
+    return this.http.get<AdminReservaDetalle>(`${environment.apiUrl}/admin/reservas/${id}`);
+  }
+
+  reservasAdmin(buscar = '', estado = '', pagina = 0): Observable<AdminPaginaReservas> {
+    const params: Record<string, string> = { buscar, pagina: String(pagina) };
+    if (estado) params['estado'] = estado;
+    return this.http.get<AdminPaginaReservas>(`${environment.apiUrl}/admin/reservas`, { params });
+  }
+
+
+  historialCancha(id: number, pagina = 0): Observable<AdminHistorialPagina> {
+    return this.http.get<AdminHistorialPagina>(`${environment.apiUrl}/admin/canchas/${id}/historial`,
+      { params: { pagina: String(pagina) } });
+  }
+
+  historialComplejo(propietarioId: number, pagina = 0): Observable<AdminHistorialPagina> {
+    return this.http.get<AdminHistorialPagina>(`${environment.apiUrl}/admin/complejos/${propietarioId}/historial`,
+      { params: { pagina: String(pagina) } });
+  }
+
+  detalleComplejoAdmin(propietarioId: number): Observable<AdminComplejoDetalle> {
+    return this.http.get<AdminComplejoDetalle>(`${environment.apiUrl}/admin/complejos/${propietarioId}`);
+  }
+
+  cambiarEstadoComplejo(propietarioId: number, suspendido: boolean, motivo: string): Observable<AdminComplejoDetalle> {
+    return this.http.post<AdminComplejoDetalle>(`${environment.apiUrl}/admin/complejos/${propietarioId}/estado`, { suspendido, motivo });
+  }
+
+  cambiarEstadoCancha(id: number, activa: boolean, motivo: string): Observable<AdminCanchaDetalle> {
+    return this.http.post<AdminCanchaDetalle>(`${environment.apiUrl}/admin/canchas/${id}/estado`, { activa, motivo });
+  }
+
+  detalleCanchaAdmin(id: number): Observable<AdminCanchaDetalle> {
+    return this.http.get<AdminCanchaDetalle>(`${environment.apiUrl}/admin/canchas/${id}`);
+  }
+
+  canchasAdmin(buscar = '', activa = '', pagina = 0): Observable<AdminPaginaCanchas> {
+    const params: Record<string, string> = { buscar, pagina: String(pagina) };
+    if (activa !== '') params['activa'] = activa;
+    return this.http.get<AdminPaginaCanchas>(`${environment.apiUrl}/admin/canchas`, { params });
+  }
+
+
+  usuarios(buscar = '', rol = '', pagina = 0): Observable<AdminPaginaUsuarios> {
+    const params: Record<string, string> = { buscar, pagina: String(pagina) };
+    if (rol) params['rol'] = rol;
+    return this.http.get<AdminPaginaUsuarios>(`${environment.apiUrl}/admin/usuarios`, { params });
+  }
+
+  detalleUsuario(id: number): Observable<AdminUsuarioDetalle> {
+    return this.http.get<AdminUsuarioDetalle>(`${environment.apiUrl}/admin/usuarios/${id}`);
+  }
+
+  cambiarEstadoUsuario(id: number, suspendido: boolean, motivo: string): Observable<AdminUsuarioDetalle> {
+    return this.http.post<AdminUsuarioDetalle>(`${environment.apiUrl}/admin/usuarios/${id}/estado`, { suspendido, motivo });
+  }
 
   resumen(): Observable<AdminResumen> {
     return this.http.get<AdminResumen>(`${environment.apiUrl}/admin/resumen`);

@@ -10,6 +10,7 @@ import com.canchasya.api.model.User;
 import com.canchasya.api.repository.CanchaRepository;
 import com.canchasya.api.repository.PagoRepository;
 import com.canchasya.api.repository.ReservaRepository;
+import com.canchasya.api.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -24,7 +25,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class ReservaServiceTransferenciaTest {
-
     private ReservaRepository reservaRepository;
     private ReservaService service;
     private User jugador;
@@ -34,9 +34,22 @@ class ReservaServiceTransferenciaTest {
     void configurar() {
         reservaRepository = mock(ReservaRepository.class);
         CanchaRepository canchaRepository = mock(CanchaRepository.class);
+        UserRepository userRepository = mock(UserRepository.class);
         PagoRepository pagoRepository = mock(PagoRepository.class);
         NotificacionService notificacionService = mock(NotificacionService.class);
-        service = new ReservaService(reservaRepository, canchaRepository, pagoRepository, notificacionService, mock(DisponibilidadService.class),java.time.Clock.system(com.canchasya.api.config.TimeConfig.ZONA),mock(MercadoPagoCuentaService.class),mock(BitacoraService.class));
+
+        // 09C4: ReservaService ahora recibe tambien UserRepository para bloquear
+        // al propietario antes de la cancha en las operaciones de reserva.
+        service = new ReservaService(
+                reservaRepository,
+                canchaRepository,
+                userRepository,
+                pagoRepository,
+                notificacionService,
+                mock(DisponibilidadService.class),
+                java.time.Clock.system(com.canchasya.api.config.TimeConfig.ZONA),
+                mock(MercadoPagoCuentaService.class),
+                mock(BitacoraService.class));
         ReflectionTestUtils.setField(service, "paymentsEnabled", false);
 
         jugador = usuario(1L, "Jugador", Role.USUARIO);
@@ -47,7 +60,6 @@ class ReservaServiceTransferenciaTest {
         Cancha cancha = new Cancha();
         cancha.setNombre("Cancha Central");
         cancha.setDueno(dueno);
-
         reserva = new Reserva();
         reserva.setId(10L);
         reserva.setUser(jugador);
@@ -60,7 +72,6 @@ class ReservaServiceTransferenciaTest {
     @Test
     void entregaLosDatosSoloParaLaReservaAutorizada() {
         DatosTransferenciaResponse response = service.datosTransferencia(10L, jugador);
-
         assertThat(response.getReservaId()).isEqualTo(10L);
         assertThat(response.getCbuCvu()).isEqualTo("1234567890123456789012");
         assertThat(response.getAliasMercadoPago()).isEqualTo("complejo.centro");
@@ -70,21 +81,17 @@ class ReservaServiceTransferenciaTest {
     @Test
     void noExponeDatosAUnTercero() {
         User tercero = usuario(3L, "Tercero", Role.USUARIO);
-
         assertThatThrownBy(() -> service.datosTransferencia(10L, tercero))
                 .isInstanceOfSatisfying(ApiException.class, error ->
-                        assertThat(error.getStatus()).isEqualTo(HttpStatus.FORBIDDEN)
-                );
+                        assertThat(error.getStatus()).isEqualTo(HttpStatus.FORBIDDEN));
     }
 
     @Test
     void noCombinaTransferenciaManualConCheckoutPro() {
         reserva.setPagoRequerido(true);
-
         assertThatThrownBy(() -> service.datosTransferencia(10L, jugador))
                 .isInstanceOfSatisfying(ApiException.class, error ->
-                        assertThat(error.getStatus()).isEqualTo(HttpStatus.CONFLICT)
-                );
+                        assertThat(error.getStatus()).isEqualTo(HttpStatus.CONFLICT));
     }
 
     private User usuario(Long id, String nombre, Role role) {

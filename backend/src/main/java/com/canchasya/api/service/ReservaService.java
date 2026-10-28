@@ -12,10 +12,12 @@ import com.canchasya.api.model.*;
 import com.canchasya.api.repository.CanchaRepository;
 import com.canchasya.api.repository.PagoRepository;
 import com.canchasya.api.repository.ReservaRepository;
+import com.canchasya.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -33,6 +35,7 @@ public class ReservaService {
 
     private final ReservaRepository reservaRepository;
     private final CanchaRepository canchaRepository;
+    private final UserRepository userRepository;
     private final PagoRepository pagoRepository;
     private final NotificacionService notificacionService;
     private final DisponibilidadService disponibilidadService;
@@ -54,7 +57,9 @@ public class ReservaService {
         return responder(reservaRepository.findByCanchaIdInOrderByFechaDesc(canchaIds));
     }
 
-    @Transactional
+    // Un SELECT previo al FOR UPDATE puede fijar un snapshot viejo en REPEATABLE_READ.
+    // READ_COMMITTED permite ver la reserva confirmada al adquirir los bloqueos.
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public ReservaResponse crear(ReservaRequest request, User user) {
         if (!request.getHoraFin().isAfter(request.getHoraInicio())) {
             throw new ApiException("El horario de fin debe ser posterior al de inicio", HttpStatus.UNPROCESSABLE_ENTITY);
@@ -64,8 +69,17 @@ public class ReservaService {
             throw new ApiException("No se puede reservar una fecha pasada", HttpStatus.UNPROCESSABLE_ENTITY);
         }
 
+        // Orden de bloqueos: propietario -> cancha. La suspensión espera las reservas en curso.
+        Long duenoId = canchaRepository.findDuenoIdByCanchaId(request.getCanchaId())
+                .orElseThrow(() -> new ApiException("Cancha no encontrada", HttpStatus.NOT_FOUND));
+        User propietario = userRepository.findByIdForUpdate(duenoId)
+                .orElseThrow(() -> new ApiException("Propietario no encontrado", HttpStatus.NOT_FOUND));
+        if (propietario.isComplejoSuspendido())
+            throw new ApiException("El complejo está suspendido por administración", HttpStatus.CONFLICT);
         Cancha cancha = canchaRepository.findByIdForUpdate(request.getCanchaId())
                 .orElseThrow(() -> new ApiException("Cancha no encontrada", HttpStatus.NOT_FOUND));
+        if (!cancha.getDueno().getId().equals(duenoId))
+            throw new ApiException("Cambió el propietario de la cancha", HttpStatus.CONFLICT);
 
         if (!cancha.isActiva()) {
             throw new ApiException("La cancha no está disponible", HttpStatus.CONFLICT);
