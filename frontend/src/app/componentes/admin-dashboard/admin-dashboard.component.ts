@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { AdminService, AdminResumen, AdminPaginaUsuarios, AdminUsuarioDetalle, AdminPaginaCanchas, AdminCanchaDetalle, AdminComplejoDetalle, AdminHistorialPagina, AdminPaginaReservas, AdminReservaDetalle } from '../../services/admin.service';
+import { AdminService, AdminResumen, AdminPaginaUsuarios, AdminUsuarioDetalle, AdminPaginaCanchas, AdminCanchaDetalle, AdminComplejoDetalle, AdminHistorialPagina, AdminPaginaReservas, AdminReservaDetalle, AdminPaginaPagos } from '../../services/admin.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -278,6 +278,28 @@ export class AdminDashboardComponent implements OnInit {
     });
   }
 
+  // 09D3: búsqueda paginada de pagos locales, sin operaciones de escritura.
+  readonly pagosPagina = signal<AdminPaginaPagos | null>(null);
+  readonly pagosCargando = signal(false);
+  readonly pagosError = signal('');
+  busquedaPagos = '';
+  estadoPagos = '';
+
+  buscarPagos(): void { this.cargarPagos(0); }
+
+  cargarPagos(pagina = 0): void {
+    this.pagosCargando.set(true);
+    this.pagosError.set('');
+    this.admin.pagosAdmin(this.busquedaPagos.trim(), this.estadoPagos, pagina).subscribe({
+      next: datos => { this.pagosPagina.set(datos); this.pagosCargando.set(false); },
+      error: err => {
+        this.pagosError.set(err.status === 403 ? 'No tenés permiso para consultar pagos.' :
+          'No se pudieron cargar los pagos registrados. Revisá Spring Boot.');
+        this.pagosCargando.set(false);
+      }
+    });
+  }
+
   // 09D2: detalle de reserva y estado de pago registrado, sin acciones de modificación.
   readonly reservaSeleccionada = signal<AdminReservaDetalle | null>(null);
   readonly detalleReservaCargando = signal(false);
@@ -360,6 +382,7 @@ export class AdminDashboardComponent implements OnInit {
   ngOnInit(): void {
     this.cargar();
     this.cargarReservas();
+    this.cargarPagos();
   }
 
   cargar(): void {

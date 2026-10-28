@@ -44,6 +44,7 @@ public class AdminController {
     private final PagoRepository pagos;
     private final AdminSuspensionService suspensiones;
     private final com.canchasya.api.service.AdminReservaConsultaService consultaReservas;
+    private final com.canchasya.api.service.AdminPagoConsultaService consultaPagos;
     private final com.canchasya.api.service.AdminCanchaModeracionService moderacionCanchas;
     private final com.canchasya.api.service.AdminComplejoModeracionService moderacionComplejos;
     private final com.canchasya.api.service.AdminModeracionHistorialService historialModeracion;
@@ -154,6 +155,16 @@ public class AdminController {
         return consultaReservas.detalle(id)
                 .map(detalle -> ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(detalle))
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /** 09D3: pagos registrados en MySQL; no verifica transacciones externas. */
+    @GetMapping("/pagos")
+    public ResponseEntity<com.canchasya.api.service.AdminPagoConsultaService.PaginaPagos> pagosAdmin(
+            @RequestParam(defaultValue = "") String buscar,
+            @RequestParam(required = false) EstadoPago estado,
+            @RequestParam(defaultValue = "0") int pagina) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(consultaPagos.listar(buscar, estado, pagina));
     }
 
     /** Consulta paginada de canchas sin exponer entidades o datos privados de dueños. */

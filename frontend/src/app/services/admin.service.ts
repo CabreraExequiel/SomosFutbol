@@ -148,9 +148,41 @@ export interface AdminPaginaReservas {
   total: number;
 }
 
+/** 09D3: pagos persistidos en MySQL; no consulta el proveedor en vivo. */
+export interface AdminPagoResumen {
+  id: number;
+  reservaId: number;
+  usuarioId: number;
+  usuario: string;
+  correo: string;
+  canchaId: number;
+  cancha: string;
+  complejo: string;
+  monto: number;
+  estado: AdminPagoEstado;
+  estadoReserva: AdminReservaEstado;
+  metodo: string | null;
+  fechaPago: string | null;
+  mpPaymentId: string | null;
+  mpPreferenceId: string | null;
+}
+
+export interface AdminPaginaPagos {
+  pagos: AdminPagoResumen[];
+  pagina: number;
+  totalPaginas: number;
+  total: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   constructor(private http: HttpClient) {}
+
+  pagosAdmin(buscar = '', estado = '', pagina = 0): Observable<AdminPaginaPagos> {
+    const params: Record<string, string> = { buscar, pagina: String(pagina) };
+    if (estado) params['estado'] = estado;
+    return this.http.get<AdminPaginaPagos>(`${environment.apiUrl}/admin/pagos`, { params });
+  }
 
   detalleReservaAdmin(id: number): Observable<AdminReservaDetalle> {
     return this.http.get<AdminReservaDetalle>(`${environment.apiUrl}/admin/reservas/${id}`);

@@ -290,7 +290,7 @@
     </section>
 
     <!-- 09D1–09D2: consulta y detalle administrativo de reservas, sin modificación -->
-    <section class="surface-card sf-admin-section" aria-label="Consulta administrativa de reservas">
+    <section id="admin-reservas" class="surface-card sf-admin-section" aria-label="Consulta administrativa de reservas">
       <div class="sf-admin-section-title">
         <div><span class="page-eyebrow">Administración · 09D2</span><h2>Buscar reservas</h2></div>
         <small>Solo lectura · No confirma, cancela ni modifica pagos</small>
@@ -391,6 +391,73 @@
           <span>Página {{ listaReservas.pagina + 1 }} de {{ listaReservas.totalPaginas || 1 }}</span>
           <button type="button" class="secondary-button" [disabled]="reservasCargando() || listaReservas.pagina + 1 >= listaReservas.totalPaginas"
             (click)="cargarReservas(listaReservas.pagina + 1)">Siguiente</button>
+        </div>
+      }
+    </section>
+
+    <!-- 09D3: consulta paginada de pagos persistidos en MySQL; sin acciones de escritura -->
+    <section class="surface-card sf-admin-section" aria-label="Consulta administrativa de pagos">
+      <div class="sf-admin-section-title">
+        <div><span class="page-eyebrow">Administración · 09D3</span><h2>Buscar pagos</h2></div>
+        <small>Solo lectura · Estados registrados en MySQL</small>
+      </div>
+      <p class="sf-admin-note">Este listado no consulta a Mercado Pago en tiempo real. Una reserva confirmada no implica un pago aprobado.</p>
+      <form class="sf-admin-user-filters" (submit)="$event.preventDefault(); buscarPagos()">
+        <label>Jugador, correo, cancha, complejo o referencia MP
+          <input type="search" name="buscarPagos" [value]="busquedaPagos"
+            (input)="busquedaPagos = $any($event.target).value"
+            maxlength="100" placeholder="Buscar pago..." />
+        </label>
+        <label>Estado del pago
+          <select name="estadoPagos" [value]="estadoPagos"
+            (change)="estadoPagos = $any($event.target).value; buscarPagos()">
+            <option value="">Todos</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="APROBADO">Aprobado</option>
+            <option value="RECHAZADO">Rechazado</option>
+            <option value="REEMBOLSADO">Reembolsado</option>
+          </select>
+        </label>
+        <button type="submit" class="secondary-button">Buscar</button>
+        <button type="button" class="secondary-button" (click)="busquedaPagos = ''; estadoPagos = ''; buscarPagos()">Limpiar</button>
+      </form>
+      @if (pagosCargando()) { <p role="status">Cargando pagos...</p> }
+      @if (pagosError()) {
+        <p role="alert">{{ pagosError() }}</p>
+        <button type="button" class="secondary-button" (click)="cargarPagos()">Reintentar</button>
+      }
+      @if (pagosPagina(); as listaPagos) {
+        <p>{{ listaPagos.total }} pagos registrados encontrados</p>
+        <div class="sf-admin-table-wrapper">
+          <table class="sf-admin-table">
+            <thead><tr>
+              <th scope="col">Pago</th><th scope="col">Jugador</th><th scope="col">Cancha / complejo</th>
+              <th scope="col">Importe</th><th scope="col">Estado del pago</th>
+              <th scope="col">Método / fecha</th><th scope="col">Reserva</th>
+            </tr></thead>
+            <tbody>
+              @for (pago of listaPagos.pagos; track pago.id) {
+                <tr>
+                  <td>#{{ pago.id }}</td>
+                  <td>{{ pago.usuario }}<br><small>{{ pago.correo }}</small></td>
+                  <td>{{ pago.cancha }}<br><small>{{ pago.complejo }}</small></td>
+                  <td>{{ pago.monto | currency:'ARS':'symbol':'1.0-2' }}</td>
+                  <td><strong>{{ pago.estado }}</strong><br><small>Reserva: {{ pago.estadoReserva }}</small></td>
+                  <td>{{ pago.metodo || 'No registrado' }}<br><small>{{ pago.fechaPago ? (pago.fechaPago | date:'dd/MM/yyyy HH:mm') : 'Fecha no registrada' }}</small></td>
+                  <td><a href="#admin-reservas" (click)="verDetalleReserva(pago.reservaId)">Ver reserva #{{ pago.reservaId }}</a></td>
+                </tr>
+              } @empty {
+                <tr><td colspan="7">No se encontraron pagos registrados con estos filtros.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="sf-admin-user-pagination">
+          <button type="button" class="secondary-button" [disabled]="pagosCargando() || listaPagos.pagina === 0"
+            (click)="cargarPagos(listaPagos.pagina - 1)">Anterior</button>
+          <span>Página {{ listaPagos.pagina + 1 }} de {{ listaPagos.totalPaginas || 1 }}</span>
+          <button type="button" class="secondary-button" [disabled]="pagosCargando() || listaPagos.pagina + 1 >= listaPagos.totalPaginas"
+            (click)="cargarPagos(listaPagos.pagina + 1)">Siguiente</button>
         </div>
       }
     </section>
