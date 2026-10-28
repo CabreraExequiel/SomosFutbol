@@ -71,7 +71,16 @@ public class CanchaService {
 
     @Transactional
     public CanchaResponse publicar(Long id, boolean activa, User user) {
+        // El propietario puede despublicar una cancha propia, pero NO revocar la
+        // moderación del administrador. Se verifica dentro de la transacción y
+        // después del bloqueo de propietario -> cancha (09C4).
         var cancha = complejoGuard.bloquearCanchaDeDueno(id, user);
+        if (activa && cancha.getMotivoDesactivacionAdmin() != null
+                && !cancha.getMotivoDesactivacionAdmin().isBlank()) {
+            throw new ApiException(
+                    "La cancha está desactivada por administración. Solicitá su reactivación.",
+                    HttpStatus.CONFLICT);
+        }
         cancha.setActiva(activa);
         return CanchaResponse.fromEntity(canchaRepository.save(cancha));
     }
