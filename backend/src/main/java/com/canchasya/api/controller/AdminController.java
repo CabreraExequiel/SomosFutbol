@@ -43,6 +43,7 @@ public class AdminController {
     private final PagoRepository pagos;
     private final AdminSuspensionService suspensiones;
     private final com.canchasya.api.service.AdminCanchaModeracionService moderacionCanchas;
+    private final com.canchasya.api.service.AdminComplejoModeracionService moderacionComplejos;
 
     @GetMapping("/resumen")
     public ResponseEntity<Resumen> resumen() {
@@ -143,12 +144,32 @@ public class AdminController {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(CanchaAdminDetalle.de(cancha));
     }
 
+    /** Moderación integral: se almacena en el dueño, sin cambiar estados individuales de canchas. */
+    @GetMapping("/complejos/{duenoId}")
+    public ResponseEntity<com.canchasya.api.service.AdminComplejoModeracionService.ComplejoAdminDetalle>
+            detalleComplejo(@PathVariable Long duenoId) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(moderacionComplejos.detalle(duenoId));
+    }
+
+    public record EstadoComplejoRequest(boolean suspendido, String motivo) {}
+
+    @PostMapping("/complejos/{duenoId}/estado")
+    public ResponseEntity<com.canchasya.api.service.AdminComplejoModeracionService.ComplejoAdminDetalle>
+            cambiarEstadoComplejo(@PathVariable Long duenoId,
+                    @RequestBody EstadoComplejoRequest solicitud, Authentication authentication) {
+        User actor = (User) authentication.getPrincipal();
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(moderacionComplejos.actualizar(duenoId, actor.getId(),
+                        solicitud.suspendido(), solicitud.motivo()));
+    }
+
     public record CanchaAdminDetalle(Long id, String nombre, String complejo, String ciudad,
                                     Long propietarioId, String propietario, String tipo,
                                     String superficie, Integer cantJugadores,
                                     java.math.BigDecimal precioHora, boolean techada,
                                     String direccion, String descripcion, boolean activa,
-                                    String motivoDesactivacionAdmin) {
+                                    String motivoDesactivacionAdmin, boolean complejoSuspendido) {
         static CanchaAdminDetalle de(Cancha c) {
             String comercial = c.getDueno().getNombreComplejo();
             return new CanchaAdminDetalle(c.getId(), c.getNombre(),
@@ -156,19 +177,20 @@ public class AdminController {
                     c.getCiudad().getNombre(), c.getDueno().getId(), c.getDueno().getName(),
                     c.getTipo(), c.getSuperficie(), c.getCantJugadores(), c.getPrecioHora(),
                     c.isTechada(), c.getDireccion(), c.getDescripcion(), c.isActiva(),
-                    c.getMotivoDesactivacionAdmin());
+                    c.getMotivoDesactivacionAdmin(), c.getDueno().isComplejoSuspendido());
         }
     }
 
     public record PaginaCanchas(List<CanchaAdminResumen> canchas, int pagina, int totalPaginas, long total) {}
 
     public record CanchaAdminResumen(Long id, String nombre, String complejo, String ciudad,
-                                    String propietario, String tipo, boolean activa) {
+                                    String propietario, String tipo, boolean activa, boolean complejoSuspendido) {
         static CanchaAdminResumen de(Cancha c) {
             String comercial = c.getDueno().getNombreComplejo();
             return new CanchaAdminResumen(c.getId(), c.getNombre(),
                     comercial == null || comercial.isBlank() ? "Sin nombre comercial" : comercial,
-                    c.getCiudad().getNombre(), c.getDueno().getName(), c.getTipo(), c.isActiva());
+                    c.getCiudad().getNombre(), c.getDueno().getName(), c.getTipo(), c.isActiva(),
+                    c.getDueno().isComplejoSuspendido());
         }
     }
 

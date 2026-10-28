@@ -124,7 +124,7 @@
 
     <section class="surface-card sf-admin-section" aria-label="Administrar complejos y canchas">
       <div class="sf-admin-section-title">
-        <div><span class="page-eyebrow">Administración · 09C1</span><h2>Buscar complejos y canchas</h2></div>
+        <div><span class="page-eyebrow">Administración · 09C4</span><h2>Buscar complejos y canchas</h2></div>
         <small>Solo lectura · Datos reales</small>
       </div>
       <form class="sf-admin-user-filters" (submit)="$event.preventDefault(); buscarCanchas()">
@@ -151,7 +151,7 @@
             <thead><tr><th>ID</th><th>Cancha</th><th>Complejo</th><th>Ciudad</th><th>Propietario</th><th>Tipo</th><th>Estado</th><th>Detalle</th></tr></thead>
             <tbody>
               @for (cancha of listaCanchas.canchas; track cancha.id) {
-                <tr><td>{{ cancha.id }}</td><td>{{ cancha.nombre }}</td><td>{{ cancha.complejo }}</td><td>{{ cancha.ciudad }}</td><td>{{ cancha.propietario }}</td><td>{{ cancha.tipo || '—' }}</td><td>{{ cancha.activa ? 'Activa' : 'Inactiva' }}</td><td><button type="button" class="secondary-button" (click)="verDetalleCancha(cancha.id)">Ver detalle</button></td></tr>
+                <tr><td>{{ cancha.id }}</td><td>{{ cancha.nombre }}</td><td>{{ cancha.complejo }}</td><td>{{ cancha.ciudad }}</td><td>{{ cancha.propietario }}</td><td>{{ cancha.tipo || '—' }}</td><td>{{ cancha.activa ? 'Activa' : 'Inactiva' }}@if (cancha.complejoSuspendido) { · Complejo suspendido }</td><td><button type="button" class="secondary-button" (click)="verDetalleCancha(cancha.id)">Ver detalle</button></td></tr>
               } @empty { <tr><td colspan="8">No se encontraron canchas con esos filtros.</td></tr> }
             </tbody>
           </table>
@@ -166,10 +166,13 @@
               <div><span class="page-eyebrow">Administración · 09C2</span><h3>Cancha #{{ detalleCancha.id }} · {{ detalleCancha.nombre }}</h3></div>
               <button type="button" class="secondary-button" (click)="cerrarDetalleCancha()">Cerrar detalle</button>
             </div>
-            <p><strong>Estado:</strong> {{ detalleCancha.activa ? 'Activa' : 'Inactiva' }}</p>
+            <p><strong>Estado individual:</strong> {{ detalleCancha.activa ? 'Activa' : 'Inactiva' }}</p>
+            @if (detalleCancha.complejoSuspendido) { <p role="status"><strong>Complejo suspendido:</strong> esta cancha no recibe nuevas reservas aunque esté activa individualmente.</p> }
             <dl>
               <dt>Complejo</dt><dd>{{ detalleCancha.complejo }}</dd>
-              <dt>Propietario</dt><dd>{{ detalleCancha.propietario }} (ID {{ detalleCancha.propietarioId }})</dd>
+              <dt>Propietario</dt><dd>{{ detalleCancha.propietario }} (ID {{ detalleCancha.propietarioId }})
+                <button type="button" class="secondary-button sf-admin-inline-action" (click)="verDetalleComplejo(detalleCancha.propietarioId)">Administrar complejo</button>
+              </dd>
               <dt>Ciudad</dt><dd>{{ detalleCancha.ciudad }}</dd>
               <dt>Dirección</dt><dd>{{ detalleCancha.direccion || 'Sin informar' }}</dd>
               <dt>Tipo</dt><dd>{{ detalleCancha.tipo || 'Sin informar' }}</dd>
@@ -193,6 +196,40 @@
               <p class="sf-admin-note">La desactivación impide nuevas reservas, pero no cancela las existentes.</p>
               @if (estadoCanchaError()) { <p role="alert">{{ estadoCanchaError() }}</p> }
               @if (estadoCanchaMensaje()) { <p role="status">{{ estadoCanchaMensaje() }}</p> }
+            </div>
+          </section>
+        }
+        @if (complejoCargando()) { <p role="status">Cargando datos del complejo...</p> }
+        @if (complejoError()) { <p role="alert">{{ complejoError() }}</p> }
+        @if (complejoSeleccionado(); as complejo) {
+          <section class="sf-admin-user-detail sf-admin-complejo-detail" aria-label="Moderación de complejo">
+            <div class="sf-admin-section-title">
+              <div><span class="page-eyebrow">Administración · 09C4</span><h3>Complejo: {{ complejo.nombreComplejo }}</h3></div>
+              <button type="button" class="secondary-button" (click)="cerrarDetalleComplejo()">Cerrar complejo</button>
+            </div>
+            <dl>
+              <dt>Propietario</dt><dd>{{ complejo.propietario }} (ID {{ complejo.propietarioId }})</dd>
+              <dt>Canchas registradas</dt><dd>{{ complejo.canchasTotal }}</dd>
+              <dt>Canchas activas individualmente</dt><dd>{{ complejo.canchasActivas }}</dd>
+              <dt>Estado del complejo</dt><dd><strong>{{ complejo.suspendido ? 'Suspendido' : 'Habilitado' }}</strong></dd>
+            </dl>
+            @if (complejo.suspendido && complejo.motivoSuspension) {
+              <p><strong>Motivo administrativo:</strong> {{ complejo.motivoSuspension }}</p>
+            }
+            <div class="sf-admin-suspend-form">
+              @if (!complejo.suspendido) {
+                <label>Motivo de suspensión del complejo (obligatorio)
+                  <textarea [value]="motivoSuspensionComplejo" (input)="motivoSuspensionComplejo = $any($event.target).value"
+                    rows="3" maxlength="500" placeholder="Indicá el motivo de la suspensión completa..."></textarea>
+                </label>
+              }
+              <button type="button" class="secondary-button" [disabled]="estadoComplejoGuardando()"
+                (click)="cambiarEstadoComplejo()">
+                {{ estadoComplejoGuardando() ? 'Guardando...' : (complejo.suspendido ? 'Reactivar complejo' : 'Suspender complejo') }}
+              </button>
+              <p class="sf-admin-note">Suspender un complejo bloquea nuevas reservas de todas sus canchas. No cambia sus estados individuales ni cancela reservas existentes. Al reactivar solo vuelve a estar disponible cada cancha que ya estuviera activa.</p>
+              @if (estadoComplejoError()) { <p role="alert">{{ estadoComplejoError() }}</p> }
+              @if (estadoComplejoMensaje()) { <p role="status">{{ estadoComplejoMensaje() }}</p> }
             </div>
           </section>
         }

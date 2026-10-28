@@ -30,6 +30,10 @@ public interface CanchaRepository extends JpaRepository<Cancha, Long> {
             @Param("termino") String termino, @Param("estado") Boolean estado,
             org.springframework.data.domain.Pageable pageable);
 
+    // No cargar Cancha en el contexto JPA antes de adquirir su bloqueo FOR UPDATE.
+    @Query(value = "SELECT user_id FROM canchas WHERE id = :id", nativeQuery = true)
+    java.util.Optional<Long> findDuenoIdByCanchaId(@Param("id") Long id);
+
     long countByActivaTrue();
 
 

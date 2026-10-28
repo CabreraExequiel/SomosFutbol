@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { AdminService, AdminResumen, AdminPaginaUsuarios, AdminUsuarioDetalle, AdminPaginaCanchas, AdminCanchaDetalle } from '../../services/admin.service';
+import { AdminService, AdminResumen, AdminPaginaUsuarios, AdminUsuarioDetalle, AdminPaginaCanchas, AdminCanchaDetalle, AdminComplejoDetalle } from '../../services/admin.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -77,6 +77,7 @@ export class AdminDashboardComponent implements OnInit {
     this.canchaSeleccionada.set(null);
     this.detalleCanchaError.set('');
     this.estadoCanchaError.set(''); this.estadoCanchaMensaje.set('');
+    this.cerrarDetalleComplejo();
     this.detalleCanchaCargando.set(true);
     this.admin.detalleCanchaAdmin(id).subscribe({
       next: detalle => {
@@ -129,6 +130,75 @@ export class AdminDashboardComponent implements OnInit {
   cerrarDetalleCancha(): void {
     this.canchaSeleccionada.set(null);
     this.detalleCanchaError.set('');
+    this.cerrarDetalleComplejo();
+  }
+
+  readonly complejoSeleccionado = signal<AdminComplejoDetalle | null>(null);
+  readonly complejoCargando = signal(false);
+  readonly complejoError = signal('');
+  readonly estadoComplejoGuardando = signal(false);
+  readonly estadoComplejoError = signal('');
+  readonly estadoComplejoMensaje = signal('');
+  motivoSuspensionComplejo = '';
+
+  verDetalleComplejo(propietarioId: number): void {
+    this.cerrarDetalleComplejo();
+    this.complejoCargando.set(true);
+    this.admin.detalleComplejoAdmin(propietarioId).subscribe({
+      next: complejo => {
+        this.complejoSeleccionado.set(complejo);
+        this.complejoCargando.set(false);
+      },
+      error: err => {
+        this.complejoError.set(err.status === 404 ? 'Propietario no encontrado.' :
+          err.status === 403 ? 'No tenés permisos.' : 'No se pudo cargar el complejo.');
+        this.complejoCargando.set(false);
+      }
+    });
+  }
+
+  cambiarEstadoComplejo(): void {
+    const complejo = this.complejoSeleccionado();
+    if (!complejo || this.estadoComplejoGuardando()) return;
+    const suspender = !complejo.suspendido;
+    const motivo = this.motivoSuspensionComplejo.trim();
+    if (suspender && (motivo.length < 5 || motivo.length > 500)) {
+      this.estadoComplejoError.set('Ingresá un motivo de 5 a 500 caracteres.'); return;
+    }
+    const mensaje = suspender
+      ? `¿Suspender ${complejo.nombreComplejo} y bloquear nuevas reservas de sus ${complejo.canchasTotal} canchas? Las reservas existentes se conservan.`
+      : `¿Reactivar ${complejo.nombreComplejo}? Las canchas individuales conservarán su propio estado.`;
+    if (!window.confirm(mensaje)) return;
+    this.estadoComplejoGuardando.set(true);
+    this.estadoComplejoError.set(''); this.estadoComplejoMensaje.set('');
+    this.admin.cambiarEstadoComplejo(complejo.propietarioId, suspender, motivo).subscribe({
+      next: actualizado => {
+        this.complejoSeleccionado.set(actualizado);
+        this.motivoSuspensionComplejo = '';
+        this.estadoComplejoMensaje.set(suspender ? 'Complejo suspendido: no se permiten nuevas reservas.' :
+          'Complejo reactivado. Se respetaron los estados de cada cancha.');
+        this.estadoComplejoGuardando.set(false);
+        const cancha = this.canchaSeleccionada();
+        if (cancha?.propietarioId === actualizado.propietarioId) {
+          this.canchaSeleccionada.set({ ...cancha, complejoSuspendido: actualizado.suspendido });
+        }
+        this.admin.canchasAdmin(this.busquedaCanchas.trim(), this.estadoCanchas, this.canchasPagina()?.pagina ?? 0)
+          .subscribe({ next: pagina => this.canchasPagina.set(pagina), error: () => this.canchasError.set('Actualizá el listado de canchas.') });
+      },
+      error: err => {
+        this.estadoComplejoError.set(err.status === 409 ? 'El estado cambió o esta cuenta no es de un dueño.' :
+          err.status === 404 ? 'Propietario no encontrado.' :
+          err.status === 403 ? 'No tenés permisos.' : 'No se pudo cambiar el estado del complejo.');
+        this.estadoComplejoGuardando.set(false);
+      }
+    });
+  }
+
+  cerrarDetalleComplejo(): void {
+    this.complejoSeleccionado.set(null);
+    this.complejoError.set('');
+    this.estadoComplejoError.set(''); this.estadoComplejoMensaje.set('');
+    this.motivoSuspensionComplejo = '';
   }
 
   readonly canchasPagina = signal<AdminPaginaCanchas | null>(null);

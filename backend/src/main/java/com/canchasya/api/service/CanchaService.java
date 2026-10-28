@@ -32,6 +32,7 @@ public class CanchaService {
     private final HorarioDisponibleRepository horarioRepository;
     private final ArchivoService archivoService;
     private final BitacoraService bitacora;
+    private final ComplejoOperacionGuard complejoGuard;
 
     public List<CanchaResponse> buscar(Long ciudadId, String tipo) {
         List<Cancha> canchas;
@@ -44,7 +45,8 @@ public class CanchaService {
         } else {
             canchas = canchaRepository.findByActivaTrue();
         }
-        return canchas.stream().map(CanchaResponse::fromEntity).toList();
+        return canchas.stream().filter(c -> !c.getDueno().isComplejoSuspendido())
+                .map(CanchaResponse::fromEntity).toList();
     }
 
     public List<DuenoPublicoResponse> duenos(Long ciudadId, String tipo) {
@@ -62,19 +64,22 @@ public class CanchaService {
     }
 
     public List<CanchaResponse> porDueno(Long id) {
-        return canchaRepository.findByDuenoId(id).stream().filter(Cancha::isActiva)
+        return canchaRepository.findByDuenoId(id).stream()
+                .filter(c -> c.isActiva() && !c.getDueno().isComplejoSuspendido())
                 .map(CanchaResponse::fromEntity).toList();
     }
 
     @Transactional
     public CanchaResponse publicar(Long id, boolean activa, User user) {
-        var cancha=canchaRepository.findByIdForUpdate(id).orElseThrow(() -> new ApiException("Cancha no encontrada",HttpStatus.NOT_FOUND));
-        validarPropietario(cancha,user);cancha.setActiva(activa);return CanchaResponse.fromEntity(canchaRepository.save(cancha));
+        var cancha = complejoGuard.bloquearCanchaDeDueno(id, user);
+        cancha.setActiva(activa);
+        return CanchaResponse.fromEntity(canchaRepository.save(cancha));
     }
 
     public CanchaResponse ver(Long id) {
         Cancha cancha = obtenerCancha(id);
-        if (!cancha.isActiva()) throw new ApiException("La cancha está pausada", HttpStatus.NOT_FOUND);
+        if (!cancha.isActiva() || cancha.getDueno().isComplejoSuspendido())
+            throw new ApiException("La cancha no está disponible", HttpStatus.NOT_FOUND);
         return CanchaResponse.fromEntity(cancha);
     }
 
@@ -84,16 +89,18 @@ public class CanchaService {
                 .toList();
     }
 
+    @Transactional
     public CanchaResponse crear(CanchaRequest request, User dueno) {
         if (dueno.getRole() != Role.DUENO && dueno.getRole() != Role.ADMINISTRADOR) {
             throw new ApiException("Solo los dueños pueden publicar canchas", HttpStatus.FORBIDDEN);
         }
 
+        User propietarioActual = complejoGuard.bloquearDueno(dueno.getId());
         Ciudad ciudad = ciudadRepository.findById(request.getCiudadId())
                 .orElseThrow(() -> new ApiException("Ciudad no encontrada", HttpStatus.NOT_FOUND));
 
         Cancha cancha = new Cancha();
-        cancha.setDueno(dueno);
+        cancha.setDueno(propietarioActual);
         cancha.setCiudad(ciudad);
         aplicarDatos(cancha, request);
 
@@ -104,8 +111,7 @@ public class CanchaService {
 
     @Transactional
     public CanchaResponse actualizar(Long id, CanchaRequest request, User dueno) {
-        Cancha cancha = canchaRepository.findByIdForUpdate(id).orElseThrow(() -> new ApiException("Cancha no encontrada", HttpStatus.NOT_FOUND));
-        validarPropietario(cancha, dueno);
+        Cancha cancha = complejoGuard.bloquearCanchaDeDueno(id, dueno);
 
         Ciudad ciudad = ciudadRepository.findById(request.getCiudadId())
                 .orElseThrow(() -> new ApiException("Ciudad no encontrada", HttpStatus.NOT_FOUND));
@@ -120,8 +126,7 @@ public class CanchaService {
 
     @Transactional
     public void eliminar(Long id, User dueno) {
-        Cancha cancha = canchaRepository.findByIdForUpdate(id).orElseThrow(() -> new ApiException("Cancha no encontrada", HttpStatus.NOT_FOUND));
-        validarPropietario(cancha, dueno);
+        Cancha cancha = complejoGuard.bloquearCanchaDeDueno(id, dueno);
         cancha.setActiva(false);
         canchaRepository.save(cancha);
         bitacora.evento("CANCHA_DESACTIVADA", "CANCHA", cancha.getId(), dueno.getId());
@@ -129,8 +134,7 @@ public class CanchaService {
 
     @Transactional
     public CanchaResponse actualizarImagen(Long id, MultipartFile archivo, User dueno) {
-        Cancha cancha = canchaRepository.findByIdForUpdate(id).orElseThrow(() -> new ApiException("Cancha no encontrada", HttpStatus.NOT_FOUND));
-        validarPropietario(cancha, dueno);
+        Cancha cancha = complejoGuard.bloquearCanchaDeDueno(id, dueno);
 
         String anterior = cancha.getImagen();
         String url = archivoService.guardarImagen(archivo, "canchas");
@@ -149,8 +153,7 @@ public class CanchaService {
 
     @Transactional
     public HorarioResponse agregarHorario(Long canchaId, HorarioRequest request, User dueno) {
-        Cancha cancha = canchaRepository.findByIdForUpdate(canchaId).orElseThrow(() -> new ApiException("Cancha no encontrada",HttpStatus.NOT_FOUND));
-        validarPropietario(cancha, dueno);
+        Cancha cancha = complejoGuard.bloquearCanchaDeDueno(canchaId, dueno);
         DisponibilidadService.validarRango(request.getHoraInicio(),request.getHoraFin());
         boolean overlap=horarioRepository.findByCanchaIdAndDiaSemana(canchaId,request.getDiaSemana()).stream()
                 .anyMatch(h -> request.getHoraInicio().isBefore(h.getHoraFin()) && request.getHoraFin().isAfter(h.getHoraInicio()));
@@ -168,8 +171,7 @@ public class CanchaService {
 
     @Transactional
     public void eliminarHorario(Long id, Long horarioId, User user) {
-        var cancha=canchaRepository.findByIdForUpdate(id).orElseThrow(() -> new ApiException("Cancha no encontrada",HttpStatus.NOT_FOUND));
-        validarPropietario(cancha,user);
+        var cancha = complejoGuard.bloquearCanchaDeDueno(id, user);
         var h=horarioRepository.findById(horarioId).orElseThrow(() -> new ApiException("Horario no encontrado",HttpStatus.NOT_FOUND));
         if(!h.getCancha().getId().equals(id)) throw new ApiException("Horario no encontrado",HttpStatus.NOT_FOUND);
         horarioRepository.delete(h);
@@ -191,9 +193,4 @@ public class CanchaService {
                 .orElseThrow(() -> new ApiException("Cancha no encontrada", HttpStatus.NOT_FOUND));
     }
 
-    private void validarPropietario(Cancha cancha, User user) {
-        if (!cancha.getDueno().getId().equals(user.getId())) {
-            throw new ApiException("No tenés permiso sobre esta cancha", HttpStatus.FORBIDDEN);
-        }
-    }
 }

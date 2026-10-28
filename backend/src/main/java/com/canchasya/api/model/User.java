@@ -80,6 +80,19 @@ public class User implements UserDetails {
     @Column(name = "suspendido_por_id")
     private Long suspendidoPorId;
 
+    // Moderación del complejo: no modificar el estado individual de sus canchas.
+    @Column(name = "complejo_suspendido", nullable = false)
+    private boolean complejoSuspendido = false;
+
+    @Column(name = "complejo_motivo_suspension", length = 500)
+    private String complejoMotivoSuspension;
+
+    @Column(name = "complejo_suspendido_en")
+    private Instant complejoSuspendidoEn;
+
+    @Column(name = "complejo_suspendido_por_id")
+    private Long complejoSuspendidoPorId;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));

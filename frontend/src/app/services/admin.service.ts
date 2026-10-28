@@ -50,6 +50,7 @@ export interface AdminCanchaResumen {
   propietario: string;
   tipo: string | null;
   activa: boolean;
+  complejoSuspendido: boolean;
 }
 
 export interface AdminCanchaDetalle extends AdminCanchaResumen {
@@ -63,6 +64,16 @@ export interface AdminCanchaDetalle extends AdminCanchaResumen {
   motivoDesactivacionAdmin: string | null;
 }
 
+export interface AdminComplejoDetalle {
+  propietarioId: number;
+  nombreComplejo: string;
+  propietario: string;
+  suspendido: boolean;
+  motivoSuspension: string | null;
+  canchasTotal: number;
+  canchasActivas: number;
+}
+
 export interface AdminPaginaCanchas {
   canchas: AdminCanchaResumen[];
   pagina: number;
@@ -73,6 +84,14 @@ export interface AdminPaginaCanchas {
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   constructor(private http: HttpClient) {}
+
+  detalleComplejoAdmin(propietarioId: number): Observable<AdminComplejoDetalle> {
+    return this.http.get<AdminComplejoDetalle>(`${environment.apiUrl}/admin/complejos/${propietarioId}`);
+  }
+
+  cambiarEstadoComplejo(propietarioId: number, suspendido: boolean, motivo: string): Observable<AdminComplejoDetalle> {
+    return this.http.post<AdminComplejoDetalle>(`${environment.apiUrl}/admin/complejos/${propietarioId}/estado`, { suspendido, motivo });
+  }
 
   cambiarEstadoCancha(id: number, activa: boolean, motivo: string): Observable<AdminCanchaDetalle> {
     return this.http.post<AdminCanchaDetalle>(`${environment.apiUrl}/admin/canchas/${id}/estado`, { activa, motivo });

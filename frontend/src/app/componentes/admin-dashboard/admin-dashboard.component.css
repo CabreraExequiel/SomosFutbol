@@ -50,3 +50,8 @@
 /* 09C2: detalle administrativo de cancha */
 .sf-admin-cancha-detail h3 { margin:.25rem 0; font-size:1.15rem; }
 .sf-admin-cancha-detail dd { overflow-wrap:anywhere; white-space:pre-wrap; }
+
+/* 09C4: acción de moderación de complejo desde el detalle de cancha */
+.sf-admin-inline-action{margin:.35rem 0 .15rem .6rem;vertical-align:middle}
+.sf-admin-complejo-detail{border-color:#a9becb;background:#f7fbfc}
+.sf-admin-complejo-detail h3{margin:.25rem 0;font-size:1.1rem}
