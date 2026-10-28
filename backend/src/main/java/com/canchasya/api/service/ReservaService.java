@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -56,7 +57,9 @@ public class ReservaService {
         return responder(reservaRepository.findByCanchaIdInOrderByFechaDesc(canchaIds));
     }
 
-    @Transactional
+    // Un SELECT previo al FOR UPDATE puede fijar un snapshot viejo en REPEATABLE_READ.
+    // READ_COMMITTED permite ver la reserva confirmada al adquirir los bloqueos.
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public ReservaResponse crear(ReservaRequest request, User user) {
         if (!request.getHoraFin().isAfter(request.getHoraInicio())) {
             throw new ApiException("El horario de fin debe ser posterior al de inicio", HttpStatus.UNPROCESSABLE_ENTITY);
