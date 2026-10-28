@@ -101,9 +101,67 @@ export interface AdminPaginaCanchas {
   total: number;
 }
 
+export type AdminReservaEstado = 'PENDIENTE' | 'CONFIRMADA' | 'CANCELADA';
+
+export interface AdminReservaResumen {
+  id: number;
+  usuarioId: number;
+  usuario: string;
+  correo: string;
+  canchaId: number;
+  cancha: string;
+  complejo: string;
+  fecha: string;
+  horaInicio: string;
+  horaFin: string;
+  monto: number;
+  estado: AdminReservaEstado;
+  pagoRequerido: boolean;
+}
+
+export type AdminPagoEstado = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO' | 'REEMBOLSADO';
+
+export interface AdminReservaPagoDetalle {
+  id: number;
+  monto: number;
+  estado: AdminPagoEstado;
+  metodo: string | null;
+  fechaPago: string | null;
+  mpPaymentId: string | null;
+  mpPreferenceId: string | null;
+}
+
+export interface AdminReservaDetalle extends AdminReservaResumen {
+  propietarioId: number;
+  propietario: string;
+  ciudad: string;
+  direccion: string | null;
+  creada: string | null;
+  vence: string | null;
+  pago: AdminReservaPagoDetalle | null;
+}
+
+export interface AdminPaginaReservas {
+  reservas: AdminReservaResumen[];
+  pagina: number;
+  totalPaginas: number;
+  total: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   constructor(private http: HttpClient) {}
+
+  detalleReservaAdmin(id: number): Observable<AdminReservaDetalle> {
+    return this.http.get<AdminReservaDetalle>(`${environment.apiUrl}/admin/reservas/${id}`);
+  }
+
+  reservasAdmin(buscar = '', estado = '', pagina = 0): Observable<AdminPaginaReservas> {
+    const params: Record<string, string> = { buscar, pagina: String(pagina) };
+    if (estado) params['estado'] = estado;
+    return this.http.get<AdminPaginaReservas>(`${environment.apiUrl}/admin/reservas`, { params });
+  }
+
 
   historialCancha(id: number, pagina = 0): Observable<AdminHistorialPagina> {
     return this.http.get<AdminHistorialPagina>(`${environment.apiUrl}/admin/canchas/${id}/historial`,

@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { AdminService, AdminResumen, AdminPaginaUsuarios, AdminUsuarioDetalle, AdminPaginaCanchas, AdminCanchaDetalle, AdminComplejoDetalle, AdminHistorialPagina } from '../../services/admin.service';
+import { AdminService, AdminResumen, AdminPaginaUsuarios, AdminUsuarioDetalle, AdminPaginaCanchas, AdminCanchaDetalle, AdminComplejoDetalle, AdminHistorialPagina, AdminPaginaReservas, AdminReservaDetalle } from '../../services/admin.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -278,6 +278,63 @@ export class AdminDashboardComponent implements OnInit {
     });
   }
 
+  // 09D2: detalle de reserva y estado de pago registrado, sin acciones de modificación.
+  readonly reservaSeleccionada = signal<AdminReservaDetalle | null>(null);
+  readonly detalleReservaCargando = signal(false);
+  readonly detalleReservaError = signal('');
+  private reservaSolicitadaId: number | null = null;
+
+  verDetalleReserva(id: number): void {
+    this.reservaSolicitadaId = id;
+    this.reservaSeleccionada.set(null);
+    this.detalleReservaError.set('');
+    this.detalleReservaCargando.set(true);
+    this.admin.detalleReservaAdmin(id).subscribe({
+      next: detalle => {
+        if (this.reservaSolicitadaId !== id) return;
+        this.reservaSeleccionada.set(detalle);
+        this.detalleReservaCargando.set(false);
+      },
+      error: err => {
+        if (this.reservaSolicitadaId !== id) return;
+        this.detalleReservaError.set(err.status === 404 ? 'La reserva ya no existe.' :
+          err.status === 403 ? 'No tenés permiso para consultar esta reserva.' :
+          'No se pudo cargar el detalle de la reserva.');
+        this.detalleReservaCargando.set(false);
+      },
+    });
+  }
+
+  cerrarDetalleReserva(): void {
+    this.reservaSolicitadaId = null;
+    this.reservaSeleccionada.set(null);
+    this.detalleReservaCargando.set(false);
+    this.detalleReservaError.set('');
+  }
+
+  // 09D1: listado paginado de reservas; sin operaciones que alteren reservas o pagos.
+  readonly reservasPagina = signal<AdminPaginaReservas | null>(null);
+  readonly reservasCargando = signal(false);
+  readonly reservasError = signal('');
+  busquedaReservas = '';
+  estadoReservas = '';
+
+  buscarReservas(): void { this.cargarReservas(0); }
+
+  cargarReservas(pagina = 0): void {
+    this.cerrarDetalleReserva();
+    this.reservasCargando.set(true);
+    this.reservasError.set('');
+    this.admin.reservasAdmin(this.busquedaReservas.trim(), this.estadoReservas, pagina).subscribe({
+      next: datos => { this.reservasPagina.set(datos); this.reservasCargando.set(false); },
+      error: err => {
+        this.reservasError.set(err.status === 403 ? 'No tenés permiso para consultar reservas.' :
+          'No se pudieron cargar las reservas. Revisá Spring Boot.');
+        this.reservasCargando.set(false);
+      }
+    });
+  }
+
   readonly usuariosPagina = signal<AdminPaginaUsuarios | null>(null);
   readonly usuariosCargando = signal(false);
   readonly usuariosError = signal('');
@@ -302,6 +359,7 @@ export class AdminDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargar();
+    this.cargarReservas();
   }
 
   cargar(): void {

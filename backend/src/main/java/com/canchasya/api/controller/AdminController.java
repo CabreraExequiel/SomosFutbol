@@ -2,6 +2,7 @@ package com.canchasya.api.controller;
 
 import com.canchasya.api.model.Role;
 import com.canchasya.api.model.Cancha;
+import com.canchasya.api.model.Reserva;
 import com.canchasya.api.model.EstadoReserva;
 import com.canchasya.api.model.EstadoPago;
 import com.canchasya.api.repository.PagoRepository;
@@ -42,6 +43,7 @@ public class AdminController {
     private final PublicacionRepository publicaciones;
     private final PagoRepository pagos;
     private final AdminSuspensionService suspensiones;
+    private final com.canchasya.api.service.AdminReservaConsultaService consultaReservas;
     private final com.canchasya.api.service.AdminCanchaModeracionService moderacionCanchas;
     private final com.canchasya.api.service.AdminComplejoModeracionService moderacionComplejos;
     private final com.canchasya.api.service.AdminModeracionHistorialService historialModeracion;
@@ -108,6 +110,50 @@ public class AdminController {
                 new UsuarioDetalle(actualizado.getId(), actualizado.getName(), actualizado.getEmail(),
                         actualizado.getRole(), actualizado.getCiudad(), actualizado.getNombreComplejo(),
                         actualizado.getGoogleSub() != null, actualizado.isSuspendido(), actualizado.getMotivoSuspension()));
+    }
+
+    /** 09D1: listado administrativo de reservas, sin operaciones de pago/cancelación. */
+    @GetMapping("/reservas")
+    public ResponseEntity<PaginaReservas> reservasAdmin(
+            @RequestParam(defaultValue = "") String buscar,
+            @RequestParam(required = false) EstadoReserva estado,
+            @RequestParam(defaultValue = "0") int pagina) {
+        String termino = buscar == null ? "" : buscar.strip();
+        if (termino.length() > 100) termino = termino.substring(0, 100);
+        int numero = Math.max(0, Math.min(pagina, 100000));
+        Page<Reserva> resultado = reservas.buscarAdministracion(termino, estado,
+                PageRequest.of(numero, 15, Sort.by(Sort.Direction.DESC, "id")));
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(new PaginaReservas(
+                resultado.getContent().stream().map(AdminReservaResumen::de).toList(),
+                resultado.getNumber(), resultado.getTotalPages(), resultado.getTotalElements()));
+    }
+
+    public record PaginaReservas(List<AdminReservaResumen> reservas,
+                                 int pagina, int totalPaginas, long total) {}
+
+    public record AdminReservaResumen(Long id, Long usuarioId, String usuario,
+                                     String correo, Long canchaId, String cancha,
+                                     String complejo, java.time.LocalDate fecha,
+                                     java.time.LocalTime horaInicio, java.time.LocalTime horaFin,
+                                     java.math.BigDecimal monto, EstadoReserva estado,
+                                     boolean pagoRequerido) {
+        static AdminReservaResumen de(Reserva r) {
+            String comercial = r.getCancha().getDueno().getNombreComplejo();
+            return new AdminReservaResumen(r.getId(), r.getUser().getId(), r.getUser().getName(),
+                    r.getUser().getEmail(), r.getCancha().getId(), r.getCancha().getNombre(),
+                    comercial == null || comercial.isBlank() ? "Sin nombre comercial" : comercial,
+                    r.getFecha(), r.getHoraInicio(), r.getHoraFin(), r.getMonto(),
+                    r.getEstado(), r.isPagoRequerido());
+        }
+    }
+
+    /** 09D2: ficha de reserva y pago asociado; no altera estados ni contacta a Mercado Pago. */
+    @GetMapping("/reservas/{id}")
+    public ResponseEntity<com.canchasya.api.service.AdminReservaConsultaService.Detalle>
+            detalleReserva(@PathVariable Long id) {
+        return consultaReservas.detalle(id)
+                .map(detalle -> ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(detalle))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     /** Consulta paginada de canchas sin exponer entidades o datos privados de dueños. */

@@ -289,6 +289,112 @@
       }
     </section>
 
+    <!-- 09D1–09D2: consulta y detalle administrativo de reservas, sin modificación -->
+    <section class="surface-card sf-admin-section" aria-label="Consulta administrativa de reservas">
+      <div class="sf-admin-section-title">
+        <div><span class="page-eyebrow">Administración · 09D2</span><h2>Buscar reservas</h2></div>
+        <small>Solo lectura · No confirma, cancela ni modifica pagos</small>
+      </div>
+      <form class="sf-admin-user-filters" (submit)="$event.preventDefault(); buscarReservas()">
+        <label>Jugador, correo, cancha o complejo
+          <input type="search" name="buscarReservas" [value]="busquedaReservas"
+            (input)="busquedaReservas = $any($event.target).value"
+            maxlength="100" placeholder="Buscar una reserva..." />
+        </label>
+        <label>Estado
+          <select name="estadoReservas" [value]="estadoReservas" (change)="estadoReservas = $any($event.target).value; buscarReservas()">
+            <option value="">Todos</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="CONFIRMADA">Confirmada</option>
+            <option value="CANCELADA">Cancelada</option>
+          </select>
+        </label>
+        <button type="submit" class="secondary-button">Buscar</button>
+        <button type="button" class="secondary-button" (click)="busquedaReservas = ''; estadoReservas = ''; buscarReservas()">Limpiar</button>
+      </form>
+      @if (reservasCargando()) { <p role="status">Cargando reservas...</p> }
+      @if (reservasError()) {
+        <p role="alert">{{ reservasError() }}</p>
+        <button type="button" class="secondary-button" (click)="cargarReservas()">Reintentar</button>
+      }
+      @if (reservasPagina(); as listaReservas) {
+        <p>{{ listaReservas.total }} reservas encontradas</p>
+        <div class="sf-admin-table-wrapper">
+          <table class="sf-admin-table">
+            <thead><tr>
+              <th scope="col">ID</th><th scope="col">Fecha y hora</th><th scope="col">Jugador</th>
+              <th scope="col">Cancha / complejo</th><th scope="col">Monto</th><th scope="col">Estado</th><th scope="col">Acciones</th>
+            </tr></thead>
+            <tbody>
+              @for (reserva of listaReservas.reservas; track reserva.id) {
+                <tr>
+                  <td>{{ reserva.id }}</td>
+                  <td>{{ reserva.fecha }}<br>{{ reserva.horaInicio.slice(0, 5) }}–{{ reserva.horaFin.slice(0, 5) }}</td>
+                  <td>{{ reserva.usuario }}<br><small>{{ reserva.correo }}</small></td>
+                  <td>{{ reserva.cancha }}<br><small>{{ reserva.complejo }}</small></td>
+                  <td>{{ reserva.monto | currency:'ARS':'symbol':'1.0-2' }}</td>
+                  <td>{{ reserva.estado }}<br><small>{{ reserva.pagoRequerido ? 'Pago requerido' : 'Sin pago obligatorio' }}</small></td>
+                  <td><button type="button" class="secondary-button" (click)="verDetalleReserva(reserva.id)">Ver detalle</button></td>
+                </tr>
+              } @empty { <tr><td colspan="7">No se encontraron reservas.</td></tr> }
+            </tbody>
+          </table>
+        </div>
+        @if (detalleReservaCargando()) { <p role="status">Cargando detalle de reserva...</p> }
+        @if (detalleReservaError()) { <p role="alert">{{ detalleReservaError() }}</p> }
+        @if (reservaSeleccionada(); as detalleReserva) {
+          <section class="sf-admin-user-detail sf-admin-reserva-detail" aria-label="Detalle administrativo de reserva">
+            <div class="sf-admin-section-title">
+              <div><span class="page-eyebrow">Administración · 09D2</span><h3>Reserva #{{ detalleReserva.id }}</h3></div>
+              <button type="button" class="secondary-button" (click)="cerrarDetalleReserva()">Cerrar detalle</button>
+            </div>
+            <p class="sf-admin-note">Consulta administrativa. La confirmación de una reserva no equivale a un pago acreditado.</p>
+            <h4>Información de la reserva</h4>
+            <dl>
+              <dt>Estado de reserva</dt><dd>{{ detalleReserva.estado }}</dd>
+              <dt>Fecha y horario</dt><dd>{{ detalleReserva.fecha }} · {{ detalleReserva.horaInicio.slice(0,5) }}–{{ detalleReserva.horaFin.slice(0,5) }}</dd>
+              <dt>Importe de reserva</dt><dd>{{ detalleReserva.monto | currency:'ARS':'symbol':'1.0-2' }}</dd>
+              <dt>Pago requerido</dt><dd>{{ detalleReserva.pagoRequerido ? 'Sí' : 'No' }}</dd>
+              <dt>Creación</dt><dd>{{ detalleReserva.creada ? (detalleReserva.creada | date:'dd/MM/yyyy HH:mm') : 'No registrada' }}</dd>
+              <dt>Vencimiento</dt><dd>{{ detalleReserva.vence ? (detalleReserva.vence | date:'dd/MM/yyyy HH:mm') : 'No registrado' }}</dd>
+            </dl>
+            <h4>Jugador y cancha</h4>
+            <dl>
+              <dt>Jugador</dt><dd>{{ detalleReserva.usuario }} · ID {{ detalleReserva.usuarioId }}</dd>
+              <dt>Correo</dt><dd>{{ detalleReserva.correo }}</dd>
+              <dt>Cancha</dt><dd>{{ detalleReserva.cancha }} · ID {{ detalleReserva.canchaId }}</dd>
+              <dt>Complejo</dt><dd>{{ detalleReserva.complejo }}</dd>
+              <dt>Propietario</dt><dd>{{ detalleReserva.propietario }} · ID {{ detalleReserva.propietarioId }}</dd>
+              <dt>Ciudad</dt><dd>{{ detalleReserva.ciudad }}</dd>
+              <dt>Dirección</dt><dd>{{ detalleReserva.direccion || 'Sin informar' }}</dd>
+            </dl>
+            <h4>Información de pago registrada</h4>
+            @if (detalleReserva.pago; as pago) {
+              <dl>
+                <dt>ID de pago local</dt><dd>{{ pago.id }}</dd>
+                <dt>Estado del pago</dt><dd><strong>{{ pago.estado }}</strong></dd>
+                <dt>Importe del pago</dt><dd>{{ pago.monto | currency:'ARS':'symbol':'1.0-2' }}</dd>
+                <dt>Método</dt><dd>{{ pago.metodo || 'No registrado' }}</dd>
+                <dt>Fecha de pago</dt><dd>{{ pago.fechaPago ? (pago.fechaPago | date:'dd/MM/yyyy HH:mm') : 'No registrada' }}</dd>
+                <dt>ID de operación MP</dt><dd>{{ pago.mpPaymentId || 'No registrado' }}</dd>
+                <dt>ID de preferencia MP</dt><dd>{{ pago.mpPreferenceId || 'No registrado' }}</dd>
+              </dl>
+              <p class="sf-admin-note">Este estado refleja lo registrado en MySQL; no consulta a Mercado Pago en tiempo real.</p>
+            } @else {
+              <p role="status">No hay un pago registrado para esta reserva. Esto no confirma ni descarta un pago externo.</p>
+            }
+          </section>
+        }
+        <div class="sf-admin-user-pagination">
+          <button type="button" class="secondary-button" [disabled]="reservasCargando() || listaReservas.pagina === 0"
+            (click)="cargarReservas(listaReservas.pagina - 1)">Anterior</button>
+          <span>Página {{ listaReservas.pagina + 1 }} de {{ listaReservas.totalPaginas || 1 }}</span>
+          <button type="button" class="secondary-button" [disabled]="reservasCargando() || listaReservas.pagina + 1 >= listaReservas.totalPaginas"
+            (click)="cargarReservas(listaReservas.pagina + 1)">Siguiente</button>
+        </div>
+      }
+    </section>
+
     <section class="surface-card sf-admin-section sf-admin-next">
         <span class="page-eyebrow">Herramientas de soporte</span>
         <h2>Bitácora de eventos y errores</h2>

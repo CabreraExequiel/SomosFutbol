@@ -62,3 +62,9 @@
 .sf-admin-history-list{display:grid;gap:.65rem;padding-left:1.5rem;margin:.75rem 0}
 .sf-admin-history-list li{padding:.6rem .4rem;overflow-wrap:anywhere}
 .sf-admin-history-list li span{display:block;margin-top:.2rem}
+
+/* 09D2: detalle administrativo de reserva (solo lectura). */
+.sf-admin-reserva-detail{margin-top:1.2rem}
+.sf-admin-reserva-detail h3{margin:.3rem 0;font-size:1.2rem}
+.sf-admin-reserva-detail h4{margin:1.2rem 0 .45rem;font-size:1.03rem}
+.sf-admin-reserva-detail dd{overflow-wrap:anywhere}
