@@ -21,6 +21,7 @@ public class AdminComplejoModeracionService {
     private final UserRepository users;
     private final CanchaRepository canchas;
     private final BitacoraService bitacora;
+    private final AdminModeracionHistorialService historial;
 
     public record ComplejoAdminDetalle(Long propietarioId, String nombreComplejo, String propietario,
                                         boolean suspendido, String motivoSuspension,
@@ -46,6 +47,9 @@ public class AdminComplejoModeracionService {
         dueno.setComplejoSuspendidoEn(suspender ? Instant.now() : null);
         dueno.setComplejoSuspendidoPorId(suspender ? adminId : null);
         users.saveAndFlush(dueno);
+        historial.registrar("COMPLEJO", duenoId, adminId, suspender ? "SUSPENSION" : "REACTIVACION",
+                suspender ? "HABILITADO" : "SUSPENDIDO",
+                suspender ? "SUSPENDIDO" : "HABILITADO", suspender ? limpio : null);
         bitacora.evento(suspender ? "COMPLEJO_SUSPENDIDO_ADMIN" : "COMPLEJO_REACTIVADO_ADMIN",
                 "COMPLEJO", duenoId, adminId);
         return respuesta(dueno);

@@ -14,6 +14,7 @@ import java.time.Instant;
 public class AdminCanchaModeracionService {
     private final CanchaRepository canchas;
     private final BitacoraService bitacora;
+    private final AdminModeracionHistorialService historial;
 
     @Transactional
     public Cancha actualizar(Long id, Long adminId, boolean activa, String motivo) {
@@ -29,6 +30,9 @@ public class AdminCanchaModeracionService {
         cancha.setModeracionAdminId(adminId);
         cancha.setModeracionAdminFecha(Instant.now());
         canchas.saveAndFlush(cancha);
+        historial.registrar("CANCHA", id, adminId, activa ? "REACTIVACION" : "DESACTIVACION",
+                activa ? "INACTIVA" : "ACTIVA", activa ? "ACTIVA" : "INACTIVA",
+                activa ? null : limpio);
         bitacora.evento(activa ? "CANCHA_REACTIVADA_ADMIN" : "CANCHA_DESACTIVADA_ADMIN", "CANCHA", id, adminId);
         return cancha;
     }

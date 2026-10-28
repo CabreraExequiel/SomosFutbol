@@ -55,3 +55,10 @@
 .sf-admin-inline-action{margin:.35rem 0 .15rem .6rem;vertical-align:middle}
 .sf-admin-complejo-detail{border-color:#a9becb;background:#f7fbfc}
 .sf-admin-complejo-detail h3{margin:.25rem 0;font-size:1.1rem}
+
+/* 09C5: historial duradero dentro de ambos detalles administrativos */
+.sf-admin-moderacion-historial{margin-top:1.25rem;border-top:1px solid #cbd5e1;padding-top:1rem}
+.sf-admin-moderacion-historial h4{margin:0 0 .35rem;font-size:1.05rem}
+.sf-admin-history-list{display:grid;gap:.65rem;padding-left:1.5rem;margin:.75rem 0}
+.sf-admin-history-list li{padding:.6rem .4rem;overflow-wrap:anywhere}
+.sf-admin-history-list li span{display:block;margin-top:.2rem}

@@ -74,6 +74,26 @@ export interface AdminComplejoDetalle {
   canchasActivas: number;
 }
 
+export interface AdminModeracionRegistro {
+  id: number;
+  fecha: string;
+  referenciaTipo: 'CANCHA' | 'COMPLEJO';
+  referenciaId: number;
+  accion: 'SUSPENSION' | 'DESACTIVACION' | 'REACTIVACION';
+  estadoAnterior: string;
+  estadoNuevo: string;
+  motivo: string | null;
+  administradorId: number;
+  administradorNombre: string;
+}
+
+export interface AdminHistorialPagina {
+  content: AdminModeracionRegistro[];
+  number: number;
+  totalPages: number;
+  totalElements: number;
+}
+
 export interface AdminPaginaCanchas {
   canchas: AdminCanchaResumen[];
   pagina: number;
@@ -84,6 +104,16 @@ export interface AdminPaginaCanchas {
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   constructor(private http: HttpClient) {}
+
+  historialCancha(id: number, pagina = 0): Observable<AdminHistorialPagina> {
+    return this.http.get<AdminHistorialPagina>(`${environment.apiUrl}/admin/canchas/${id}/historial`,
+      { params: { pagina: String(pagina) } });
+  }
+
+  historialComplejo(propietarioId: number, pagina = 0): Observable<AdminHistorialPagina> {
+    return this.http.get<AdminHistorialPagina>(`${environment.apiUrl}/admin/complejos/${propietarioId}/historial`,
+      { params: { pagina: String(pagina) } });
+  }
 
   detalleComplejoAdmin(propietarioId: number): Observable<AdminComplejoDetalle> {
     return this.http.get<AdminComplejoDetalle>(`${environment.apiUrl}/admin/complejos/${propietarioId}`);

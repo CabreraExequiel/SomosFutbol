@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { AdminService, AdminResumen, AdminPaginaUsuarios, AdminUsuarioDetalle, AdminPaginaCanchas, AdminCanchaDetalle, AdminComplejoDetalle } from '../../services/admin.service';
+import { AdminService, AdminResumen, AdminPaginaUsuarios, AdminUsuarioDetalle, AdminPaginaCanchas, AdminCanchaDetalle, AdminComplejoDetalle, AdminHistorialPagina } from '../../services/admin.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -69,12 +69,37 @@ export class AdminDashboardComponent implements OnInit {
     this.detalleError.set('');
   }
 
+  readonly historialCancha = signal<AdminHistorialPagina | null>(null);
+  readonly historialCanchaCargando = signal(false);
+  readonly historialCanchaError = signal('');
+
+  cargarHistorialCancha(pagina = 0): void {
+    const cancha = this.canchaSeleccionada();
+    if (!cancha) return;
+    this.historialCanchaCargando.set(true);
+    this.historialCanchaError.set('');
+    this.admin.historialCancha(cancha.id, pagina).subscribe({
+      next: resultado => {
+        if (this.canchaSeleccionada()?.id !== cancha.id) return;
+        this.historialCancha.set(resultado);
+        this.historialCanchaCargando.set(false);
+      },
+      error: () => {
+        if (this.canchaSeleccionada()?.id !== cancha.id) return;
+        this.historialCanchaError.set('No se pudo consultar el historial de la cancha.');
+        this.historialCanchaCargando.set(false);
+      },
+    });
+  }
+
   readonly canchaSeleccionada = signal<AdminCanchaDetalle | null>(null);
   readonly detalleCanchaCargando = signal(false);
   readonly detalleCanchaError = signal('');
 
   verDetalleCancha(id: number): void {
     this.canchaSeleccionada.set(null);
+    this.historialCancha.set(null);
+    this.historialCanchaError.set('');
     this.detalleCanchaError.set('');
     this.estadoCanchaError.set(''); this.estadoCanchaMensaje.set('');
     this.cerrarDetalleComplejo();
@@ -82,6 +107,7 @@ export class AdminDashboardComponent implements OnInit {
     this.admin.detalleCanchaAdmin(id).subscribe({
       next: detalle => {
         this.canchaSeleccionada.set(detalle);
+        this.cargarHistorialCancha();
         this.detalleCanchaCargando.set(false);
       },
       error: err => {
@@ -112,6 +138,7 @@ export class AdminDashboardComponent implements OnInit {
     this.admin.cambiarEstadoCancha(cancha.id, activar, motivo).subscribe({
       next: actualizada => {
         this.canchaSeleccionada.set(actualizada);
+        this.cargarHistorialCancha();
         this.motivoDesactivacionCancha = '';
         this.estadoCanchaMensaje.set(activar ? 'Cancha reactivada.' : 'Cancha desactivada. No se aceptan nuevas reservas.');
         this.estadoCanchaGuardando.set(false);
@@ -129,8 +156,33 @@ export class AdminDashboardComponent implements OnInit {
 
   cerrarDetalleCancha(): void {
     this.canchaSeleccionada.set(null);
+    this.historialCancha.set(null);
+    this.historialCanchaError.set('');
     this.detalleCanchaError.set('');
     this.cerrarDetalleComplejo();
+  }
+
+  readonly historialComplejo = signal<AdminHistorialPagina | null>(null);
+  readonly historialComplejoCargando = signal(false);
+  readonly historialComplejoError = signal('');
+
+  cargarHistorialComplejo(pagina = 0): void {
+    const complejo = this.complejoSeleccionado();
+    if (!complejo) return;
+    this.historialComplejoCargando.set(true);
+    this.historialComplejoError.set('');
+    this.admin.historialComplejo(complejo.propietarioId, pagina).subscribe({
+      next: resultado => {
+        if (this.complejoSeleccionado()?.propietarioId !== complejo.propietarioId) return;
+        this.historialComplejo.set(resultado);
+        this.historialComplejoCargando.set(false);
+      },
+      error: () => {
+        if (this.complejoSeleccionado()?.propietarioId !== complejo.propietarioId) return;
+        this.historialComplejoError.set('No se pudo consultar el historial del complejo.');
+        this.historialComplejoCargando.set(false);
+      },
+    });
   }
 
   readonly complejoSeleccionado = signal<AdminComplejoDetalle | null>(null);
@@ -147,6 +199,7 @@ export class AdminDashboardComponent implements OnInit {
     this.admin.detalleComplejoAdmin(propietarioId).subscribe({
       next: complejo => {
         this.complejoSeleccionado.set(complejo);
+        this.cargarHistorialComplejo();
         this.complejoCargando.set(false);
       },
       error: err => {
@@ -174,6 +227,7 @@ export class AdminDashboardComponent implements OnInit {
     this.admin.cambiarEstadoComplejo(complejo.propietarioId, suspender, motivo).subscribe({
       next: actualizado => {
         this.complejoSeleccionado.set(actualizado);
+        this.cargarHistorialComplejo();
         this.motivoSuspensionComplejo = '';
         this.estadoComplejoMensaje.set(suspender ? 'Complejo suspendido: no se permiten nuevas reservas.' :
           'Complejo reactivado. Se respetaron los estados de cada cancha.');
@@ -196,6 +250,8 @@ export class AdminDashboardComponent implements OnInit {
 
   cerrarDetalleComplejo(): void {
     this.complejoSeleccionado.set(null);
+    this.historialComplejo.set(null);
+    this.historialComplejoError.set('');
     this.complejoError.set('');
     this.estadoComplejoError.set(''); this.estadoComplejoMensaje.set('');
     this.motivoSuspensionComplejo = '';

@@ -197,6 +197,30 @@
               @if (estadoCanchaError()) { <p role="alert">{{ estadoCanchaError() }}</p> }
               @if (estadoCanchaMensaje()) { <p role="status">{{ estadoCanchaMensaje() }}</p> }
             </div>
+            <section class="sf-admin-moderacion-historial" aria-label="Historial de moderación de cancha">
+              <h4>Historial de moderación · Cancha</h4>
+              <p class="sf-admin-note">Acciones registradas desde la 09C5. No modifica reservas anteriores.</p>
+              @if (historialCanchaCargando()) { <p role="status">Cargando historial...</p> }
+              @if (historialCanchaError()) { <p role="alert">{{ historialCanchaError() }}</p><button type="button" class="secondary-button" (click)="cargarHistorialCancha()">Reintentar</button> }
+              @if (historialCancha(); as historial) {
+                <p>{{ historial.totalElements }} acciones registradas</p>
+                <ol class="sf-admin-history-list">
+                  @for (evento of historial.content; track evento.id) {
+                    <li><strong>{{ evento.accion === 'DESACTIVACION' ? 'Desactivación' : 'Reactivación' }}</strong>
+                      · {{ evento.fecha | date:'dd/MM/yyyy HH:mm' }}
+                      <span>{{ evento.estadoAnterior }} → {{ evento.estadoNuevo }}</span>
+                      <span>Administrador: {{ evento.administradorNombre }} (ID {{ evento.administradorId }})</span>
+                      @if (evento.motivo) { <span>Motivo: {{ evento.motivo }}</span> }
+                    </li>
+                  } @empty { <li>No hay movimientos históricos registrados para esta cancha.</li> }
+                </ol>
+                <div class="sf-admin-user-pagination">
+                  <button type="button" class="secondary-button" [disabled]="historialCanchaCargando() || historial.number === 0" (click)="cargarHistorialCancha(historial.number - 1)">Anterior</button>
+                  <span>Página {{ historial.number + 1 }} de {{ historial.totalPages || 1 }}</span>
+                  <button type="button" class="secondary-button" [disabled]="historialCanchaCargando() || historial.number + 1 >= historial.totalPages" (click)="cargarHistorialCancha(historial.number + 1)">Siguiente</button>
+                </div>
+              }
+            </section>
           </section>
         }
         @if (complejoCargando()) { <p role="status">Cargando datos del complejo...</p> }
@@ -231,6 +255,30 @@
               @if (estadoComplejoError()) { <p role="alert">{{ estadoComplejoError() }}</p> }
               @if (estadoComplejoMensaje()) { <p role="status">{{ estadoComplejoMensaje() }}</p> }
             </div>
+            <section class="sf-admin-moderacion-historial" aria-label="Historial de moderación de complejo">
+              <h4>Historial de moderación · Complejo</h4>
+              <p class="sf-admin-note">Incluye suspensiones y reactivaciones del complejo. Las canchas mantienen su propio historial.</p>
+              @if (historialComplejoCargando()) { <p role="status">Cargando historial...</p> }
+              @if (historialComplejoError()) { <p role="alert">{{ historialComplejoError() }}</p><button type="button" class="secondary-button" (click)="cargarHistorialComplejo()">Reintentar</button> }
+              @if (historialComplejo(); as historial) {
+                <p>{{ historial.totalElements }} acciones registradas</p>
+                <ol class="sf-admin-history-list">
+                  @for (evento of historial.content; track evento.id) {
+                    <li><strong>{{ evento.accion === 'SUSPENSION' ? 'Suspensión' : 'Reactivación' }}</strong>
+                      · {{ evento.fecha | date:'dd/MM/yyyy HH:mm' }}
+                      <span>{{ evento.estadoAnterior }} → {{ evento.estadoNuevo }}</span>
+                      <span>Administrador: {{ evento.administradorNombre }} (ID {{ evento.administradorId }})</span>
+                      @if (evento.motivo) { <span>Motivo: {{ evento.motivo }}</span> }
+                    </li>
+                  } @empty { <li>No hay movimientos históricos registrados para este complejo.</li> }
+                </ol>
+                <div class="sf-admin-user-pagination">
+                  <button type="button" class="secondary-button" [disabled]="historialComplejoCargando() || historial.number === 0" (click)="cargarHistorialComplejo(historial.number - 1)">Anterior</button>
+                  <span>Página {{ historial.number + 1 }} de {{ historial.totalPages || 1 }}</span>
+                  <button type="button" class="secondary-button" [disabled]="historialComplejoCargando() || historial.number + 1 >= historial.totalPages" (click)="cargarHistorialComplejo(historial.number + 1)">Siguiente</button>
+                </div>
+              }
+            </section>
           </section>
         }
         <div class="sf-admin-user-pagination">

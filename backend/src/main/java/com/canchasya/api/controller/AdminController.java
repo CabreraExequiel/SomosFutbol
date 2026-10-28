@@ -44,6 +44,7 @@ public class AdminController {
     private final AdminSuspensionService suspensiones;
     private final com.canchasya.api.service.AdminCanchaModeracionService moderacionCanchas;
     private final com.canchasya.api.service.AdminComplejoModeracionService moderacionComplejos;
+    private final com.canchasya.api.service.AdminModeracionHistorialService historialModeracion;
 
     @GetMapping("/resumen")
     public ResponseEntity<Resumen> resumen() {
@@ -162,6 +163,21 @@ public class AdminController {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
                 .body(moderacionComplejos.actualizar(duenoId, actor.getId(),
                         solicitud.suspendido(), solicitud.motivo()));
+    }
+
+    /** Historial duradero (09C5). Solo administradores; sin exponer entidades JPA. */
+    @GetMapping("/canchas/{id}/historial")
+    public ResponseEntity<Page<com.canchasya.api.service.AdminModeracionHistorialService.RegistroRespuesta>>
+            historialCancha(@PathVariable Long id, @RequestParam(defaultValue = "0") int pagina) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(historialModeracion.listar("CANCHA", id, pagina));
+    }
+
+    @GetMapping("/complejos/{duenoId}/historial")
+    public ResponseEntity<Page<com.canchasya.api.service.AdminModeracionHistorialService.RegistroRespuesta>>
+            historialComplejo(@PathVariable Long duenoId, @RequestParam(defaultValue = "0") int pagina) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(historialModeracion.listar("COMPLEJO", duenoId, pagina));
     }
 
     public record CanchaAdminDetalle(Long id, String nombre, String complejo, String ciudad,
