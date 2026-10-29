@@ -61,3 +61,41 @@
   outline:3px solid #16854a; outline-offset:2px; }
 @media(max-width:580px){.sf-bitacora-filtro-acciones{width:100%;}
   .sf-bitacora-filtro-acciones button{flex:1 1 auto;}}
+
+/* Etapa 09E2: historial administrativo de consulta y filtros independientes. */
+.sf-admin-acciones { border-top:1px solid #d9e8dc; padding-top:2rem; margin-top:2rem; }
+.sf-admin-acciones header h2 { margin:.2rem 0 .45rem; }
+.sf-admin-acciones header p { color:var(--text-muted,#526459); margin:0 0 .5rem; }
+.sf-admin-acciones-filtros { display:flex; align-items:flex-end; flex-wrap:wrap; gap:.85rem;
+  padding:1rem; margin:1rem 0; }
+.sf-admin-acciones-filtros label { display:grid; gap:.35rem; flex:1 1 185px; font-weight:600; }
+.sf-admin-acciones-filtros input, .sf-admin-acciones-filtros select { border:1px solid #ced9d1;
+  border-radius:9px; background:var(--surface,#fff); color:var(--text,#15291e);
+  padding:.65rem; min-width:0; width:100%; }
+.sf-admin-acciones-filtros input:focus-visible, .sf-admin-acciones-filtros select:focus-visible {
+  outline:3px solid #16854a; outline-offset:2px; }
+.sf-admin-acciones-botones { display:flex; gap:.5rem; flex-wrap:wrap; }
+@media(max-width:580px) { .sf-admin-acciones-botones { width:100%; }
+  .sf-admin-acciones-botones button { flex:1 1 auto; } }
+
+/* Etapa 09E3: cola de incidentes y línea temporal de cambios auditados. */
+.sf-seguimiento { margin-top:2rem; padding-top:2rem; border-top:1px solid #d9e8dc; }
+.sf-seguimiento header h2 { margin:.25rem 0 .5rem; }
+.sf-seguimiento header p { margin:.3rem 0 .8rem; color:var(--text-muted,#526459); }
+.sf-seguimiento-filtros { display:flex; align-items:flex-end; flex-wrap:wrap; gap:.8rem; padding:1rem; margin:1rem 0; }
+.sf-seguimiento-filtros label { display:grid; gap:.35rem; flex:1 1 180px; font-weight:600; }
+.sf-seguimiento-filtros input:not([type=checkbox]), .sf-seguimiento-filtros select { width:100%; min-width:0;
+  padding:.65rem; border-radius:9px; border:1px solid #ced9d1; background:var(--surface,#fff); color:var(--text,#15291e); }
+.sf-seguimiento-filtros input:focus-visible, .sf-seguimiento-filtros select:focus-visible { outline:3px solid #16854a; outline-offset:2px; }
+.sf-seguimiento-filtros .sf-seguimiento-buscar { flex:2 1 270px; }
+.sf-seguimiento-filtros .sf-seguimiento-sin-gestion { flex:1 1 260px; display:flex; align-items:center; gap:.5rem; }
+.sf-seguimiento-sin-gestion input { width:18px; height:18px; }
+.sf-seguimiento-acciones { display:flex; align-items:center; flex-wrap:wrap; gap:.6rem; }
+.sf-incidente-historial { margin:1.2rem 0; padding:1rem; border:1px solid #d9e8dc; border-radius:10px; }
+.sf-incidente-historial h3 { margin:.1rem 0 .5rem; }
+.sf-incidente-historial-lista { display:grid; gap:.6rem; margin:1rem 0; padding:0; list-style:none; }
+.sf-incidente-historial-lista li { display:flex; flex-wrap:wrap; align-items:center; gap:.35rem .8rem;
+  background:#f4f7f5; border-radius:9px; padding:.7rem; font-size:.85rem; }
+.sf-incidente-historial-lista code { overflow-wrap:anywhere; }
+@media(max-width:580px) { .sf-seguimiento-acciones { width:100%; }
+  .sf-seguimiento-acciones button { flex:1 1 auto; } }

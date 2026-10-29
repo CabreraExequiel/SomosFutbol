@@ -18,6 +18,27 @@ export class AdminBitacoraComponent implements OnInit {
   readonly seleccionado = signal<EventoBitacora | null>(null);
   readonly guardando = signal(false);
   readonly mensajeAccion = signal('');
+  readonly incidentesCargando = signal(false);
+  readonly incidentesError = signal('');
+  readonly incidentesPagina = signal<PaginaBitacora | null>(null);
+  readonly historialIncidentePagina = signal<PaginaBitacora | null>(null);
+  readonly historialIncidenteCargando = signal(false);
+  readonly historialIncidenteError = signal('');
+  estadoSeguimiento = 'PENDIENTE';
+  origenSeguimiento = '';
+  ambienteSeguimiento = '';
+  ultimoAdminSeguimiento = '';
+  sinGestionSeguimiento = false;
+  buscarSeguimiento = '';
+  private ultimaSolicitudIncidentes = 0;
+  private ultimaSolicitudHistorial = 0;
+  readonly accionesCargando = signal(false);
+  readonly accionesError = signal('');
+  readonly accionesPagina = signal<PaginaBitacora | null>(null);
+  tipoAccion = '';
+  actorAccion = '';
+  buscarAccion = '';
+  private ultimaSolicitudAcciones = 0;
   @ViewChild('detalleDialog') detalleDialog?: ElementRef<HTMLDialogElement>;
   nivel = '';
   origen = '';
@@ -35,15 +56,20 @@ export class AdminBitacoraComponent implements OnInit {
     this.buscar = '';
     this.cargar(0);
   }
-  ngOnInit(): void { this.cargar(0); }
+  ngOnInit(): void { this.cargar(0); this.cargarAcciones(0); this.cargarIncidentes(0); }
   abrir(evento: EventoBitacora): void {
     this.mensajeAccion.set('');
     this.seleccionado.set(evento);
+    this.historialIncidentePagina.set(null);
+    this.historialIncidenteError.set('');
     this.detalleDialog?.nativeElement.showModal();
+    if (evento.nivel === 'ERROR') this.cargarHistorialIncidente(evento.id, 0);
   }
   cerrar(): void {
+    ++this.ultimaSolicitudHistorial;
     this.detalleDialog?.nativeElement.close();
     this.seleccionado.set(null);
+    this.historialIncidentePagina.set(null);
   }
   cambiarEstado(estado: EstadoIncidente): void {
     const evento = this.seleccionado();
@@ -58,6 +84,9 @@ export class AdminBitacoraComponent implements OnInit {
         } : null);
         this.guardando.set(false);
         this.mensajeAccion.set('Estado actualizado correctamente.');
+        this.cargarAcciones(0);
+        this.cargarIncidentes(this.incidentesPagina()?.number ?? 0);
+        this.cargarHistorialIncidente(actualizado.id, 0);
       },
       error: () => {
         this.guardando.set(false);
@@ -96,6 +125,110 @@ export class AdminBitacoraComponent implements OnInit {
     } catch {
       this.mensajeAccion.set('El navegador no permitió copiar. Usá un contexto seguro (localhost o HTTPS).');
     }
+  }
+
+  limpiarSeguimiento(): void {
+    this.estadoSeguimiento = 'PENDIENTE';
+    this.origenSeguimiento = '';
+    this.ambienteSeguimiento = '';
+    this.ultimoAdminSeguimiento = '';
+    this.sinGestionSeguimiento = false;
+    this.buscarSeguimiento = '';
+    this.cargarIncidentes(0);
+  }
+
+  cargarIncidentes(numero: number): void {
+    const solicitud = ++this.ultimaSolicitudIncidentes;
+    this.incidentesCargando.set(true);
+    this.incidentesError.set('');
+    const texto = this.ultimoAdminSeguimiento.trim();
+    const ultimoAdminId = /^\d+$/.test(texto) ? Number(texto) : undefined;
+    if (!this.sinGestionSeguimiento && texto && (!ultimoAdminId || !Number.isSafeInteger(ultimoAdminId))) {
+      this.incidentesCargando.set(false);
+      this.incidentesError.set('Ingresá un ID de administrador válido.');
+      return;
+    }
+    this.bitacora.listarIncidentes(numero, {
+      estado: this.estadoSeguimiento,
+      origen: this.origenSeguimiento,
+      ambiente: this.ambienteSeguimiento,
+      ultimoAdminId: this.sinGestionSeguimiento ? undefined : ultimoAdminId,
+      sinGestion: this.sinGestionSeguimiento,
+      buscar: this.buscarSeguimiento,
+    }).subscribe({
+      next: datos => {
+        if (solicitud !== this.ultimaSolicitudIncidentes) return;
+        this.incidentesPagina.set(datos);
+        this.incidentesCargando.set(false);
+      },
+      error: err => {
+        if (solicitud !== this.ultimaSolicitudIncidentes) return;
+        this.incidentesError.set(err.status === 403 ? 'No tenés permiso para consultar incidentes.' :
+          err.status === 400 ? 'Revisá los filtros del seguimiento.' :
+          'No pudimos consultar los incidentes. Revisá Spring Boot.');
+        this.incidentesPagina.set(null);
+        this.incidentesCargando.set(false);
+      },
+    });
+  }
+
+  cargarHistorialIncidente(id: number, numero: number): void {
+    if (this.seleccionado()?.id !== id || this.seleccionado()?.nivel !== 'ERROR') return;
+    const solicitud = ++this.ultimaSolicitudHistorial;
+    this.historialIncidenteCargando.set(true);
+    this.historialIncidenteError.set('');
+    this.bitacora.historialIncidente(id, numero).subscribe({
+      next: datos => {
+        if (solicitud !== this.ultimaSolicitudHistorial || this.seleccionado()?.id !== id) return;
+        this.historialIncidentePagina.set(datos);
+        this.historialIncidenteCargando.set(false);
+      },
+      error: err => {
+        if (solicitud !== this.ultimaSolicitudHistorial || this.seleccionado()?.id !== id) return;
+        this.historialIncidenteError.set(err.status === 403 ? 'Acceso denegado al historial.' :
+          'No pudimos consultar el historial de este incidente.');
+        this.historialIncidenteCargando.set(false);
+      },
+    });
+  }
+
+  limpiarAcciones(): void {
+    this.tipoAccion = '';
+    this.actorAccion = '';
+    this.buscarAccion = '';
+    this.cargarAcciones(0);
+  }
+
+  cargarAcciones(numero: number): void {
+    const solicitud = ++this.ultimaSolicitudAcciones;
+    this.accionesCargando.set(true);
+    this.accionesError.set('');
+    const valorActor = this.actorAccion.trim();
+    const administradorId = /^\d+$/.test(valorActor) ? Number(valorActor) : undefined;
+    if (valorActor && (!administradorId || !Number.isSafeInteger(administradorId))) {
+      this.accionesError.set('Ingresá un ID de administrador válido.');
+      this.accionesCargando.set(false);
+      return;
+    }
+    this.bitacora.listarAcciones(numero, {
+      tipo: this.tipoAccion,
+      administradorId,
+      buscar: this.buscarAccion,
+    }).subscribe({
+      next: resultado => {
+        if (solicitud !== this.ultimaSolicitudAcciones) return;
+        this.accionesPagina.set(resultado);
+        this.accionesCargando.set(false);
+      },
+      error: err => {
+        if (solicitud !== this.ultimaSolicitudAcciones) return;
+        this.accionesError.set(err.status === 403 ? 'No tenés permiso para consultar las acciones.' :
+          err.status === 400 ? 'Los filtros del historial no son válidos.' :
+          'No pudimos cargar las acciones administrativas.');
+        this.accionesPagina.set(null);
+        this.accionesCargando.set(false);
+      },
+    });
   }
 
   cargar(numero: number): void {

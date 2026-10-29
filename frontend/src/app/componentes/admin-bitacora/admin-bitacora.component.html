@@ -111,6 +111,36 @@
             </div>
             @if (e.atendidoEn) { <small>Última gestión: {{ e.atendidoEn | date:'dd/MM/yyyy HH:mm' }} · Admin #{{ e.atendidoPorId }}</small> }
         </section>
+        <section class="sf-incidente-historial" aria-label="Historial de cambios del incidente">
+            <h3>Seguimiento de este incidente</h3>
+            <p class="sf-bitacora-nota">Se muestran cambios de estado registrados desde la Etapa 09E2. Los eventos antiguos sin auditoría no pueden reconstruirse.</p>
+            @if (historialIncidenteCargando()) { <p role="status">Cargando seguimiento…</p> }
+            @if (historialIncidenteError()) {
+                <p role="alert">{{ historialIncidenteError() }}</p>
+                <button type="button" class="secondary-button" (click)="cargarHistorialIncidente(e.id, 0)">Reintentar</button>
+            }
+            @if (historialIncidentePagina(); as h) {
+                <p>{{ h.totalElements }} cambios de estado auditados</p>
+                <ul class="sf-incidente-historial-lista">
+                    @for (accion of h.content; track accion.id) {
+                        <li>
+                            <strong>{{ accion.fecha | date:'dd/MM/yyyy HH:mm:ss' }}</strong>
+                            <span>Admin #{{ accion.actorId ?? '—' }} · Cambio de estado registrado</span>
+                            <code>{{ accion.codigo }}</code>
+                        </li>
+                    } @empty {
+                        <li>Sin cambios de estado auditados para este incidente.</li>
+                    }
+                </ul>
+                <nav class="sf-bitacora-paginacion" aria-label="Páginas de cambios del incidente">
+                    <button type="button" class="secondary-button" [disabled]="h.number === 0"
+                            (click)="cargarHistorialIncidente(e.id, h.number - 1)">Anterior</button>
+                    <span>Página {{ h.number + 1 }} de {{ h.totalPages || 1 }}</span>
+                    <button type="button" class="secondary-button" [disabled]="h.number + 1 >= h.totalPages"
+                            (click)="cargarHistorialIncidente(e.id, h.number + 1)">Siguiente</button>
+                </nav>
+            }
+        </section>
         }
         <dl class="sf-dialog-datos">
             <div><dt>Fecha y hora</dt><dd>{{ e.fecha | date:'dd/MM/yyyy HH:mm:ss' }}</dd></div>
@@ -145,5 +175,168 @@
         </div>
         }
     </dialog>
+    <section class="sf-seguimiento" aria-labelledby="sf-seguimiento-titulo">
+        <header>
+            <span class="page-eyebrow">Administración · 09E3</span>
+            <h2 id="sf-seguimiento-titulo">Seguimiento de incidentes</h2>
+            <p>Cola de errores independiente de eventos informativos. Podés revisar pendientes, responsables de la última gestión y cambios de estado.</p>
+        </header>
+        <form class="surface-card sf-seguimiento-filtros" (ngSubmit)="cargarIncidentes(0)">
+            <label>Estado
+                <select name="estadoSeguimiento" [(ngModel)]="estadoSeguimiento">
+                    <option value="">Todos</option>
+                    <option value="PENDIENTE">Pendiente</option>
+                    <option value="EN_INVESTIGACION">En investigación</option>
+                    <option value="RESUELTO">Resuelto</option>
+                </select>
+            </label>
+            <label>Origen
+                <select name="origenSeguimiento" [(ngModel)]="origenSeguimiento">
+                    <option value="">Todos</option>
+                    <option value="BACKEND">Backend</option>
+                    <option value="FRONTEND">Frontend</option>
+                </select>
+            </label>
+            <label>Entorno
+                <select name="ambienteSeguimiento" [(ngModel)]="ambienteSeguimiento">
+                    <option value="">Todos</option>
+                    <option value="local">Local</option>
+                    <option value="production">Producción</option>
+                </select>
+            </label>
+            <label>Último administrador que gestionó (ID)
+                <input name="ultimoAdminSeguimiento" type="text" inputmode="numeric" maxlength="18"
+                       [(ngModel)]="ultimoAdminSeguimiento" [disabled]="sinGestionSeguimiento"
+                       placeholder="Ej. 1" />
+            </label>
+            <label class="sf-seguimiento-buscar">Código, ruta, tipo o descripción
+                <input name="buscarSeguimiento" type="search" maxlength="100" autocomplete="off"
+                       [(ngModel)]="buscarSeguimiento" placeholder="Ej. SF-, /api, ERROR_INTERFAZ" />
+            </label>
+            <label class="sf-seguimiento-sin-gestion">
+                <input type="checkbox" name="sinGestionSeguimiento" [(ngModel)]="sinGestionSeguimiento" />
+                Mostrar solo incidentes sin gestión registrada
+            </label>
+            <div class="sf-seguimiento-acciones">
+                <button type="submit" class="primary-button" [disabled]="incidentesCargando()">Buscar incidentes</button>
+                <button type="button" class="secondary-button" (click)="limpiarSeguimiento()">Limpiar</button>
+            </div>
+        </form>
+        @if (incidentesCargando()) { <p class="surface-card sf-bitacora-mensaje" role="status">Consultando incidentes…</p> }
+        @if (incidentesError()) {
+            <div class="app-alert error sf-bitacora-mensaje" role="alert">{{ incidentesError() }}
+                <button type="button" class="secondary-button" (click)="cargarIncidentes(0)">Reintentar</button>
+            </div>
+        }
+        @if (incidentesPagina(); as datos) {
+            <p class="sf-bitacora-contador">{{ datos.totalElements }} incidentes con estos filtros</p>
+            <div class="sf-bitacora-lista">
+                @for (incidente of datos.content; track incidente.id) {
+                    <button type="button" class="surface-card sf-bitacora-evento sf-bitacora-error sf-bitacora-abrir"
+                            [attr.aria-label]="'Dar seguimiento al incidente ' + incidente.codigo"
+                            (click)="abrir(incidente)">
+                        <div class="sf-bitacora-evento-top">
+                            <strong>{{ incidente.tipo.replaceAll('_', ' ') }}</strong>
+                            <span class="sf-bitacora-etiqueta">{{ etiquetaEstado(incidente.estado) }}</span>
+                        </div>
+                        <p>{{ incidente.descripcion }}</p>
+                        <div class="sf-bitacora-meta">
+                            <span>{{ incidente.fecha | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+                            <span>{{ incidente.origen }} · {{ incidente.ambiente }}</span>
+                            @if (incidente.atendidoPorId) {
+                                <span>Última gestión: Admin #{{ incidente.atendidoPorId }}</span>
+                            } @else { <span>Sin gestión registrada</span> }
+                            @if (incidente.atendidoEn) { <span>{{ incidente.atendidoEn | date:'dd/MM/yyyy HH:mm' }}</span> }
+                        </div>
+                        <div class="sf-bitacora-pie"><code class="sf-bitacora-codigo">{{ incidente.codigo }}</code>
+                            <span class="sf-bitacora-ver">Abrir seguimiento →</span></div>
+                    </button>
+                } @empty {
+                    <div class="surface-card sf-bitacora-mensaje">No hay incidentes con estos filtros.</div>
+                }
+            </div>
+            <nav class="sf-bitacora-paginacion" aria-label="Páginas del seguimiento">
+                <button type="button" class="secondary-button" [disabled]="datos.number === 0"
+                        (click)="cargarIncidentes(datos.number - 1)">← Anterior</button>
+                <span>Página {{ datos.number + 1 }} de {{ datos.totalPages || 1 }}</span>
+                <button type="button" class="secondary-button" [disabled]="datos.number + 1 >= datos.totalPages"
+                        (click)="cargarIncidentes(datos.number + 1)">Siguiente →</button>
+            </nav>
+        }
+        <p class="sf-bitacora-nota">«Último administrador» indica quién registró la última gestión, no una asignación permanente. El historial no almacena los estados anterior y nuevo; solo la fecha y autor de cada cambio.</p>
+    </section>
+
+    <section class="sf-admin-acciones" aria-labelledby="sf-admin-acciones-titulo">
+        <header>
+            <h2 id="sf-admin-acciones-titulo">Historial de acciones administrativas</h2>
+            <p>Suspensiones de usuarios, moderación de canchas y complejos, y cambios de estado de incidentes.</p>
+        </header>
+        <form class="surface-card sf-admin-acciones-filtros" (ngSubmit)="cargarAcciones(0)">
+            <label>Tipo de acción
+                <select name="tipoAccion" [(ngModel)]="tipoAccion">
+                    <option value="">Todas</option>
+                    <option value="USUARIO_SUSPENDIDO">Usuario suspendido</option>
+                    <option value="USUARIO_REACTIVADO">Usuario reactivado</option>
+                    <option value="CANCHA_DESACTIVADA_ADMIN">Cancha desactivada</option>
+                    <option value="CANCHA_REACTIVADA_ADMIN">Cancha reactivada</option>
+                    <option value="COMPLEJO_SUSPENDIDO_ADMIN">Complejo suspendido</option>
+                    <option value="COMPLEJO_REACTIVADO_ADMIN">Complejo reactivado</option>
+                    <option value="INCIDENTE_ESTADO_CAMBIADO_ADMIN">Estado de incidente modificado</option>
+                </select>
+            </label>
+            <label>ID del administrador
+                <input name="actorAccion" type="text" inputmode="numeric" maxlength="18"
+                       [(ngModel)]="actorAccion" placeholder="Ej. 1" />
+            </label>
+            <label>Código, tipo o referencia
+                <input name="buscarAccion" type="search" maxlength="100"
+                       [(ngModel)]="buscarAccion" placeholder="Ej. SF-, COMPLEJO" />
+            </label>
+            <div class="sf-admin-acciones-botones">
+                <button type="submit" class="primary-button" [disabled]="accionesCargando()">Buscar acciones</button>
+                <button type="button" class="secondary-button" (click)="limpiarAcciones()">Limpiar</button>
+            </div>
+        </form>
+        @if (accionesCargando()) { <div class="surface-card sf-bitacora-mensaje" role="status">Cargando acciones administrativas…</div> }
+        @if (accionesError()) {
+            <div class="app-alert error sf-bitacora-mensaje" role="alert">{{ accionesError() }}
+                <button type="button" class="secondary-button" (click)="cargarAcciones(0)">Reintentar</button>
+            </div>
+        }
+        @if (accionesPagina(); as datos) {
+            <p class="sf-bitacora-contador">{{ datos.totalElements }} acciones administrativas registradas</p>
+            <div class="sf-bitacora-lista">
+                @for (accion of datos.content; track accion.id) {
+                    <button type="button" class="surface-card sf-bitacora-evento sf-bitacora-abrir"
+                            [attr.aria-label]="'Ver acción administrativa ' + accion.codigo"
+                            (click)="abrir(accion)">
+                        <div class="sf-bitacora-evento-top">
+                            <strong>{{ accion.tipo.replaceAll('_', ' ') }}</strong>
+                            <span class="sf-bitacora-etiqueta">Admin #{{ accion.actorId ?? '—' }}</span>
+                        </div>
+                        <p>{{ accion.descripcion }}</p>
+                        <div class="sf-bitacora-meta">
+                            <span>{{ accion.fecha | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+                            @if (accion.referenciaTipo) { <span>{{ accion.referenciaTipo }} #{{ accion.referenciaId }}</span> }
+                            <span>{{ accion.ambiente }}</span>
+                        </div>
+                        <div class="sf-bitacora-pie"><code class="sf-bitacora-codigo">{{ accion.codigo }}</code>
+                            <span class="sf-bitacora-ver">Ver detalle →</span></div>
+                    </button>
+                } @empty {
+                    <div class="surface-card sf-bitacora-mensaje">No hay acciones registradas con estos filtros.</div>
+                }
+            </div>
+            <nav class="sf-bitacora-paginacion" aria-label="Páginas del historial administrativo">
+                <button type="button" class="secondary-button" [disabled]="datos.number === 0"
+                        (click)="cargarAcciones(datos.number - 1)">← Anterior</button>
+                <span>Página {{ datos.number + 1 }} de {{ datos.totalPages || 1 }}</span>
+                <button type="button" class="secondary-button" [disabled]="datos.number + 1 >= datos.totalPages"
+                        (click)="cargarAcciones(datos.number + 1)">Siguiente →</button>
+            </nav>
+        }
+        <p class="sf-bitacora-nota">Se muestran acciones que ya fueron registradas en bitácora; no se reconstruyen eventos antiguos faltantes. Los motivos detallados de moderación permanecen en el historial específico de cada cancha o complejo.</p>
+    </section>
+
     <p class="sf-bitacora-nota">Los errores de infraestructura o base de datos deben revisarse también en los logs de Render y Spring Boot, porque no siempre es posible guardarlos en MySQL.</p>
 </section>

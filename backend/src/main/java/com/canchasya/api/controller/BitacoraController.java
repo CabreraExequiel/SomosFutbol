@@ -19,6 +19,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.util.Set;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -70,6 +71,138 @@ public class BitacoraController {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(resultados.map(EventoRespuesta::from));
     }
 
+    /** 09E2: historial paginado de acciones administrativas ya registradas en bitácora.
+     * Nunca incluye acciones habituales de jugadores o dueños.
+     */
+    private static final Set<String> TIPOS_ACCION_ADMIN = Set.of(
+            "USUARIO_SUSPENDIDO", "USUARIO_REACTIVADO",
+            "CANCHA_DESACTIVADA_ADMIN", "CANCHA_REACTIVADA_ADMIN",
+            "COMPLEJO_SUSPENDIDO_ADMIN", "COMPLEJO_REACTIVADO_ADMIN",
+            "INCIDENTE_ESTADO_CAMBIADO_ADMIN");
+
+    @GetMapping("/api/admin/bitacora/acciones")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<Page<EventoRespuesta>> listarAcciones(
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(required = false) String tipo,
+            @RequestParam(required = false) Long administradorId,
+            @RequestParam(required = false) String buscar) {
+        if (pagina < 0 || pagina > 10000) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Página inválida");
+        }
+        if (administradorId != null && administradorId <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Administrador inválido");
+        }
+        String t = tipo == null ? "" : tipo.trim();
+        if (!t.isEmpty() && !TIPOS_ACCION_ADMIN.contains(t)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tipo de acción inválido");
+        }
+        String termino = buscar == null ? "" : buscar.trim();
+        if (termino.length() > 100 || termino.chars().anyMatch(Character::isISOControl)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Búsqueda inválida");
+        }
+        // Las suspensiones de cuenta antiguas se registraban como BACKEND; las
+        // moderaciones como AUDITORIA. En ambos casos el tipo es restrictivo.
+        Specification<BitacoraEvento> spec = (root, query, cb) -> cb.and(
+                cb.equal(root.get("nivel"), "INFO"),
+                root.get("tipo").in(TIPOS_ACCION_ADMIN),
+                cb.or(cb.equal(root.get("origen"), "AUDITORIA"),
+                      cb.and(cb.equal(root.get("origen"), "BACKEND"),
+                             root.get("tipo").in("USUARIO_SUSPENDIDO", "USUARIO_REACTIVADO"))));
+        if (!t.isEmpty()) spec = spec.and((root, query, cb) -> cb.equal(root.get("tipo"), t));
+        if (administradorId != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("actorId"), administradorId));
+        }
+        if (!termino.isEmpty()) {
+            String patron = "%" + termino.toLowerCase(java.util.Locale.ROOT)
+                    .replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+            spec = spec.and((root, query, cb) -> cb.or(
+                    cb.like(cb.lower(root.get("codigo")), patron, '!'),
+                    cb.like(cb.lower(root.get("tipo")), patron, '!'),
+                    cb.like(cb.lower(root.get("referenciaTipo")), patron, '!')));
+        }
+        var resultados = repository.findAll(spec,
+                PageRequest.of(pagina, 15, Sort.Direction.DESC, "fecha", "id"));
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(resultados.map(EventoRespuesta::from));
+    }
+
+    /** 09E3: cola de incidentes, independiente de eventos INFO y de auditoría. */
+    @GetMapping("/api/admin/bitacora/incidentes")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<Page<EventoRespuesta>> listarIncidentes(
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(required = false) String estado,
+            @RequestParam(required = false) String origen,
+            @RequestParam(required = false) String ambiente,
+            @RequestParam(required = false) Long ultimoAdminId,
+            @RequestParam(defaultValue = "false") boolean sinGestion,
+            @RequestParam(required = false) String buscar) {
+        if (pagina < 0 || pagina > 10000) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Página inválida");
+        }
+        if (ultimoAdminId != null && ultimoAdminId <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Administrador inválido");
+        }
+        if (sinGestion && ultimoAdminId != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Filtros de atención incompatibles");
+        }
+        String e = filtro(estado, "PENDIENTE", "EN_INVESTIGACION", "RESUELTO");
+        String o = filtro(origen, "BACKEND", "FRONTEND");
+        String a = filtro(ambiente, "local", "production");
+        String termino = buscar == null ? "" : buscar.trim();
+        if (termino.length() > 100 || termino.chars().anyMatch(Character::isISOControl)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Búsqueda inválida");
+        }
+        Specification<BitacoraEvento> spec = (root, query, cb) -> cb.equal(root.get("nivel"), "ERROR");
+        if (e != null) spec = spec.and((root, query, cb) -> cb.equal(root.get("estado"), e));
+        if (o != null) spec = spec.and((root, query, cb) -> cb.equal(root.get("origen"), o));
+        if (a != null) spec = spec.and((root, query, cb) -> cb.equal(root.get("ambiente"), a));
+        if (sinGestion) {
+            spec = spec.and((root, query, cb) -> cb.isNull(root.get("atendidoPorId")));
+        } else if (ultimoAdminId != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("atendidoPorId"), ultimoAdminId));
+        }
+        if (!termino.isEmpty()) {
+            String patron = "%" + termino.toLowerCase(java.util.Locale.ROOT)
+                    .replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+            spec = spec.and((root, query, cb) -> cb.or(
+                    cb.like(cb.lower(root.get("codigo")), patron, '!'),
+                    cb.like(cb.lower(root.get("tipo")), patron, '!'),
+                    cb.like(cb.lower(root.get("ruta")), patron, '!'),
+                    cb.like(cb.lower(root.get("descripcion")), patron, '!')));
+        }
+        var resultados = repository.findAll(spec,
+                PageRequest.of(pagina, 15, Sort.Direction.DESC, "fecha", "id"));
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(resultados.map(EventoRespuesta::from));
+    }
+
+    /** Historial disponible: eventos de cambio de estado ya auditados, sin reconstruir estados anteriores. */
+    @GetMapping("/api/admin/bitacora/{id}/historial")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<Page<EventoRespuesta>> historialIncidente(
+            @PathVariable Long id, @RequestParam(defaultValue = "0") int pagina) {
+        if (id <= 0 || pagina < 0 || pagina > 10000) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Parámetros inválidos");
+        }
+        BitacoraEvento incidente = repository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Incidente inexistente"));
+        if (!"ERROR".equals(incidente.getNivel())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "El registro no es un incidente");
+        }
+        Specification<BitacoraEvento> spec = (root, query, cb) -> cb.and(
+                cb.equal(root.get("nivel"), "INFO"),
+                cb.equal(root.get("origen"), "AUDITORIA"),
+                cb.equal(root.get("tipo"), "INCIDENTE_ESTADO_CAMBIADO_ADMIN"),
+                cb.equal(root.get("referenciaTipo"), "INCIDENTE"),
+                cb.equal(root.get("referenciaId"), id));
+        var historial = repository.findAll(spec,
+                PageRequest.of(pagina, 10, Sort.Direction.DESC, "fecha", "id"));
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(historial.map(EventoRespuesta::from));
+    }
+
     /** Endpoint autenticado. No se reciben stack traces, mensajes o cuerpos HTTP. */
     @PostMapping("/api/diagnostico/frontend")
     @PreAuthorize("isAuthenticated()")
@@ -98,11 +231,17 @@ public class BitacoraController {
         if (!"PENDIENTE".equals(estado) && !"EN_INVESTIGACION".equals(estado) && !"RESUELTO".equals(estado)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Estado inválido");
         }
+        boolean cambioReal = !estado.equals(evento.getEstado());
         evento.setEstado(estado);
         evento.setAtendidoPorId(administrador.getId());
         evento.setAtendidoEn(Instant.now());
+        BitacoraEvento actualizado = repository.saveAndFlush(evento);
+        if (cambioReal) {
+            // Registro posterior al commit para evitar auditar transacciones fallidas.
+            bitacora.evento("INCIDENTE_ESTADO_CAMBIADO_ADMIN", "INCIDENTE", id, administrador.getId());
+        }
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                .body(EventoRespuesta.from(repository.saveAndFlush(evento)));
+                .body(EventoRespuesta.from(actualizado));
     }
 
     private final com.canchasya.api.service.FrontendReportLimiter frontendReportLimiter;
