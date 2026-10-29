@@ -51,3 +51,13 @@
 .sf-gestion-botones button:disabled { opacity:.48; cursor:default; }
 .sf-dialog-acciones { display:flex; gap:.7rem; flex-wrap:wrap; }
 .sf-dialog-estado { font-size:.9rem; color:#17693f; }
+
+/* Etapa 09E1: filtros administrativos ampliados, manteniendo la vista adaptable. */
+.sf-bitacora-filtros input { border:1px solid #ced9d1; background:var(--surface,#fff);
+  color:var(--text,#15291e); border-radius:9px; padding:.65rem; width:100%; min-width:0; }
+.sf-bitacora-filtro-buscar { flex:2 1 300px!important; }
+.sf-bitacora-filtro-acciones { display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
+.sf-bitacora-filtros input:focus-visible, .sf-bitacora-filtros select:focus-visible {
+  outline:3px solid #16854a; outline-offset:2px; }
+@media(max-width:580px){.sf-bitacora-filtro-acciones{width:100%;}
+  .sf-bitacora-filtro-acciones button{flex:1 1 auto;}}

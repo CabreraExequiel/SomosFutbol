@@ -8,6 +8,11 @@
         <a routerLink="/admin" class="secondary-button">← Volver al panel</a>
     </header>
     <form class="surface-card sf-bitacora-filtros" (ngSubmit)="cargar(0)">
+        <label class="sf-bitacora-filtro-buscar">Código, ruta, tipo o descripción
+            <input type="search" name="buscar" [(ngModel)]="buscar" maxlength="100"
+                   placeholder="Ej. SF-123, /api/reservas, ERROR_INTERFAZ"
+                   autocomplete="off" />
+        </label>
         <label>Gravedad
             <select name="nivel" [(ngModel)]="nivel">
                 <option value="">Todas</option><option value="ERROR">Errores</option><option value="INFO">Eventos</option>
@@ -19,7 +24,25 @@
                 <option value="FRONTEND">Angular</option><option value="AUDITORIA">Auditoría</option>
             </select>
         </label>
-        <button type="submit" class="primary-button">Filtrar</button>
+        <label>Entorno
+            <select name="ambiente" [(ngModel)]="ambiente">
+                <option value="">Todos</option>
+                <option value="local">Local</option>
+                <option value="production">Producción</option>
+            </select>
+        </label>
+        <label>Estado del incidente
+            <select name="estado" [(ngModel)]="estado">
+                <option value="">Todos</option>
+                <option value="PENDIENTE">Pendiente</option>
+                <option value="EN_INVESTIGACION">En investigación</option>
+                <option value="RESUELTO">Resuelto</option>
+            </select>
+        </label>
+        <div class="sf-bitacora-filtro-acciones">
+            <button type="submit" class="primary-button" [disabled]="cargando()">Buscar</button>
+            <button type="button" class="secondary-button" (click)="limpiarFiltros()">Limpiar</button>
+        </div>
     </form>
     @if (cargando()) { <div role="status" class="surface-card sf-bitacora-mensaje">Consultando bitácora…</div> }
     @if (error()) {
@@ -55,7 +78,7 @@
                 <span class="sf-bitacora-ver">Ver detalle →</span></div>
         </button>
         } @empty {
-        <div class="surface-card sf-bitacora-mensaje">Todavía no hay registros con estos filtros. Probá crear una cancha o una reserva en local.</div>
+        <div class="surface-card sf-bitacora-mensaje">No hay registros con estos filtros. Probá cambiar la búsqueda o usar Limpiar.</div>
         }
     </div>
     <nav class="sf-bitacora-paginacion" aria-label="Páginas de la bitácora">

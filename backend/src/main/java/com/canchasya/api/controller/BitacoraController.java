@@ -34,13 +34,38 @@ public class BitacoraController {
     public ResponseEntity<Page<EventoRespuesta>> listar(
             @RequestParam(required = false) String nivel,
             @RequestParam(required = false) String origen,
+            @RequestParam(required = false) String ambiente,
+            @RequestParam(required = false) String estado,
+            @RequestParam(required = false) String buscar,
             @RequestParam(defaultValue = "0") int pagina) {
         if (pagina < 0 || pagina > 10000) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Página inválida");
         String n = filtro(nivel, "ERROR", "INFO");
         String o = filtro(origen, "BACKEND", "FRONTEND", "AUDITORIA");
+        String a = filtro(ambiente, "local", "production");
+        String e = filtro(estado, "PENDIENTE", "EN_INVESTIGACION", "RESUELTO");
+        String termino = buscar == null ? "" : buscar.trim();
+        if (termino.length() > 100 || termino.chars().anyMatch(Character::isISOControl)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Búsqueda inválida");
+        }
         Specification<BitacoraEvento> spec = (root, query, cb) -> cb.conjunction();
         if (n != null) spec = spec.and((root, query, cb) -> cb.equal(root.get("nivel"), n));
         if (o != null) spec = spec.and((root, query, cb) -> cb.equal(root.get("origen"), o));
+        if (a != null) spec = spec.and((root, query, cb) -> cb.equal(root.get("ambiente"), a));
+        if (e != null) {
+            spec = spec.and((root, query, cb) -> cb.and(
+                    cb.equal(root.get("nivel"), "ERROR"), cb.equal(root.get("estado"), e)));
+        }
+        if (!termino.isEmpty()) {
+            // Escapar comodines SQL para buscar códigos/rutas literalmente y no permitir búsquedas masivas.
+            String patron = "%" + termino.toLowerCase(java.util.Locale.ROOT)
+                    .replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+            spec = spec.and((root, query, cb) -> cb.or(
+                    cb.like(cb.lower(root.get("codigo")), patron, '!'),
+                    cb.like(cb.lower(root.get("tipo")), patron, '!'),
+                    cb.like(cb.lower(root.get("ruta")), patron, '!'),
+                    cb.like(cb.lower(root.get("descripcion")), patron, '!')
+            ));
+        }
         var resultados = repository.findAll(spec, PageRequest.of(pagina, 25, Sort.Direction.DESC, "fecha", "id"));
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(resultados.map(EventoRespuesta::from));
     }

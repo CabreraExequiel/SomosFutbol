@@ -35,16 +35,26 @@ export interface PaginaBitacora {
   totalPages: number;
   totalElements: number;
 }
+export interface FiltrosBitacora {
+  nivel?: string;
+  origen?: string;
+  ambiente?: string;
+  estado?: string;
+  buscar?: string;
+}
 @Injectable({ providedIn: 'root' })
 export class BitacoraService {
   constructor(private readonly http: HttpClient) {}
   actualizarEstado(id: number, estado: EstadoIncidente): Observable<EventoBitacora> {
     return this.http.patch<EventoBitacora>(`${environment.apiUrl}/admin/bitacora/${id}/estado`, { estado });
   }
-  listar(pagina = 0, nivel = '', origen = ''): Observable<PaginaBitacora> {
+  listar(pagina = 0, filtros: FiltrosBitacora = {}): Observable<PaginaBitacora> {
     let params = new HttpParams().set('pagina', pagina);
-    if (nivel) params = params.set('nivel', nivel);
-    if (origen) params = params.set('origen', origen);
+    if (filtros.nivel) params = params.set('nivel', filtros.nivel);
+    if (filtros.origen) params = params.set('origen', filtros.origen);
+    if (filtros.ambiente) params = params.set('ambiente', filtros.ambiente);
+    if (filtros.estado) params = params.set('estado', filtros.estado);
+    if (filtros.buscar?.trim()) params = params.set('buscar', filtros.buscar.trim());
     return this.http.get<PaginaBitacora>(`${environment.apiUrl}/admin/bitacora`, { params });
   }
 }

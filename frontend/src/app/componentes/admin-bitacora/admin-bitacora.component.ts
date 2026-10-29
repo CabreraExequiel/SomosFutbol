@@ -21,7 +21,20 @@ export class AdminBitacoraComponent implements OnInit {
   @ViewChild('detalleDialog') detalleDialog?: ElementRef<HTMLDialogElement>;
   nivel = '';
   origen = '';
+  ambiente = '';
+  estado = '';
+  buscar = '';
+  private ultimaSolicitud = 0;
   constructor(private readonly bitacora: BitacoraService) {}
+
+  limpiarFiltros(): void {
+    this.nivel = '';
+    this.origen = '';
+    this.ambiente = '';
+    this.estado = '';
+    this.buscar = '';
+    this.cargar(0);
+  }
   ngOnInit(): void { this.cargar(0); }
   abrir(evento: EventoBitacora): void {
     this.mensajeAccion.set('');
@@ -86,12 +99,25 @@ export class AdminBitacoraComponent implements OnInit {
   }
 
   cargar(numero: number): void {
+    const solicitud = ++this.ultimaSolicitud;
     this.cargando.set(true);
     this.error.set('');
-    this.bitacora.listar(numero, this.nivel, this.origen).subscribe({
-      next: resultado => { this.pagina.set(resultado); this.cargando.set(false); },
+    this.bitacora.listar(numero, {
+      nivel: this.nivel,
+      origen: this.origen,
+      ambiente: this.ambiente,
+      estado: this.estado,
+      buscar: this.buscar,
+    }).subscribe({
+      next: resultado => {
+        if (solicitud !== this.ultimaSolicitud) return;
+        this.pagina.set(resultado);
+        this.cargando.set(false);
+      },
       error: err => {
+        if (solicitud !== this.ultimaSolicitud) return;
         this.error.set(err.status === 403 ? 'No tenés permisos para ver la bitácora.' :
+          err.status === 400 ? 'Alguno de los filtros no es válido.' :
           'No pudimos consultar la bitácora. Revisá Spring Boot y la tabla bitacora_eventos.');
         this.pagina.set(null);
         this.cargando.set(false);
