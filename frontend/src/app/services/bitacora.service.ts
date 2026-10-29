@@ -56,9 +56,38 @@ export interface FiltrosAccionesAdmin {
   buscar?: string;
 }
 
+/** 09E4: datos agregados del período, nunca registros privados ni diagnósticos. */
+export interface TramoErroresBitacora {
+  etiqueta: string;
+  errores: number;
+}
+export interface EstadisticasBitacora {
+  dias: number;
+  ambiente: 'local' | 'production' | 'todos';
+  zonaHoraria: string;
+  totalEventos: number;
+  totalErrores: number;
+  eventosInformativos: number;
+  pendientes: number;
+  enInvestigacion: number;
+  resueltos: number;
+  sinGestion: number;
+  erroresBackend: number;
+  erroresFrontend: number;
+  accionesAdministrativas: number;
+  tendencia: TramoErroresBitacora[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class BitacoraService {
   constructor(private readonly http: HttpClient) {}
+  /** 09E4: resumen de solo lectura, limitado a 7 o 30 días. */
+  estadisticas(dias: 7 | 30, ambiente = ''): Observable<EstadisticasBitacora> {
+    let params = new HttpParams().set('dias', dias);
+    if (ambiente) params = params.set('ambiente', ambiente);
+    return this.http.get<EstadisticasBitacora>(`${environment.apiUrl}/admin/bitacora/estadisticas`, { params });
+  }
+
   actualizarEstado(id: number, estado: EstadoIncidente): Observable<EventoBitacora> {
     return this.http.patch<EventoBitacora>(`${environment.apiUrl}/admin/bitacora/${id}/estado`, { estado });
   }

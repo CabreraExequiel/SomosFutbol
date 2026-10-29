@@ -7,6 +7,64 @@
         </div>
         <a routerLink="/admin" class="secondary-button">← Volver al panel</a>
     </header>
+    <section class="sf-estadisticas" aria-labelledby="sf-estadisticas-titulo">
+        <header class="sf-estadisticas-cabecera">
+            <div>
+                <h2 id="sf-estadisticas-titulo">Estadísticas de errores e incidentes</h2>
+                <p>Eventos registrados en la bitácora. Períodos de días calendario en UTC, incluido hoy.</p>
+            </div>
+            <form class="sf-estadisticas-controles" (ngSubmit)="cargarEstadisticas()">
+                <label>Período
+                    <select name="diasEstadisticas" [(ngModel)]="diasEstadisticas">
+                        <option [ngValue]="7">7 días</option><option [ngValue]="30">30 días</option>
+                    </select>
+                </label>
+                <label>Entorno
+                    <select name="ambienteEstadisticas" [(ngModel)]="ambienteEstadisticas">
+                        <option value="">Todos</option><option value="local">Local</option>
+                        <option value="production">Producción</option>
+                    </select>
+                </label>
+                <button type="submit" class="secondary-button" [disabled]="estadisticasCargando()">Actualizar</button>
+            </form>
+        </header>
+        @if (estadisticasCargando()) { <p class="surface-card sf-bitacora-mensaje" role="status">Calculando estadísticas…</p> }
+        @if (estadisticasError()) {
+            <div role="alert" class="app-alert error sf-bitacora-mensaje">{{ estadisticasError() }}
+                <button type="button" class="secondary-button" (click)="cargarEstadisticas()">Reintentar</button>
+            </div>
+        }
+        @if (estadisticasDatos(); as s) {
+            <div class="sf-estadisticas-resumen" aria-label="Resumen de bitácora">
+                <div class="surface-card sf-estadistica-tarjeta"><span>Errores registrados</span><strong>{{ s.totalErrores }}</strong></div>
+                <div class="surface-card sf-estadistica-tarjeta"><span>Pendientes</span><strong>{{ s.pendientes }}</strong></div>
+                <div class="surface-card sf-estadistica-tarjeta"><span>En investigación</span><strong>{{ s.enInvestigacion }}</strong></div>
+                <div class="surface-card sf-estadistica-tarjeta"><span>Resueltos</span><strong>{{ s.resueltos }}</strong></div>
+                <div class="surface-card sf-estadistica-tarjeta"><span>Sin gestión registrada</span><strong>{{ s.sinGestion }}</strong></div>
+                <div class="surface-card sf-estadistica-tarjeta"><span>Backend / Frontend</span><strong>{{ s.erroresBackend }} / {{ s.erroresFrontend }}</strong></div>
+                <div class="surface-card sf-estadistica-tarjeta"><span>Eventos informativos</span><strong>{{ s.eventosInformativos }}</strong></div>
+                <div class="surface-card sf-estadistica-tarjeta"><span>Acciones administrativas</span><strong>{{ s.accionesAdministrativas }}</strong></div>
+            </div>
+            <div class="surface-card sf-estadisticas-grafico">
+                <div class="sf-estadisticas-grafico-cabecera">
+                    <h3>Evolución de errores registrados</h3>
+                    <span>{{ s.dias }} días · {{ s.ambiente === 'todos' ? 'Todos los entornos' : s.ambiente }} · {{ s.zonaHoraria }}</span>
+                </div>
+                <div class="sf-estadisticas-barras" role="list" aria-label="Errores registrados por período">
+                    @for (tramo of s.tendencia; track tramo.etiqueta) {
+                        <div class="sf-estadisticas-tramo" role="listitem" [attr.aria-label]="tramo.etiqueta + ': ' + tramo.errores + ' errores'">
+                            <span class="sf-estadisticas-cantidad">{{ tramo.errores }}</span>
+                            <div class="sf-estadisticas-barra-fondo">
+                                <div class="sf-estadisticas-barra" [style.height.%]="alturaBarra(tramo.errores, maximoTendencia(s))"></div>
+                            </div>
+                            <span class="sf-estadisticas-etiqueta">{{ tramo.etiqueta }}</span>
+                        </div>
+                    }
+                </div>
+                <p class="sf-bitacora-nota">Para 7 días se muestra una barra diaria; para 30 días, seis intervalos de cinco días. Las estadísticas se calculan sobre la bitácora, no sobre los logs de infraestructura.</p>
+            </div>
+        }
+    </section>
     <form class="surface-card sf-bitacora-filtros" (ngSubmit)="cargar(0)">
         <label class="sf-bitacora-filtro-buscar">Código, ruta, tipo o descripción
             <input type="search" name="buscar" [(ngModel)]="buscar" maxlength="100"

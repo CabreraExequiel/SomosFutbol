@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, ElementRef, OnInit, ViewChild, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { BitacoraService, EstadoIncidente, EventoBitacora, PaginaBitacora } from '../../services/bitacora.service';
+import { BitacoraService, EstadisticasBitacora, EstadoIncidente, EventoBitacora, PaginaBitacora } from '../../services/bitacora.service';
 
 @Component({
   selector: 'app-admin-bitacora',
@@ -12,6 +12,13 @@ import { BitacoraService, EstadoIncidente, EventoBitacora, PaginaBitacora } from
   styleUrl: './admin-bitacora.component.css',
 })
 export class AdminBitacoraComponent implements OnInit {
+  // 09E4: estadísticas propias; no dependen de la paginación del listado principal.
+  readonly estadisticasCargando = signal(false);
+  readonly estadisticasError = signal('');
+  readonly estadisticasDatos = signal<EstadisticasBitacora | null>(null);
+  diasEstadisticas: 7 | 30 = 7;
+  ambienteEstadisticas = '';
+  private ultimaSolicitudEstadisticas = 0;
   readonly cargando = signal(true);
   readonly error = signal('');
   readonly pagina = signal<PaginaBitacora | null>(null);
@@ -48,6 +55,35 @@ export class AdminBitacoraComponent implements OnInit {
   private ultimaSolicitud = 0;
   constructor(private readonly bitacora: BitacoraService) {}
 
+  cargarEstadisticas(): void {
+    const solicitud = ++this.ultimaSolicitudEstadisticas;
+    this.estadisticasCargando.set(true);
+    this.estadisticasError.set('');
+    this.bitacora.estadisticas(this.diasEstadisticas, this.ambienteEstadisticas).subscribe({
+      next: datos => {
+        if (solicitud !== this.ultimaSolicitudEstadisticas) return;
+        this.estadisticasDatos.set(datos);
+        this.estadisticasCargando.set(false);
+      },
+      error: err => {
+        if (solicitud !== this.ultimaSolicitudEstadisticas) return;
+        this.estadisticasDatos.set(null);
+        this.estadisticasCargando.set(false);
+        this.estadisticasError.set(err.status === 403 ? 'Acceso denegado a las estadísticas.' :
+          err.status === 400 ? 'Período o entorno inválido.' :
+          'No se pudieron consultar las estadísticas. Revisá Spring Boot.');
+      },
+    });
+  }
+
+  alturaBarra(errores: number, maximo: number): number {
+    return maximo > 0 && errores > 0 ? Math.max(5, Math.round(100 * errores / maximo)) : 0;
+  }
+
+  maximoTendencia(datos: EstadisticasBitacora): number {
+    return Math.max(0, ...datos.tendencia.map(d => d.errores));
+  }
+
   limpiarFiltros(): void {
     this.nivel = '';
     this.origen = '';
@@ -56,7 +92,7 @@ export class AdminBitacoraComponent implements OnInit {
     this.buscar = '';
     this.cargar(0);
   }
-  ngOnInit(): void { this.cargar(0); this.cargarAcciones(0); this.cargarIncidentes(0); }
+  ngOnInit(): void { this.cargar(0); this.cargarAcciones(0); this.cargarIncidentes(0); this.cargarEstadisticas(); }
   abrir(evento: EventoBitacora): void {
     this.mensajeAccion.set('');
     this.seleccionado.set(evento);
@@ -87,6 +123,7 @@ export class AdminBitacoraComponent implements OnInit {
         this.cargarAcciones(0);
         this.cargarIncidentes(this.incidentesPagina()?.number ?? 0);
         this.cargarHistorialIncidente(actualizado.id, 0);
+        this.cargarEstadisticas();
       },
       error: () => {
         this.guardando.set(false);

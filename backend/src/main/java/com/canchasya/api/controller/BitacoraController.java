@@ -19,6 +19,11 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.HttpStatus;
@@ -70,6 +75,79 @@ public class BitacoraController {
         var resultados = repository.findAll(spec, PageRequest.of(pagina, 25, Sort.Direction.DESC, "fecha", "id"));
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(resultados.map(EventoRespuesta::from));
     }
+
+    /** 09E4: indicadores por intervalo de días UTC, de solo lectura. La bitácora
+     * registra eventos observados, no representa necesariamente todos los fallos de infraestructura.
+     */
+    @GetMapping("/api/admin/bitacora/estadisticas")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @Transactional(readOnly = true)
+    public ResponseEntity<EstadisticasRespuesta> estadisticas(
+            @RequestParam(defaultValue = "7") int dias,
+            @RequestParam(required = false) String ambiente) {
+        if (dias != 7 && dias != 30) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El período debe ser de 7 o 30 días");
+        }
+        String a = filtro(ambiente, "local", "production");
+        LocalDate hoy = LocalDate.now(ZoneOffset.UTC);
+        LocalDate primerDia = hoy.minusDays(dias - 1L);
+        Instant inicio = primerDia.atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant ahora = Instant.now();
+        Specification<BitacoraEvento> intervalo = (root, query, cb) -> cb.and(
+                cb.greaterThanOrEqualTo(root.<Instant>get("fecha"), inicio),
+                cb.lessThanOrEqualTo(root.<Instant>get("fecha"), ahora));
+        if (a != null) {
+            intervalo = intervalo.and((root, query, cb) -> cb.equal(root.get("ambiente"), a));
+        }
+        Specification<BitacoraEvento> errores = intervalo.and(
+                (root, query, cb) -> cb.equal(root.get("nivel"), "ERROR"));
+        long total = repository.count(intervalo);
+        long totalErrores = repository.count(errores);
+        long pendientes = repository.count(errores.and(
+                (root, query, cb) -> cb.equal(root.get("estado"), "PENDIENTE")));
+        long investigacion = repository.count(errores.and(
+                (root, query, cb) -> cb.equal(root.get("estado"), "EN_INVESTIGACION")));
+        long resueltos = repository.count(errores.and(
+                (root, query, cb) -> cb.equal(root.get("estado"), "RESUELTO")));
+        long sinGestion = repository.count(errores.and(
+                (root, query, cb) -> cb.isNull(root.get("atendidoPorId"))));
+        long backend = repository.count(errores.and(
+                (root, query, cb) -> cb.equal(root.get("origen"), "BACKEND")));
+        long frontend = repository.count(errores.and(
+                (root, query, cb) -> cb.equal(root.get("origen"), "FRONTEND")));
+        long accionesAdmin = repository.count(intervalo.and((root, query, cb) -> cb.and(
+                cb.equal(root.get("nivel"), "INFO"),
+                root.get("tipo").in(TIPOS_ACCION_ADMIN))));
+
+        // Siete barras diarias; para 30 días, seis barras de cinco días.
+        int paso = dias == 7 ? 1 : 5;
+        DateTimeFormatter formato = DateTimeFormatter.ofPattern("dd/MM");
+        List<TramoErrores> tendencia = new ArrayList<>();
+        for (int offset = 0; offset < dias; offset += paso) {
+            LocalDate desde = primerDia.plusDays(offset);
+            LocalDate hasta = desde.plusDays(paso - 1L);
+            Instant limiteInf = desde.atStartOfDay(ZoneOffset.UTC).toInstant();
+            Instant limiteSup = hasta.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+            // El límite superior de 'errores' evita incluir eventos futuros del día actual.
+            long cantidad = repository.count(errores.and((root, query, cb) -> cb.and(
+                    cb.greaterThanOrEqualTo(root.<Instant>get("fecha"), limiteInf),
+                    cb.lessThan(root.<Instant>get("fecha"), limiteSup))));
+            String etiqueta = paso == 1 ? desde.format(formato) :
+                    desde.format(formato) + "–" + hasta.format(formato);
+            tendencia.add(new TramoErrores(etiqueta, cantidad));
+        }
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(new EstadisticasRespuesta(dias, a == null ? "todos" : a, "UTC",
+                        total, totalErrores, total - totalErrores, pendientes, investigacion,
+                        resueltos, sinGestion, backend, frontend, accionesAdmin, tendencia));
+    }
+
+    public record TramoErrores(String etiqueta, long errores) { }
+    public record EstadisticasRespuesta(int dias, String ambiente, String zonaHoraria,
+            long totalEventos, long totalErrores, long eventosInformativos,
+            long pendientes, long enInvestigacion, long resueltos, long sinGestion,
+            long erroresBackend, long erroresFrontend, long accionesAdministrativas,
+            List<TramoErrores> tendencia) { }
 
     /** 09E2: historial paginado de acciones administrativas ya registradas en bitácora.
      * Nunca incluye acciones habituales de jugadores o dueños.
