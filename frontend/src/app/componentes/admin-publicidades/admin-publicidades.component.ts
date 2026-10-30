@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { PublicidadesEstadisticasComponent } from '../publicidades-estadisticas/publicidades-estadisticas.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   EstadoPublicidad, UbicacionPublicidad, PublicidadAdmin,
@@ -29,7 +30,7 @@ function formularioVacio(): FormularioPublicidad {
 @Component({
   selector: 'app-admin-publicidades',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PublicidadesEstadisticasComponent],
   templateUrl: './admin-publicidades.component.html',
   styleUrl: './admin-publicidades.component.css',
 })

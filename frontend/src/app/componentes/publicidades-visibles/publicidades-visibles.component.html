@@ -3,7 +3,8 @@
   <div class="sf-publicidades-cabecera"><span>Publicidad</span></div>
   <div class="sf-publicidades-lista">
     @for (anuncio of anuncios(); track anuncio.id) {
-      <a class="sf-publicidad" [href]="anuncio.destinoUrl" target="_blank"
+      <a class="sf-publicidad" [sfImpresionPublicidad]="anuncio.id" [ubicacionImpresion]="ubicacion"
+         (click)="registrarClick(anuncio)" [href]="anuncio.destinoUrl" target="_blank"
          rel="noopener noreferrer sponsored" [attr.aria-label]="'Publicidad: ' + anuncio.titulo + '. Abrir enlace externo'">
         @if (imagenSegura(anuncio.imagenUrl)) {
           <img [src]="anuncio.imagenUrl" [alt]="anuncio.titulo" loading="lazy" />

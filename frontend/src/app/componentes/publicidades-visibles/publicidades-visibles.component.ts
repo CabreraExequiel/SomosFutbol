@@ -1,6 +1,8 @@
 import { Component, Input, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
+import { PublicidadImpresionDirective } from '../../directivas/publicidad-impresion.directive';
+import { PublicidadesMetricasService } from '../../services/publicidades-metricas.service';
 import {
   PublicidadVisible,
   PublicidadesPublicasService,
@@ -11,7 +13,7 @@ import {
 @Component({
   selector: 'app-publicidades-visibles',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, PublicidadImpresionDirective],
   templateUrl: './publicidades-visibles.component.html',
   styleUrl: './publicidades-visibles.component.css'
 })
@@ -20,7 +22,8 @@ export class PublicidadesVisiblesComponent implements OnInit, OnDestroy {
   readonly anuncios = signal<PublicidadVisible[]>([]);
   private peticion?: Subscription;
 
-  constructor(private readonly servicio: PublicidadesPublicasService) {}
+  constructor(private readonly servicio: PublicidadesPublicasService,
+              private readonly metricas: PublicidadesMetricasService) {}
 
   ngOnInit(): void {
     this.peticion = this.servicio.listar(this.ubicacion).subscribe({
@@ -35,6 +38,10 @@ export class PublicidadesVisiblesComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.peticion?.unsubscribe();
+  }
+
+  registrarClick(anuncio: PublicidadVisible): void {
+    this.metricas.clic(anuncio.id, this.ubicacion).subscribe({ error: () => {} });
   }
 
   imagenSegura(url: string | null): boolean {

@@ -16,6 +16,8 @@
   @if (exito()) { <p class="sf-ads-success" role="status">{{ exito() }}</p> }
   @if (error()) { <p class="sf-ads-error" role="alert">{{ error() }}</p> }
 
+  <app-publicidades-estadisticas />
+
   <form class="sf-ads-filtros" (ngSubmit)="buscarAnuncios()" aria-label="Filtros de publicidades">
     <label>Buscar por título
       <input type="search" name="buscarPublicidad" [(ngModel)]="buscar" maxlength="100" placeholder="Nombre del anuncio..." />

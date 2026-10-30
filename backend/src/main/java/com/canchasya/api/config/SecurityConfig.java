@@ -68,6 +68,10 @@ public class SecurityConfig {
                                 "/api/mercadopago/callback",
                                 "/actuator/health"
                         ).permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST,
+                                "/api/publicidades/*/impresiones",
+                                "/api/publicidades/*/clics"
+                        ).permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET,
                                 "/api/config",
                                 "/api/publicidades/visibles",
