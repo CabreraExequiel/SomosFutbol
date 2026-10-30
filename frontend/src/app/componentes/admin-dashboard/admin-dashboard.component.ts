@@ -1,12 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { AdminPublicidadesComponent } from '../admin-publicidades/admin-publicidades.component';
 import { AdminService, AdminResumen, AdminPaginaUsuarios, AdminUsuarioDetalle, AdminPaginaCanchas, AdminCanchaDetalle, AdminComplejoDetalle, AdminHistorialPagina, AdminPaginaReservas, AdminReservaDetalle, AdminPaginaPagos, AdminResumenConciliacion, AdminPaginaCasosConciliacion, AdminTipoCasoConciliacion } from '../../services/admin.service';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, AdminPublicidadesComponent],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.css',
 })

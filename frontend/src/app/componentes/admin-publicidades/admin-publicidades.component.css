@@ -1,0 +1,46 @@
+.sf-ads{padding:1.5rem;margin:1.2rem 0;border-radius:14px}
+.sf-ads-top,.sf-ads-editor-heading,.sf-ads-item-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.sf-ads-top h2{font-size:1.5rem;margin:.3rem 0}
+.sf-ads-sub{margin:.3rem 0;color:var(--text-muted,#64748b)}
+.sf-ads-top-actions,.sf-ads-form-actions,.sf-ads-item-actions{display:flex;gap:.55rem;align-items:center;flex-wrap:wrap}
+.sf-ads-hint{padding:.8rem 1rem;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;color:#854d0e;font-size:.9rem;margin:1rem 0}
+.sf-ads-filtros{display:flex;gap:.8rem;align-items:end;flex-wrap:wrap;margin:1.4rem 0}
+.sf-ads-filtros label,.sf-ads-form label{display:grid;gap:.35rem;font-weight:600;font-size:.9rem;min-width:160px;flex:1}
+.sf-ads-filtros input,.sf-ads-filtros select,.sf-ads-form input,.sf-ads-form select,.sf-ads-form textarea{width:100%;padding:.7rem .75rem;border:1px solid #cbd5e1;border-radius:9px;background:var(--surface,#fff);color:inherit;font:inherit;min-width:0}
+.sf-ads-filtros input:focus,.sf-ads-form input:focus,.sf-ads-form select:focus,.sf-ads-form textarea:focus{outline:2px solid #16a34a;outline-offset:1px}
+.sf-ads-success,.sf-ads-error{padding:.8rem 1rem;border-radius:9px;overflow-wrap:anywhere}
+.sf-ads-success{border:1px solid #86efac;background:#f0fdf4;color:#166534}
+.sf-ads-error{border:1px solid #fecaca;background:#fef2f2;color:#991b1b}
+.sf-ads-editor{padding:1.2rem;border-radius:12px;border:1px solid #cbd5e1;background:var(--surface,#fff);margin:1.3rem 0}
+.sf-ads-editor h3{margin:0 0 .8rem}
+.sf-ads-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.95rem}
+.sf-ads-full{grid-column:1/-1}
+.sf-ads-field-note{font-size:.82rem;color:var(--text-muted,#64748b);align-self:center}
+.sf-ads-form-note,.sf-ads-count,.sf-ads-loading{color:var(--text-muted,#64748b);font-size:.9rem}
+.sf-ads-preview{border:1px solid #e2e8f0;border-radius:12px;max-width:490px;overflow:hidden;margin:1rem 0}
+.sf-ads-preview-label{font-size:.78rem;padding:.5rem .7rem;background:#f1f5f9;color:#475569;font-weight:700;margin:0}
+.sf-ads-preview img{width:100%;max-height:220px;object-fit:cover;display:block}
+.sf-ads-image-empty{min-height:100px;background:#f1f5f9;color:#64748b;display:grid;place-items:center}
+.sf-ads-preview-body{padding:.9rem}
+.sf-ads-preview-body strong{font-size:1.1rem}
+.sf-ads-preview-body p{margin:.5rem 0}
+.sf-ads-preview-body small{color:var(--text-muted,#64748b)}
+.sf-ads-list{display:grid;gap:1rem;margin:1rem 0}
+.sf-ads-item{display:grid;grid-template-columns:150px minmax(0,1fr);gap:1rem;padding:1rem;border:1px solid #dbe5df;border-radius:12px;background:var(--surface,#fff)}
+.sf-ads-thumb{background:#f1f5f9;min-height:120px;display:grid;place-items:center;border-radius:9px;overflow:hidden;font-size:.82rem;color:#64748b}
+.sf-ads-thumb img{width:100%;height:100%;max-height:165px;object-fit:cover}
+.sf-ads-item-body{min-width:0}
+.sf-ads-item-body p{margin:.5rem 0;color:var(--text-muted,#64748b);overflow-wrap:anywhere}
+.sf-ads-item-heading strong{font-size:1.05rem;overflow-wrap:anywhere}
+.sf-ads-state{padding:.23rem .6rem;border-radius:99px;background:#f1f5f9;color:#475569;font-weight:700;font-size:.75rem}
+.sf-ads-state.sf-ads-active{background:#dcfce7;color:#166534}
+.sf-ads-state.sf-ads-archived{background:#f1f5f9;color:#64748b}
+.sf-ads-meta{display:flex;gap:.35rem 1rem;flex-wrap:wrap;font-size:.8rem;color:var(--text-muted,#64748b);margin:.65rem 0}
+.sf-ads-item-actions button{font-size:.82rem;padding:.45rem .75rem}
+.sf-ads-danger{border:1px solid #dc2626;color:#b91c1c;background:transparent;border-radius:8px;cursor:pointer;font-weight:700}
+.sf-ads-danger:disabled{opacity:.5;cursor:not-allowed}
+.sf-ads-locked{color:#64748b}
+.sf-ads-empty{padding:1.2rem;background:#f8fafc;border-radius:10px;color:#475569}
+.sf-ads-pages{display:flex;align-items:center;justify-content:center;gap:1rem;flex-wrap:wrap;margin:1.2rem 0 .2rem}
+@media(max-width:700px){.sf-ads-item{grid-template-columns:1fr}.sf-ads-thumb{max-height:190px}.sf-ads-fields{grid-template-columns:1fr}.sf-ads-full{grid-column:auto}}
+@media(max-width:420px){.sf-ads{padding:1rem}.sf-ads-top-actions button{flex:1}.sf-ads-item{padding:.75rem}}

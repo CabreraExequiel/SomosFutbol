@@ -70,6 +70,7 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET,
                                 "/api/config",
+                                "/api/publicidades/visibles",
                                 "/api/ciudades",
                                 "/api/canchas",
                                 "/api/canchas/*",

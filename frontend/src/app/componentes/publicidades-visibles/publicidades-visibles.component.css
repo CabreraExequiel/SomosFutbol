@@ -1,0 +1,13 @@
+:host { display: block; }
+.sf-publicidades { margin: 16px 0 22px; }
+.sf-publicidades-cabecera { margin: 0 0 8px; font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #66766e; }
+.sf-publicidades-lista { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; }
+.sf-publicidad { min-width: 0; display: flex; overflow: hidden; border: 1px solid #dbe7df; border-radius: 14px; background: #f6faf7; text-decoration: none; color: #16291d; transition: border-color .15s, transform .15s; }
+.sf-publicidad:hover { border-color: #219b59; transform: translateY(-1px); }
+.sf-publicidad:focus-visible { outline: 3px solid #258c55; outline-offset: 2px; }
+.sf-publicidad img { width: 39%; max-width: 150px; object-fit: cover; background: #e3eae6; min-height: 110px; }
+.sf-publicidad-info { padding: 12px; display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 5px; }
+.sf-publicidad-info strong { font-size: 1rem; line-height: 1.25; overflow-wrap: anywhere; }
+.sf-publicidad-info p { margin: 0; font-size: .86rem; color: #52635a; line-height: 1.4; overflow-wrap: anywhere; }
+.sf-publicidad-accion { font-size: .8rem; font-weight: 700; color: #137743; margin-top: auto; padding-top: 6px; }
+@media (max-width: 490px) { .sf-publicidad img { width: 34%; } }

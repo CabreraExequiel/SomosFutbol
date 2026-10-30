@@ -1,0 +1,152 @@
+<section id="admin-publicidades" class="sf-ads surface-card" aria-labelledby="titulo-publicidades">
+  <div class="sf-ads-top">
+    <div>
+      <span class="page-eyebrow">Administración · 10B</span>
+      <h2 id="titulo-publicidades">Publicidades</h2>
+      <p class="sf-ads-sub">Creá, programá y administrá los anuncios de Somos Fútbol.</p>
+    </div>
+    <div class="sf-ads-top-actions">
+      <button type="button" class="secondary-button" (click)="cargar(pagina()?.number ?? 0)" [disabled]="cargando()">Actualizar</button>
+      <button type="button" class="primary-button" (click)="nueva()">+ Nueva publicidad</button>
+    </div>
+  </div>
+
+  <p class="sf-ads-hint">Los anuncios <strong>todavía no se muestran a los jugadores</strong>: su publicación en el feed y otras ubicaciones se habilitará en la etapa 10C.</p>
+
+  @if (exito()) { <p class="sf-ads-success" role="status">{{ exito() }}</p> }
+  @if (error()) { <p class="sf-ads-error" role="alert">{{ error() }}</p> }
+
+  <form class="sf-ads-filtros" (ngSubmit)="buscarAnuncios()" aria-label="Filtros de publicidades">
+    <label>Buscar por título
+      <input type="search" name="buscarPublicidad" [(ngModel)]="buscar" maxlength="100" placeholder="Nombre del anuncio..." />
+    </label>
+    <label>Estado
+      <select name="estadoPublicidad" [(ngModel)]="estado">
+        <option value="">Todos</option>
+        @for (opcion of estados; track opcion) { <option [value]="opcion">{{ opcion }}</option> }
+      </select>
+    </label>
+    <label>Ubicación
+      <select name="ubicacionPublicidad" [(ngModel)]="ubicacion">
+        <option value="">Todas</option>
+        @for (opcion of ubicaciones; track opcion) { <option [value]="opcion">{{ ubicacionEtiqueta(opcion) }}</option> }
+      </select>
+    </label>
+    <button type="submit" class="primary-button" [disabled]="cargando()">Buscar</button>
+    <button type="button" class="secondary-button" (click)="limpiarFiltros()">Limpiar</button>
+  </form>
+
+  @if (formularioAbierto()) {
+    <section class="sf-ads-editor" aria-label="Formulario de publicidad">
+      <div class="sf-ads-editor-heading">
+        <h3>{{ editandoId() === null ? 'Nueva publicidad' : 'Editar publicidad #' + editandoId() }}</h3>
+        <button type="button" class="secondary-button" (click)="cancelar()" [disabled]="guardando()">Cerrar</button>
+      </div>
+      <form (ngSubmit)="guardar()" class="sf-ads-form">
+        <div class="sf-ads-fields">
+          <label>Título <span aria-hidden="true">*</span>
+            <input type="text" name="titulo" [(ngModel)]="formulario.titulo" required maxlength="120" placeholder="Ej.: Torneo de fútbol 5" />
+          </label>
+          <label>Ubicación <span aria-hidden="true">*</span>
+            <select name="ubicacion" [(ngModel)]="formulario.ubicacion" required>
+              @for (opcion of ubicaciones; track opcion) { <option [value]="opcion">{{ ubicacionEtiqueta(opcion) }}</option> }
+            </select>
+          </label>
+          <label class="sf-ads-full">Descripción
+            <textarea name="descripcion" [(ngModel)]="formulario.descripcion" maxlength="400" rows="3" placeholder="Texto del anuncio..."></textarea>
+          </label>
+          <label class="sf-ads-full">URL HTTPS de la imagen (opcional)
+            <input type="url" name="imagenUrl" [(ngModel)]="formulario.imagenUrl" maxlength="700" placeholder="https://ejemplo.com/banner.jpg" />
+          </label>
+          <label class="sf-ads-full">URL HTTPS del destino <span aria-hidden="true">*</span>
+            <input type="url" name="destinoUrl" [(ngModel)]="formulario.destinoUrl" required maxlength="700" placeholder="https://ejemplo.com/promocion" />
+          </label>
+          <label>Prioridad (0–100)
+            <input type="number" name="prioridad" [(ngModel)]="formulario.prioridad" min="0" max="100" step="1" required />
+          </label>
+          <div class="sf-ads-field-note">Cuanto mayor sea la prioridad, más arriba aparecerá en el listado administrativo.</div>
+          <label>Fecha y hora de inicio (opcional)
+            <input type="datetime-local" name="fechaInicio" [(ngModel)]="formulario.fechaInicio" />
+          </label>
+          <label>Fecha y hora de fin (opcional)
+            <input type="datetime-local" name="fechaFin" [(ngModel)]="formulario.fechaFin" />
+          </label>
+        </div>
+        <p class="sf-ads-form-note">Las fechas se ingresan en tu horario local. Los enlaces deben usar HTTPS. La nueva publicidad siempre se crea como <strong>BORRADOR</strong>.</p>
+
+        <div class="sf-ads-preview" aria-label="Vista previa del anuncio">
+          <p class="sf-ads-preview-label">Vista previa</p>
+          @if (formulario.imagenUrl && formulario.imagenUrl.startsWith('https://')) {
+            <img [src]="formulario.imagenUrl" [alt]="formulario.titulo || 'Imagen de publicidad'" loading="lazy" />
+          } @else {
+            <div class="sf-ads-image-empty">Sin imagen</div>
+          }
+          <div class="sf-ads-preview-body">
+            <strong>{{ formulario.titulo || 'Título del anuncio' }}</strong>
+            <p>{{ formulario.descripcion || 'Acá se verá la descripción.' }}</p>
+            <small>{{ ubicacionEtiqueta(formulario.ubicacion) }} · Vista administrativa</small>
+          </div>
+        </div>
+        <div class="sf-ads-form-actions">
+          <button type="submit" class="primary-button" [disabled]="guardando()">{{ guardando() ? 'Guardando...' : (editandoId() === null ? 'Crear borrador' : 'Guardar cambios') }}</button>
+          <button type="button" class="secondary-button" (click)="cancelar()" [disabled]="guardando()">Cancelar</button>
+        </div>
+      </form>
+    </section>
+  }
+
+  @if (cargando()) { <p class="sf-ads-loading" role="status">Cargando publicidades...</p> }
+  @if (pagina(); as resultado) {
+    <p class="sf-ads-count">{{ resultado.totalElements }} publicidades encontradas</p>
+    <div class="sf-ads-list">
+      @for (anuncio of resultado.content; track anuncio.id) {
+        <article class="sf-ads-item">
+          <div class="sf-ads-thumb">
+            @if (anuncio.imagenUrl) {
+              <img [src]="anuncio.imagenUrl" [alt]="anuncio.titulo" loading="lazy" />
+            } @else { <span>Sin imagen</span> }
+          </div>
+          <div class="sf-ads-item-body">
+            <div class="sf-ads-item-heading">
+              <strong>#{{ anuncio.id }} · {{ anuncio.titulo }}</strong>
+              <span class="sf-ads-state" [class.sf-ads-active]="anuncio.estado === 'ACTIVA'"
+                [class.sf-ads-archived]="anuncio.estado === 'ARCHIVADA'">{{ anuncio.estado }}</span>
+            </div>
+            <p>{{ anuncio.descripcion || 'Sin descripción' }}</p>
+            <div class="sf-ads-meta">
+              <span>Ubicación: <strong>{{ ubicacionEtiqueta(anuncio.ubicacion) }}</strong></span>
+              <span>Prioridad: {{ anuncio.prioridad }}</span>
+              @if (anuncio.fechaInicio) { <span>Desde: {{ anuncio.fechaInicio | date:'dd/MM/yyyy HH:mm' }}</span> }
+              @if (anuncio.fechaFin) { <span>Hasta: {{ anuncio.fechaFin | date:'dd/MM/yyyy HH:mm' }}</span> }
+            </div>
+            <div class="sf-ads-item-actions">
+              <button type="button" class="secondary-button" (click)="abrirDestino(anuncio.destinoUrl)">Abrir enlace</button>
+              @if (anuncio.estado !== 'ARCHIVADA') {
+                <button type="button" class="secondary-button" (click)="editar(anuncio)" [disabled]="cargandoDetalle() || cambiandoId() !== null">Editar</button>
+                @if (anuncio.estado !== 'ACTIVA') {
+                  <button type="button" class="secondary-button" (click)="cambiarEstado(anuncio, 'ACTIVA')" [disabled]="cambiandoId() !== null">Activar</button>
+                }
+                @if (anuncio.estado !== 'PAUSADA') {
+                  <button type="button" class="secondary-button" (click)="cambiarEstado(anuncio, 'PAUSADA')" [disabled]="cambiandoId() !== null">Pausar</button>
+                }
+                @if (anuncio.estado !== 'BORRADOR') {
+                  <button type="button" class="secondary-button" (click)="cambiarEstado(anuncio, 'BORRADOR')" [disabled]="cambiandoId() !== null">Borrador</button>
+                }
+                <button type="button" class="sf-ads-danger" (click)="cambiarEstado(anuncio, 'ARCHIVADA')" [disabled]="cambiandoId() !== null">Archivar</button>
+              } @else {
+                <small class="sf-ads-locked">Archivada · solo lectura</small>
+              }
+            </div>
+          </div>
+        </article>
+      } @empty {
+        <p class="sf-ads-empty">No se encontraron anuncios con estos filtros. Podés crear uno desde «Nueva publicidad».</p>
+      }
+    </div>
+    <div class="sf-ads-pages" aria-label="Paginación de publicidades">
+      <button type="button" class="secondary-button" [disabled]="cargando() || resultado.number === 0" (click)="cargar(resultado.number - 1)">Anterior</button>
+      <span>Página {{ resultado.number + 1 }} de {{ resultado.totalPages || 1 }}</span>
+      <button type="button" class="secondary-button" [disabled]="cargando() || resultado.number + 1 >= resultado.totalPages" (click)="cargar(resultado.number + 1)">Siguiente</button>
+    </div>
+  }
+</section>
