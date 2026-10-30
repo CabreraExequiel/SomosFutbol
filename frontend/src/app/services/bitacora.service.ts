@@ -35,16 +35,94 @@ export interface PaginaBitacora {
   totalPages: number;
   totalElements: number;
 }
+export interface FiltrosBitacora {
+  nivel?: string;
+  origen?: string;
+  ambiente?: string;
+  estado?: string;
+  buscar?: string;
+}
+export interface FiltrosSeguimiento {
+  estado?: string;
+  origen?: string;
+  ambiente?: string;
+  ultimoAdminId?: number;
+  sinGestion?: boolean;
+  buscar?: string;
+}
+export interface FiltrosAccionesAdmin {
+  tipo?: string;
+  administradorId?: number;
+  buscar?: string;
+}
+
+/** 09E4: datos agregados del período, nunca registros privados ni diagnósticos. */
+export interface TramoErroresBitacora {
+  etiqueta: string;
+  errores: number;
+}
+export interface EstadisticasBitacora {
+  dias: number;
+  ambiente: 'local' | 'production' | 'todos';
+  zonaHoraria: string;
+  totalEventos: number;
+  totalErrores: number;
+  eventosInformativos: number;
+  pendientes: number;
+  enInvestigacion: number;
+  resueltos: number;
+  sinGestion: number;
+  erroresBackend: number;
+  erroresFrontend: number;
+  accionesAdministrativas: number;
+  tendencia: TramoErroresBitacora[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class BitacoraService {
   constructor(private readonly http: HttpClient) {}
+  /** 09E4: resumen de solo lectura, limitado a 7 o 30 días. */
+  estadisticas(dias: 7 | 30, ambiente = ''): Observable<EstadisticasBitacora> {
+    let params = new HttpParams().set('dias', dias);
+    if (ambiente) params = params.set('ambiente', ambiente);
+    return this.http.get<EstadisticasBitacora>(`${environment.apiUrl}/admin/bitacora/estadisticas`, { params });
+  }
+
   actualizarEstado(id: number, estado: EstadoIncidente): Observable<EventoBitacora> {
     return this.http.patch<EventoBitacora>(`${environment.apiUrl}/admin/bitacora/${id}/estado`, { estado });
   }
-  listar(pagina = 0, nivel = '', origen = ''): Observable<PaginaBitacora> {
+  /** 09E3: cola paginada de errores para seguimiento administrativo. */
+  listarIncidentes(pagina = 0, filtros: FiltrosSeguimiento = {}): Observable<PaginaBitacora> {
     let params = new HttpParams().set('pagina', pagina);
-    if (nivel) params = params.set('nivel', nivel);
-    if (origen) params = params.set('origen', origen);
+    if (filtros.estado) params = params.set('estado', filtros.estado);
+    if (filtros.origen) params = params.set('origen', filtros.origen);
+    if (filtros.ambiente) params = params.set('ambiente', filtros.ambiente);
+    if (filtros.ultimoAdminId) params = params.set('ultimoAdminId', filtros.ultimoAdminId);
+    if (filtros.sinGestion) params = params.set('sinGestion', true);
+    if (filtros.buscar?.trim()) params = params.set('buscar', filtros.buscar.trim());
+    return this.http.get<PaginaBitacora>(`${environment.apiUrl}/admin/bitacora/incidentes`, { params });
+  }
+  historialIncidente(id: number, pagina = 0): Observable<PaginaBitacora> {
+    return this.http.get<PaginaBitacora>(`${environment.apiUrl}/admin/bitacora/${id}/historial`, {
+      params: new HttpParams().set('pagina', pagina),
+    });
+  }
+  /** 09E2: únicamente eventos de acciones administrativas identificadas. */
+  listarAcciones(pagina = 0, filtros: FiltrosAccionesAdmin = {}): Observable<PaginaBitacora> {
+    let params = new HttpParams().set('pagina', pagina);
+    if (filtros.tipo) params = params.set('tipo', filtros.tipo);
+    if (filtros.administradorId) params = params.set('administradorId', filtros.administradorId);
+    if (filtros.buscar?.trim()) params = params.set('buscar', filtros.buscar.trim());
+    return this.http.get<PaginaBitacora>(`${environment.apiUrl}/admin/bitacora/acciones`, { params });
+  }
+
+  listar(pagina = 0, filtros: FiltrosBitacora = {}): Observable<PaginaBitacora> {
+    let params = new HttpParams().set('pagina', pagina);
+    if (filtros.nivel) params = params.set('nivel', filtros.nivel);
+    if (filtros.origen) params = params.set('origen', filtros.origen);
+    if (filtros.ambiente) params = params.set('ambiente', filtros.ambiente);
+    if (filtros.estado) params = params.set('estado', filtros.estado);
+    if (filtros.buscar?.trim()) params = params.set('buscar', filtros.buscar.trim());
     return this.http.get<PaginaBitacora>(`${environment.apiUrl}/admin/bitacora`, { params });
   }
 }
