@@ -1,0 +1,24 @@
+.sf-estadisticas {margin:18px 0; padding:18px; border:1px solid #d9e5dd; border-radius:16px; background:#f8fcf9;color:#183628}
+.sf-estadisticas-header {display:flex; gap:16px;justify-content:space-between; align-items:start;flex-wrap:wrap}
+.sf-estadisticas h3 {margin:0 0 6px;font-size:1.14rem}.sf-estadisticas h4{margin:16px 0 10px}
+.sf-estadisticas p {margin:0;color:#51665b;font-size:.85rem;line-height:1.5}
+.sf-estadisticas-filtros {display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:16px 0}
+.sf-estadisticas-filtros label {display:grid;gap:4px;font-weight:600;font-size:.82rem;flex:1;min-width:130px}
+.sf-estadisticas-filtros select,.sf-estadisticas-filtros input {padding:9px;border:1px solid #cddbd2;border-radius:9px;min-width:0;width:100%;background:white}
+.sf-estadisticas-button {border:0;border-radius:9px;padding:10px 14px;background:#0e7644;color:white;font-weight:700;cursor:pointer}
+.sf-estadisticas-button.secondary {background:#eef5f0;color:#264435;border:1px solid #d1dfd5}
+.sf-estadisticas-button:disabled {opacity:.5;cursor:not-allowed}
+.sf-estadisticas-error{color:#aa2323!important;margin-bottom:10px!important}
+.sf-estadisticas-totales {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.sf-estadisticas-totales>div{background:white;border:1px solid #e1eae3;border-radius:12px;padding:12px;display:grid;gap:3px}
+.sf-estadisticas-totales small{color:#567264;font-size:.75rem}.sf-estadisticas-totales strong{font-size:1.4rem;font-variant-numeric:tabular-nums}
+.sf-estadisticas-scroll,.sf-estadisticas-tabla-scroll {overflow-x:auto}
+.sf-estadisticas-grafico {min-width:340px;display:flex;gap:5px;align-items:end;min-height:155px;padding:8px 2px;border-bottom:1px solid #c5d8ca}
+.sf-estadisticas-dia {min-width:23px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:end;gap:4px}
+.sf-estadisticas-numero{font-size:.65rem;color:#446350}.sf-estadisticas-barra{background:#248b59;width:80%;min-height:2px;border-radius:4px 4px 0 0}
+.sf-estadisticas-dia small{font-size:.64rem;color:#607266;white-space:nowrap}
+.sf-estadisticas-tabla {width:100%;border-collapse:collapse;font-size:.83rem;min-width:560px}
+.sf-estadisticas-tabla th,.sf-estadisticas-tabla td{text-align:left;padding:9px;border-bottom:1px solid #e0e8e2;vertical-align:top}
+.sf-estadisticas-tabla th{color:#436453;background:#eef5ef}
+.sf-estadisticas .sf-estadisticas-ayuda{margin-top:12px;font-size:.76rem}
+@media(max-width:520px){.sf-estadisticas-totales strong{font-size:1.12rem}.sf-estadisticas{padding:12px}}

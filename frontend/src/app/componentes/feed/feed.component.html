@@ -10,6 +10,7 @@
   </header>
 
   <div class="feed-columna">
+    <app-publicidades-visibles ubicacion="INICIO" />
     <section class="surface-card nueva-publicacion">
       <div class="publicacion-identidad">
         <span class="avatar avatar-propio">
@@ -153,6 +154,7 @@
     </div>
   </section>
 
+  <app-publicidades-visibles ubicacion="FEED" />
   <nav class="feed-filtros" aria-label="Elegir tipo de publicaciones">
     <button type="button" [class.activo]="modoFeed === 'para-vos'" [attr.aria-pressed]="modoFeed === 'para-vos'" (click)="cambiarModo('para-vos')">✨ Para vos</button>
     <button type="button" [class.activo]="modoFeed === 'recientes'" [attr.aria-pressed]="modoFeed === 'recientes'" (click)="cambiarModo('recientes')">🕒 Recientes</button>

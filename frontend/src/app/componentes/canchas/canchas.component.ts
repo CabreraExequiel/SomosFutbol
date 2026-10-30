@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PublicidadesVisiblesComponent } from '../publicidades-visibles/publicidades-visibles.component';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -8,7 +9,7 @@ import { DuenoPublico } from '../../models/agenda';
 
 @Component({
   selector: 'app-canchas',
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [PublicidadesVisiblesComponent, CommonModule, FormsModule, RouterLink],
   templateUrl: './canchas.component.html',
   styleUrls: ['./canchas.component.css', './canchas-filtros-06c.css'],
   changeDetection: ChangeDetectionStrategy.Eager,

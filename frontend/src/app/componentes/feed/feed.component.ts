@@ -6,6 +6,7 @@ import {
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
+import { PublicidadesVisiblesComponent } from '../publicidades-visibles/publicidades-visibles.component';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { environment } from '../../../environments/environment';
 import { FormsModule } from '@angular/forms';
@@ -27,7 +28,7 @@ type ModoFeed = 'para-vos' | 'recientes' | 'amigos' | 'cerca';
 @Component({
   selector: 'app-feed',
   standalone: true,
-  imports: [
+  imports: [PublicidadesVisiblesComponent, 
     CommonModule,
     FormsModule
   ],
