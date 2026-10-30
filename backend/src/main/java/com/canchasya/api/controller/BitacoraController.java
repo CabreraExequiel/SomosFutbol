@@ -348,6 +348,6 @@ public class BitacoraController {
     public record FrontendErrorRequest(@Size(max=70) String nombre, @Size(max=180) String ruta,
                                        @Size(max=120) String funcion, @Size(max=180) String clase,
                                        @Size(max=150) String archivo, Integer linea) { }
-    public record CambiarEstadoRequest(@NotBlank String estado) { }
+    public record CambiarEstadoRequest(@NotBlank @Size(max = 20) String estado) { }
     public record CodigoRespuesta(String codigo) { }
 }
